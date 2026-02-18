@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
 
 
@@ -14,7 +15,22 @@ runApp(
     child: MyApp(),
   ),
 );
+
+  print("Firebase Initialized");
 }
+
+
+Future<void> testFirestore() async {
+  await FirebaseFirestore.instance.collection('test').add({
+    'message': 'Hello NutriCook',
+    'createdAt': Timestamp.now(),
+  });
+
+  print("🔥 Data written to Firestore");
+}
+
+
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -68,16 +84,19 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
+  void _incrementCounter() async {
+  setState(() {
+    _counter++;
+  });
+
+  await FirebaseFirestore.instance.collection('test').add({
+    'counter': _counter,
+    'createdAt': Timestamp.now(),
+  });
+
+  print("Firestore Database Test");
+}
+
 
   @override
   Widget build(BuildContext context) {
