@@ -42,7 +42,6 @@ dependencies:
   go_router: ^17.1.0
   animations: ^2.1.1
   riverpod_annotation: ^4.0.2
-  freezed: ^3.2.3
   freezed_annotation: ^3.1.0
   json_annotation: ^4.9.0
   image_picker: ^1.2.1
@@ -52,6 +51,7 @@ dependencies:
   flutter_slidable: ^4.0.3
   smooth_page_indicator: ^2.0.1
   intl: ^0.20.2
+  
 
 dev_dependencies:
   flutter_test:
@@ -64,6 +64,8 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
   json_serializable: ^6.11.2
+  freezed: ^3.2.3
+  build_runner: ^2.11.1
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
