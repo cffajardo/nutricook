@@ -14,12 +14,12 @@ _PlannerItem _$PlannerItemFromJson(Map<String, dynamic> json) => _PlannerItem(
   mealType: json['mealType'] as String,
   recipeId: json['recipeId'] as String,
   recipeName: json['recipeName'] as String,
-  thumbnailUrl: json['thumbnailUrl'] as String,
+  thumbnailUrl: json['thumbnailUrl'] as String?,
   servingMultiplier: (json['servingMultiplier'] as num).toDouble(),
   prepTime: (json['prepTime'] as num).toInt(),
   cookTime: (json['cookTime'] as num).toInt(),
   notes: json['notes'] as String?,
-  isCompleted: json['isCompleted'] as bool,
+  isCompleted: json['isCompleted'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$PlannerItemToJson(_PlannerItem instance) =>

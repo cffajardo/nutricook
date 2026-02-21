@@ -14,12 +14,12 @@ abstract class PlannerItem with _$PlannerItem {
     required String mealType,
     required String recipeId,
     required String recipeName,
-    required String thumbnailUrl,
+    String? thumbnailUrl,
     required double servingMultiplier,
     required int prepTime,
     required int cookTime,
     String? notes,
-    required bool isCompleted,
+    @Default(false) bool isCompleted,
   }) = _PlannerItem;
 
   factory PlannerItem.fromJson(Map<String, dynamic> json) =>

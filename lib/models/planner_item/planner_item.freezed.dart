@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$PlannerItem {
 
- String get id; String get ownerId;@TimestampConverter() DateTime get date;@TimestampConverter() DateTime get createdAt; String get mealType; String get recipeId; String get recipeName; String get thumbnailUrl; double get servingMultiplier; int get prepTime; int get cookTime; String? get notes; bool get isCompleted;
+ String get id; String get ownerId;@TimestampConverter() DateTime get date;@TimestampConverter() DateTime get createdAt; String get mealType; String get recipeId; String get recipeName; String? get thumbnailUrl; double get servingMultiplier; int get prepTime; int get cookTime; String? get notes; bool get isCompleted;
 /// Create a copy of PlannerItem
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $PlannerItemCopyWith<$Res>  {
   factory $PlannerItemCopyWith(PlannerItem value, $Res Function(PlannerItem) _then) = _$PlannerItemCopyWithImpl;
 @useResult
 $Res call({
- String id, String ownerId,@TimestampConverter() DateTime date,@TimestampConverter() DateTime createdAt, String mealType, String recipeId, String recipeName, String thumbnailUrl, double servingMultiplier, int prepTime, int cookTime, String? notes, bool isCompleted
+ String id, String ownerId,@TimestampConverter() DateTime date,@TimestampConverter() DateTime createdAt, String mealType, String recipeId, String recipeName, String? thumbnailUrl, double servingMultiplier, int prepTime, int cookTime, String? notes, bool isCompleted
 });
 
 
@@ -65,7 +65,7 @@ class _$PlannerItemCopyWithImpl<$Res>
 
 /// Create a copy of PlannerItem
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? ownerId = null,Object? date = null,Object? createdAt = null,Object? mealType = null,Object? recipeId = null,Object? recipeName = null,Object? thumbnailUrl = null,Object? servingMultiplier = null,Object? prepTime = null,Object? cookTime = null,Object? notes = freezed,Object? isCompleted = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? ownerId = null,Object? date = null,Object? createdAt = null,Object? mealType = null,Object? recipeId = null,Object? recipeName = null,Object? thumbnailUrl = freezed,Object? servingMultiplier = null,Object? prepTime = null,Object? cookTime = null,Object? notes = freezed,Object? isCompleted = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,ownerId: null == ownerId ? _self.ownerId : ownerId // ignore: cast_nullable_to_non_nullable
@@ -74,8 +74,8 @@ as DateTime,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore
 as DateTime,mealType: null == mealType ? _self.mealType : mealType // ignore: cast_nullable_to_non_nullable
 as String,recipeId: null == recipeId ? _self.recipeId : recipeId // ignore: cast_nullable_to_non_nullable
 as String,recipeName: null == recipeName ? _self.recipeName : recipeName // ignore: cast_nullable_to_non_nullable
-as String,thumbnailUrl: null == thumbnailUrl ? _self.thumbnailUrl : thumbnailUrl // ignore: cast_nullable_to_non_nullable
-as String,servingMultiplier: null == servingMultiplier ? _self.servingMultiplier : servingMultiplier // ignore: cast_nullable_to_non_nullable
+as String,thumbnailUrl: freezed == thumbnailUrl ? _self.thumbnailUrl : thumbnailUrl // ignore: cast_nullable_to_non_nullable
+as String?,servingMultiplier: null == servingMultiplier ? _self.servingMultiplier : servingMultiplier // ignore: cast_nullable_to_non_nullable
 as double,prepTime: null == prepTime ? _self.prepTime : prepTime // ignore: cast_nullable_to_non_nullable
 as int,cookTime: null == cookTime ? _self.cookTime : cookTime // ignore: cast_nullable_to_non_nullable
 as int,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
@@ -165,7 +165,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String ownerId, @TimestampConverter()  DateTime date, @TimestampConverter()  DateTime createdAt,  String mealType,  String recipeId,  String recipeName,  String thumbnailUrl,  double servingMultiplier,  int prepTime,  int cookTime,  String? notes,  bool isCompleted)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String ownerId, @TimestampConverter()  DateTime date, @TimestampConverter()  DateTime createdAt,  String mealType,  String recipeId,  String recipeName,  String? thumbnailUrl,  double servingMultiplier,  int prepTime,  int cookTime,  String? notes,  bool isCompleted)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PlannerItem() when $default != null:
 return $default(_that.id,_that.ownerId,_that.date,_that.createdAt,_that.mealType,_that.recipeId,_that.recipeName,_that.thumbnailUrl,_that.servingMultiplier,_that.prepTime,_that.cookTime,_that.notes,_that.isCompleted);case _:
@@ -186,7 +186,7 @@ return $default(_that.id,_that.ownerId,_that.date,_that.createdAt,_that.mealType
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String ownerId, @TimestampConverter()  DateTime date, @TimestampConverter()  DateTime createdAt,  String mealType,  String recipeId,  String recipeName,  String thumbnailUrl,  double servingMultiplier,  int prepTime,  int cookTime,  String? notes,  bool isCompleted)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String ownerId, @TimestampConverter()  DateTime date, @TimestampConverter()  DateTime createdAt,  String mealType,  String recipeId,  String recipeName,  String? thumbnailUrl,  double servingMultiplier,  int prepTime,  int cookTime,  String? notes,  bool isCompleted)  $default,) {final _that = this;
 switch (_that) {
 case _PlannerItem():
 return $default(_that.id,_that.ownerId,_that.date,_that.createdAt,_that.mealType,_that.recipeId,_that.recipeName,_that.thumbnailUrl,_that.servingMultiplier,_that.prepTime,_that.cookTime,_that.notes,_that.isCompleted);case _:
@@ -206,7 +206,7 @@ return $default(_that.id,_that.ownerId,_that.date,_that.createdAt,_that.mealType
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String ownerId, @TimestampConverter()  DateTime date, @TimestampConverter()  DateTime createdAt,  String mealType,  String recipeId,  String recipeName,  String thumbnailUrl,  double servingMultiplier,  int prepTime,  int cookTime,  String? notes,  bool isCompleted)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String ownerId, @TimestampConverter()  DateTime date, @TimestampConverter()  DateTime createdAt,  String mealType,  String recipeId,  String recipeName,  String? thumbnailUrl,  double servingMultiplier,  int prepTime,  int cookTime,  String? notes,  bool isCompleted)?  $default,) {final _that = this;
 switch (_that) {
 case _PlannerItem() when $default != null:
 return $default(_that.id,_that.ownerId,_that.date,_that.createdAt,_that.mealType,_that.recipeId,_that.recipeName,_that.thumbnailUrl,_that.servingMultiplier,_that.prepTime,_that.cookTime,_that.notes,_that.isCompleted);case _:
@@ -221,7 +221,7 @@ return $default(_that.id,_that.ownerId,_that.date,_that.createdAt,_that.mealType
 @JsonSerializable()
 
 class _PlannerItem implements PlannerItem {
-  const _PlannerItem({required this.id, required this.ownerId, @TimestampConverter() required this.date, @TimestampConverter() required this.createdAt, required this.mealType, required this.recipeId, required this.recipeName, required this.thumbnailUrl, required this.servingMultiplier, required this.prepTime, required this.cookTime, this.notes, required this.isCompleted});
+  const _PlannerItem({required this.id, required this.ownerId, @TimestampConverter() required this.date, @TimestampConverter() required this.createdAt, required this.mealType, required this.recipeId, required this.recipeName, this.thumbnailUrl, required this.servingMultiplier, required this.prepTime, required this.cookTime, this.notes, this.isCompleted = false});
   factory _PlannerItem.fromJson(Map<String, dynamic> json) => _$PlannerItemFromJson(json);
 
 @override final  String id;
@@ -231,12 +231,12 @@ class _PlannerItem implements PlannerItem {
 @override final  String mealType;
 @override final  String recipeId;
 @override final  String recipeName;
-@override final  String thumbnailUrl;
+@override final  String? thumbnailUrl;
 @override final  double servingMultiplier;
 @override final  int prepTime;
 @override final  int cookTime;
 @override final  String? notes;
-@override final  bool isCompleted;
+@override@JsonKey() final  bool isCompleted;
 
 /// Create a copy of PlannerItem
 /// with the given fields replaced by the non-null parameter values.
@@ -271,7 +271,7 @@ abstract mixin class _$PlannerItemCopyWith<$Res> implements $PlannerItemCopyWith
   factory _$PlannerItemCopyWith(_PlannerItem value, $Res Function(_PlannerItem) _then) = __$PlannerItemCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String ownerId,@TimestampConverter() DateTime date,@TimestampConverter() DateTime createdAt, String mealType, String recipeId, String recipeName, String thumbnailUrl, double servingMultiplier, int prepTime, int cookTime, String? notes, bool isCompleted
+ String id, String ownerId,@TimestampConverter() DateTime date,@TimestampConverter() DateTime createdAt, String mealType, String recipeId, String recipeName, String? thumbnailUrl, double servingMultiplier, int prepTime, int cookTime, String? notes, bool isCompleted
 });
 
 
@@ -288,7 +288,7 @@ class __$PlannerItemCopyWithImpl<$Res>
 
 /// Create a copy of PlannerItem
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? ownerId = null,Object? date = null,Object? createdAt = null,Object? mealType = null,Object? recipeId = null,Object? recipeName = null,Object? thumbnailUrl = null,Object? servingMultiplier = null,Object? prepTime = null,Object? cookTime = null,Object? notes = freezed,Object? isCompleted = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? ownerId = null,Object? date = null,Object? createdAt = null,Object? mealType = null,Object? recipeId = null,Object? recipeName = null,Object? thumbnailUrl = freezed,Object? servingMultiplier = null,Object? prepTime = null,Object? cookTime = null,Object? notes = freezed,Object? isCompleted = null,}) {
   return _then(_PlannerItem(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,ownerId: null == ownerId ? _self.ownerId : ownerId // ignore: cast_nullable_to_non_nullable
@@ -297,8 +297,8 @@ as DateTime,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore
 as DateTime,mealType: null == mealType ? _self.mealType : mealType // ignore: cast_nullable_to_non_nullable
 as String,recipeId: null == recipeId ? _self.recipeId : recipeId // ignore: cast_nullable_to_non_nullable
 as String,recipeName: null == recipeName ? _self.recipeName : recipeName // ignore: cast_nullable_to_non_nullable
-as String,thumbnailUrl: null == thumbnailUrl ? _self.thumbnailUrl : thumbnailUrl // ignore: cast_nullable_to_non_nullable
-as String,servingMultiplier: null == servingMultiplier ? _self.servingMultiplier : servingMultiplier // ignore: cast_nullable_to_non_nullable
+as String,thumbnailUrl: freezed == thumbnailUrl ? _self.thumbnailUrl : thumbnailUrl // ignore: cast_nullable_to_non_nullable
+as String?,servingMultiplier: null == servingMultiplier ? _self.servingMultiplier : servingMultiplier // ignore: cast_nullable_to_non_nullable
 as double,prepTime: null == prepTime ? _self.prepTime : prepTime // ignore: cast_nullable_to_non_nullable
 as int,cookTime: null == cookTime ? _self.cookTime : cookTime // ignore: cast_nullable_to_non_nullable
 as int,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
