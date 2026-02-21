@@ -1,5 +1,4 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 part 'techniques.freezed.dart';
 part 'techniques.g.dart';
