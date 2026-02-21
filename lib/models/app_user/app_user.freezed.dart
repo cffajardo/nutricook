@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$AppUser {
 
- String get id; String get username; String get email;@TimestampConverter() Timestamp get createdAt; String? get mediaId; List<String> get allergens;
+ String get id; String get username; String get email;@TimestampConverter() DateTime get createdAt; String? get mediaId; List<String> get allergens;
 /// Create a copy of AppUser
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $AppUserCopyWith<$Res>  {
   factory $AppUserCopyWith(AppUser value, $Res Function(AppUser) _then) = _$AppUserCopyWithImpl;
 @useResult
 $Res call({
- String id, String username, String email,@TimestampConverter() Timestamp createdAt, String? mediaId, List<String> allergens
+ String id, String username, String email,@TimestampConverter() DateTime createdAt, String? mediaId, List<String> allergens
 });
 
 
@@ -71,7 +71,7 @@ id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,username: null == username ? _self.username : username // ignore: cast_nullable_to_non_nullable
 as String,email: null == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
 as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
-as Timestamp,mediaId: freezed == mediaId ? _self.mediaId : mediaId // ignore: cast_nullable_to_non_nullable
+as DateTime,mediaId: freezed == mediaId ? _self.mediaId : mediaId // ignore: cast_nullable_to_non_nullable
 as String?,allergens: null == allergens ? _self.allergens : allergens // ignore: cast_nullable_to_non_nullable
 as List<String>,
   ));
@@ -158,7 +158,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String username,  String email, @TimestampConverter()  Timestamp createdAt,  String? mediaId,  List<String> allergens)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String username,  String email, @TimestampConverter()  DateTime createdAt,  String? mediaId,  List<String> allergens)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AppUser() when $default != null:
 return $default(_that.id,_that.username,_that.email,_that.createdAt,_that.mediaId,_that.allergens);case _:
@@ -179,7 +179,7 @@ return $default(_that.id,_that.username,_that.email,_that.createdAt,_that.mediaI
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String username,  String email, @TimestampConverter()  Timestamp createdAt,  String? mediaId,  List<String> allergens)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String username,  String email, @TimestampConverter()  DateTime createdAt,  String? mediaId,  List<String> allergens)  $default,) {final _that = this;
 switch (_that) {
 case _AppUser():
 return $default(_that.id,_that.username,_that.email,_that.createdAt,_that.mediaId,_that.allergens);case _:
@@ -199,7 +199,7 @@ return $default(_that.id,_that.username,_that.email,_that.createdAt,_that.mediaI
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String username,  String email, @TimestampConverter()  Timestamp createdAt,  String? mediaId,  List<String> allergens)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String username,  String email, @TimestampConverter()  DateTime createdAt,  String? mediaId,  List<String> allergens)?  $default,) {final _that = this;
 switch (_that) {
 case _AppUser() when $default != null:
 return $default(_that.id,_that.username,_that.email,_that.createdAt,_that.mediaId,_that.allergens);case _:
@@ -220,7 +220,7 @@ class _AppUser implements AppUser {
 @override final  String id;
 @override final  String username;
 @override final  String email;
-@override@TimestampConverter() final  Timestamp createdAt;
+@override@TimestampConverter() final  DateTime createdAt;
 @override final  String? mediaId;
  final  List<String> _allergens;
 @override@JsonKey() List<String> get allergens {
@@ -263,7 +263,7 @@ abstract mixin class _$AppUserCopyWith<$Res> implements $AppUserCopyWith<$Res> {
   factory _$AppUserCopyWith(_AppUser value, $Res Function(_AppUser) _then) = __$AppUserCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String username, String email,@TimestampConverter() Timestamp createdAt, String? mediaId, List<String> allergens
+ String id, String username, String email,@TimestampConverter() DateTime createdAt, String? mediaId, List<String> allergens
 });
 
 
@@ -286,7 +286,7 @@ id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,username: null == username ? _self.username : username // ignore: cast_nullable_to_non_nullable
 as String,email: null == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
 as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
-as Timestamp,mediaId: freezed == mediaId ? _self.mediaId : mediaId // ignore: cast_nullable_to_non_nullable
+as DateTime,mediaId: freezed == mediaId ? _self.mediaId : mediaId // ignore: cast_nullable_to_non_nullable
 as String?,allergens: null == allergens ? _self._allergens : allergens // ignore: cast_nullable_to_non_nullable
 as List<String>,
   ));

@@ -11,7 +11,7 @@ abstract class AppUser with _$AppUser {
     required String id,
     required String username,
     required String email,
-    @TimestampConverter() required Timestamp createdAt,
+    @TimestampConverter() required DateTime createdAt,
     String? mediaId,
     @Default(<String>[]) List<String> allergens,
 

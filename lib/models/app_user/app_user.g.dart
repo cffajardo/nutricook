@@ -10,9 +10,7 @@ _AppUser _$AppUserFromJson(Map<String, dynamic> json) => _AppUser(
   id: json['id'] as String,
   username: json['username'] as String,
   email: json['email'] as String,
-  createdAt: const TimestampConverter().fromJson(
-    json['createdAt'] as Timestamp,
-  ),
+  createdAt: DateTime.parse(json['createdAt'] as String),
   mediaId: json['mediaId'] as String?,
   allergens:
       (json['allergens'] as List<dynamic>?)?.map((e) => e as String).toList() ??
@@ -23,7 +21,7 @@ Map<String, dynamic> _$AppUserToJson(_AppUser instance) => <String, dynamic>{
   'id': instance.id,
   'username': instance.username,
   'email': instance.email,
-  'createdAt': const TimestampConverter().toJson(instance.createdAt),
+  'createdAt': instance.createdAt.toIso8601String(),
   'mediaId': instance.mediaId,
   'allergens': instance.allergens,
 };
