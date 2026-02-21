@@ -19,8 +19,12 @@ _Recipe _$RecipeFromJson(Map<String, dynamic> json) => _Recipe(
   servings: (json['servings'] as num).toInt(),
   cookTime: (json['cookTime'] as num).toInt(),
   prepTime: (json['prepTime'] as num).toInt(),
-  createdAt: DateTime.parse(json['createdAt'] as String),
-  updatedAt: DateTime.parse(json['updatedAt'] as String),
+  createdAt: const TimestampConverter().fromJson(
+    json['createdAt'] as Timestamp,
+  ),
+  updatedAt: const TimestampConverter().fromJson(
+    json['updatedAt'] as Timestamp,
+  ),
   nutritionTotal: json['nutritionTotal'] == null
       ? null
       : NutritionInfo.fromJson(json['nutritionTotal'] as Map<String, dynamic>),
@@ -55,8 +59,8 @@ Map<String, dynamic> _$RecipeToJson(_Recipe instance) => <String, dynamic>{
   'servings': instance.servings,
   'cookTime': instance.cookTime,
   'prepTime': instance.prepTime,
-  'createdAt': instance.createdAt.toIso8601String(),
-  'updatedAt': instance.updatedAt.toIso8601String(),
+  'createdAt': const TimestampConverter().toJson(instance.createdAt),
+  'updatedAt': const TimestampConverter().toJson(instance.updatedAt),
   'nutritionTotal': instance.nutritionTotal,
   'nutritionPerServing': instance.nutritionPerServing,
   'ownerID': instance.ownerID,

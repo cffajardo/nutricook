@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../features/utils/timestamp_convert.dart';
 import '../nutrition_info/nutrition_info.dart';
 import '../recipe_ingredient/recipe_ingredient.dart';
