@@ -26,7 +26,7 @@ Future<void> testFirestore() async {
     'createdAt': Timestamp.now(),
   });
 
-  print("🔥 Data written to Firestore");
+  print("Firestore Checked");
 }
 
 
