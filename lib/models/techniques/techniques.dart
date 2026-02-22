@@ -8,6 +8,7 @@ abstract class Technique with _$Technique {
   const factory Technique({
     required String id,
     required String name,
+    required String category,
     String? description,
     @Default(<String>[]) List<String> mediaIDs,
   }) = _Technique;
