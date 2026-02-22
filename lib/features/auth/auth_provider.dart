@@ -16,11 +16,19 @@ final authStateProvider = StreamProvider<User?>((ref) {
   return authService.authStateChanges();
 });
 
-final verificationRefreshProvider = StateProvider<int>((ref) => 0);
+class VerificationRefreshNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+  void increment() => state++;
+}
+
+final verificationRefreshProvider =
+    NotifierProvider<VerificationRefreshNotifier, int>(
+        VerificationRefreshNotifier.new);
 
 /// User with fresh emailVerified status. Reloads when verificationRefreshProvider changes.
 final currentUserWithVerificationProvider = FutureProvider<User?>((ref) async {
-  final user = ref.watch(authStateProvider).valueOrNull;
+  final user = ref.watch(authStateProvider).asData?.value;
   ref.watch(verificationRefreshProvider);
   if (user == null) return null;
   await ref.read(authProvider).reloadCurrentUser();
