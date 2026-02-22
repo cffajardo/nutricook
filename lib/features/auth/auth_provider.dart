@@ -16,8 +16,6 @@ final authStateProvider = StreamProvider<User?>((ref) {
   return authService.authStateChanges();
 });
 
-/// Increment this when user has verified email (e.g. after tapping "I've verified")
-/// so the auth gate reloads and picks up the new emailVerified status.
 final verificationRefreshProvider = StateProvider<int>((ref) => 0);
 
 /// User with fresh emailVerified status. Reloads when verificationRefreshProvider changes.
