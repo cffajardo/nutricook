@@ -28,6 +28,14 @@ class AuthService {
     }
   }
 
+  Future<void> signInAnonymously() async {
+    try {
+      await _auth.signInAnonymously();
+    } on FirebaseAuthException catch (e) {
+      throw _handleAuthException(e);
+    }
+  }
+
   Future<void> registerWithEmail({
     required String email,
     required String password,
@@ -114,12 +122,12 @@ class AuthService {
     String? profilePictureUrl,
   }) async {
     await _db.collection('users').doc(uid).set({
-      'uid': uid,
+      'id': uid,
       'email': email,
       'username': username,
-      'profilePictureUrl': profilePictureUrl,
+      'mediaId': profilePictureUrl,
       'allergens': [],
-      'creationDate': FieldValue.serverTimestamp(),
+      'createdAt': FieldValue.serverTimestamp(),
     });
   }
 
