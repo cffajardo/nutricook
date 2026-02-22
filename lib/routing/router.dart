@@ -31,7 +31,7 @@ class RouterAuthNotifier extends ChangeNotifier {
 final routerAuthNotifierProvider =
     Provider<RouterAuthNotifier>((ref) => RouterAuthNotifier());
 
-/// Syncs auth state from Riverpod to the router's refresh notifier.
+/// Riverpod state sync for router auth notifier
 class AuthStateSync extends ConsumerStatefulWidget {
   const AuthStateSync({super.key, required this.child});
 
@@ -68,7 +68,6 @@ class _AuthStateSyncState extends ConsumerState<AuthStateSync> {
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
-/// Main app router with auth-aware redirects.
 GoRouter createRouter(RouterAuthNotifier authNotifier) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
@@ -82,15 +81,12 @@ GoRouter createRouter(RouterAuthNotifier authNotifier) {
       final isAuthRoute = path == '/login' || path == '/register';
       final isVerifyEmailRoute = path == '/verify-email';
 
-      // During initial auth load, show login (avoids flash of wrong screen)
       if (isLoading) return isAuthRoute ? null : '/login';
 
-      // Not logged in -> login (unless already on auth route)
       if (user == null) {
         return isAuthRoute ? null : '/login';
       }
 
-      // Logged in, email not verified -> verify-email (unless already there)
       final needsVerification = user.email != null &&
           user.email!.isNotEmpty &&
           !user.emailVerified;
@@ -98,7 +94,6 @@ GoRouter createRouter(RouterAuthNotifier authNotifier) {
         return isVerifyEmailRoute ? null : '/verify-email';
       }
 
-      // Logged in and verified -> home (redirect away from auth routes)
       if (isAuthRoute || isVerifyEmailRoute) {
         return '/';
       }
