@@ -93,6 +93,9 @@ class AuthService {
       );
 
       await userCredential.user!.updateDisplayName(username.trim());
+
+      // Send verification email so user can prove they own the address
+      await userCredential.user!.sendEmailVerification();
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
     }
@@ -151,6 +154,25 @@ class AuthService {
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
     }
+  }
+
+  /// Sends a verification link to the current user's email.
+  Future<void> sendEmailVerification() async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('You must be signed in to verify your email.');
+    if (user.email == null || user.email!.isEmpty) {
+      throw Exception('No email address to verify.');
+    }
+    try {
+      await user.sendEmailVerification();
+    } on FirebaseAuthException catch (e) {
+      throw _handleAuthException(e);
+    }
+  }
+
+  /// Reloads the current user from Firebase to get the latest emailVerified status.
+  Future<void> reloadCurrentUser() async {
+    await _auth.currentUser?.reload();
   }
 
   Future<void> _createUserDocument({
