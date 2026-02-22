@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Technique {
 
- String get id; String get name; String? get description; List<String> get mediaIDs;
+ String get id; String get name; String get category; String? get description; List<String> get mediaIDs;
 /// Create a copy of Technique
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $TechniqueCopyWith<Technique> get copyWith => _$TechniqueCopyWithImpl<Technique>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Technique&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other.mediaIDs, mediaIDs));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Technique&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.category, category) || other.category == category)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other.mediaIDs, mediaIDs));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,description,const DeepCollectionEquality().hash(mediaIDs));
+int get hashCode => Object.hash(runtimeType,id,name,category,description,const DeepCollectionEquality().hash(mediaIDs));
 
 @override
 String toString() {
-  return 'Technique(id: $id, name: $name, description: $description, mediaIDs: $mediaIDs)';
+  return 'Technique(id: $id, name: $name, category: $category, description: $description, mediaIDs: $mediaIDs)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $TechniqueCopyWith<$Res>  {
   factory $TechniqueCopyWith(Technique value, $Res Function(Technique) _then) = _$TechniqueCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String? description, List<String> mediaIDs
+ String id, String name, String category, String? description, List<String> mediaIDs
 });
 
 
@@ -65,10 +65,11 @@ class _$TechniqueCopyWithImpl<$Res>
 
 /// Create a copy of Technique
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? description = freezed,Object? mediaIDs = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? category = null,Object? description = freezed,Object? mediaIDs = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
 as String,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,mediaIDs: null == mediaIDs ? _self.mediaIDs : mediaIDs // ignore: cast_nullable_to_non_nullable
 as List<String>,
@@ -156,10 +157,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String? description,  List<String> mediaIDs)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String category,  String? description,  List<String> mediaIDs)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Technique() when $default != null:
-return $default(_that.id,_that.name,_that.description,_that.mediaIDs);case _:
+return $default(_that.id,_that.name,_that.category,_that.description,_that.mediaIDs);case _:
   return orElse();
 
 }
@@ -177,10 +178,10 @@ return $default(_that.id,_that.name,_that.description,_that.mediaIDs);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String? description,  List<String> mediaIDs)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String category,  String? description,  List<String> mediaIDs)  $default,) {final _that = this;
 switch (_that) {
 case _Technique():
-return $default(_that.id,_that.name,_that.description,_that.mediaIDs);case _:
+return $default(_that.id,_that.name,_that.category,_that.description,_that.mediaIDs);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -197,10 +198,10 @@ return $default(_that.id,_that.name,_that.description,_that.mediaIDs);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String? description,  List<String> mediaIDs)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String category,  String? description,  List<String> mediaIDs)?  $default,) {final _that = this;
 switch (_that) {
 case _Technique() when $default != null:
-return $default(_that.id,_that.name,_that.description,_that.mediaIDs);case _:
+return $default(_that.id,_that.name,_that.category,_that.description,_that.mediaIDs);case _:
   return null;
 
 }
@@ -212,11 +213,12 @@ return $default(_that.id,_that.name,_that.description,_that.mediaIDs);case _:
 @JsonSerializable()
 
 class _Technique implements Technique {
-  const _Technique({required this.id, required this.name, this.description, final  List<String> mediaIDs = const <String>[]}): _mediaIDs = mediaIDs;
+  const _Technique({required this.id, required this.name, required this.category, this.description, final  List<String> mediaIDs = const <String>[]}): _mediaIDs = mediaIDs;
   factory _Technique.fromJson(Map<String, dynamic> json) => _$TechniqueFromJson(json);
 
 @override final  String id;
 @override final  String name;
+@override final  String category;
 @override final  String? description;
  final  List<String> _mediaIDs;
 @override@JsonKey() List<String> get mediaIDs {
@@ -239,16 +241,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Technique&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other._mediaIDs, _mediaIDs));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Technique&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.category, category) || other.category == category)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other._mediaIDs, _mediaIDs));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,description,const DeepCollectionEquality().hash(_mediaIDs));
+int get hashCode => Object.hash(runtimeType,id,name,category,description,const DeepCollectionEquality().hash(_mediaIDs));
 
 @override
 String toString() {
-  return 'Technique(id: $id, name: $name, description: $description, mediaIDs: $mediaIDs)';
+  return 'Technique(id: $id, name: $name, category: $category, description: $description, mediaIDs: $mediaIDs)';
 }
 
 
@@ -259,7 +261,7 @@ abstract mixin class _$TechniqueCopyWith<$Res> implements $TechniqueCopyWith<$Re
   factory _$TechniqueCopyWith(_Technique value, $Res Function(_Technique) _then) = __$TechniqueCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String? description, List<String> mediaIDs
+ String id, String name, String category, String? description, List<String> mediaIDs
 });
 
 
@@ -276,10 +278,11 @@ class __$TechniqueCopyWithImpl<$Res>
 
 /// Create a copy of Technique
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? description = freezed,Object? mediaIDs = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? category = null,Object? description = freezed,Object? mediaIDs = null,}) {
   return _then(_Technique(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
 as String,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,mediaIDs: null == mediaIDs ? _self._mediaIDs : mediaIDs // ignore: cast_nullable_to_non_nullable
 as List<String>,
