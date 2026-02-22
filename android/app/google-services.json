@@ -12,7 +12,20 @@
           "package_name": "com.proj.nutricook"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "482853364044-dhtnfq55lmhlmbpedp7ptg10fef5a1pa.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.proj.nutricook",
+            "certificate_hash": "33b4f5ba4580ffcdb0ad331a8883b58db30d384a"
+          }
+        },
+        {
+          "client_id": "482853364044-8me4p09v1l7f09irkotuqjtkc0h6f8u8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBGqgKyjlsXUcx4LFiGJohdKqazINtiLTo"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "482853364044-8me4p09v1l7f09irkotuqjtkc0h6f8u8.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "482853364044-em29a3v7rpor9rtfv40krgbvojdslf3g.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.proj.nutricook"
+              }
+            }
+          ]
         }
       }
     }

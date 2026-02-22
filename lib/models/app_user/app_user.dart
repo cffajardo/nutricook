@@ -20,7 +20,6 @@ abstract class AppUser with _$AppUser {
   factory AppUser.fromJson(Map<String, dynamic> json) =>
     _$AppUserFromJson(json);
 
-  /// Parses user data from Firestore, supporting both legacy and current field names.
   factory AppUser.fromFirestore(Map<String, dynamic> data) => AppUser.fromJson({
         'id': data['id'] ?? data['uid'],
         'username': data['username'],
