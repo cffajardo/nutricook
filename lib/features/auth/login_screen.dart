@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/validators.dart';
 import 'auth_provider.dart';
 import 'register_screen.dart';
 
@@ -12,7 +14,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _identifierController = TextEditingController();
   final _passwordController = TextEditingController();
 
   bool _isLoading = false;
@@ -20,7 +22,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _identifierController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -33,8 +35,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     try {
-      await ref.read(authProvider).signInWithEmail(
-            email: _emailController.text,
+      await ref.read(authProvider).signInWithUsernameOrEmail(
+            usernameOrEmail: _identifierController.text,
             password: _passwordController.text,
           );
       if (mounted) {
@@ -112,18 +114,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 const SizedBox(height: 48),
                 TextFormField(
-                  controller: _emailController,
+                  controller: _identifierController,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   decoration: const InputDecoration(
-                    labelText: 'Email',
-                    hintText: 'you@example.com',
+                    labelText: 'Email or username',
+                    hintText: 'you@example.com or username',
                     border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email_outlined),
+                    prefixIcon: Icon(Icons.person_outline),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Enter your email';
+                      return 'Enter your email or username';
+                    }
+                    if (looksLikeEmail(value)) {
+                      if (!isValidEmail(value)) {
+                        return 'Enter a valid email address';
+                      }
+                    } else {
+                      if (value.trim().length < 2) {
+                        return 'Username must be at least 2 characters';
+                      }
                     }
                     return null;
                   },

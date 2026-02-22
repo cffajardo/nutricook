@@ -2,6 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../core/constants.dart';
+
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
@@ -26,6 +28,42 @@ class AuthService {
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
     }
+  }
+
+  /// Sign in with either username or email. If the identifier contains '@',
+  /// treats it as email. Otherwise looks up the email from the username in Firestore.
+  Future<void> signInWithUsernameOrEmail({
+    required String usernameOrEmail,
+    required String password,
+  }) async {
+    final identifier = usernameOrEmail.trim();
+    String email;
+
+    if (identifier.contains('@')) {
+      email = identifier;
+    } else {
+      email = await _getEmailByUsername(identifier);
+    }
+
+    await signInWithEmail(email: email, password: password);
+  }
+
+  Future<String> _getEmailByUsername(String username) async {
+    final snapshot = await _db
+        .collection(FirestoreConstants.users)
+        .where('username', isEqualTo: username.trim())
+        .limit(1)
+        .get();
+
+    if (snapshot.docs.isEmpty) {
+      throw Exception('No user found with this username.');
+    }
+
+    final email = snapshot.docs.first.data()['email'] as String?;
+    if (email == null || email.isEmpty) {
+      throw Exception('User account has no email.');
+    }
+    return email;
   }
 
   Future<void> signInAnonymously() async {

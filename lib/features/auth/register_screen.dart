@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/validators.dart';
 import 'auth_provider.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -106,6 +108,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Enter your email';
+                    }
+                    if (!isValidEmail(value)) {
+                      return 'Enter a valid email address';
                     }
                     return null;
                   },
