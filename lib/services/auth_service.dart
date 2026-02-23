@@ -1,13 +1,15 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:nutricook/core/validators.dart';
 
 import '../core/constants.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
   bool _isGoogleSignInInitialized = false;
 
   Stream<User?> authStateChanges() {
@@ -32,17 +34,17 @@ class AuthService {
 
   /// Sign in with either username or email. If the identifier contains '@',
   /// treats it as email. Otherwise looks up the email from the username in Firestore.
-  Future<void> signInWithUsernameOrEmail({
-    required String usernameOrEmail,
+  Future<void> signInWithIdentifier({
+    required String identifier,
     required String password,
   }) async {
-    final identifier = usernameOrEmail.trim();
+    final userOremail = identifier.trim();
     String email;
 
-    if (identifier.contains('@')) {
-      email = identifier;
+    if (looksLikeEmail(userOremail)) {
+      email = userOremail; // Treat as email if it contains '@'
     } else {
-      email = await _getEmailByUsername(identifier);
+      email = await _getEmailByUsername(userOremail);
     }
 
     await signInWithEmail(email: email, password: password);
@@ -75,37 +77,71 @@ class AuthService {
   }
 
   Future<void> registerWithEmail({
-    required String email,
-    required String password,
-    required String username,
-  }) async {
-    try {
-      final userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email.trim(),
-        password: password,
-      );
-
-      await _createUserDocument(
-        uid: userCredential.user!.uid,
-        email: email.trim(),
-        username: username.trim(),
-        profilePictureUrl: null,
-      );
-
-      await userCredential.user!.updateDisplayName(username.trim());
-
-      // Send verification email so user can prove they own the address
-      await userCredential.user!.sendEmailVerification();
-    } on FirebaseAuthException catch (e) {
-      throw _handleAuthException(e);
-    }
+  required String email,
+  required String password,
+  required String username,
+}) async {
+  final trimmedEmail = email.trim();
+  final trimmedUsername = username.trim().toLowerCase();
+  
+  if (!isValidUsername(trimmedUsername)) {
+    throw Exception('Username must be 6-20 characters, alphanumeric and underscores only');
   }
+  
+  UserCredential? userCredential;
+  
+  try {
+    final usernameQuery = await FirebaseFirestore.instance
+      .collection('users')
+      .where('username'.toLowerCase(), isEqualTo: trimmedUsername)
+      .limit(1)
+      .get();
+    
+    if (usernameQuery.docs.isNotEmpty) {
+      throw Exception('Username already taken. Please choose another one.');
+    }
+    
+    userCredential = await _auth.createUserWithEmailAndPassword(
+      email: trimmedEmail,
+      password: password,
+    );
+    
+    final uid = userCredential.user!.uid;
+    
+    await FirebaseFirestore.instance
+      .collection('users')
+      .doc(uid) 
+      .set({
+        'id': uid,
+        'email': trimmedEmail,
+        'username': username.trim(),
+        'profilePictureUrl': null,
+        'allergens': [],
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    
+    await userCredential.user!.updateDisplayName(username.trim());
+    
+    await userCredential.user!.sendEmailVerification();
+    
+  } on FirebaseAuthException catch (e) {
+    throw _handleAuthException(e);
+  } catch (e) {
+    if (userCredential != null) {
+      try {
+        await userCredential.user!.delete();
+      } catch (deleteError) {
+        debugPrint('Failed to rollback Auth user: $deleteError');
+      }
+    }
+    rethrow;
+  }
+}
 
   Future<void> signInWithGoogle() async {
     try {
       await _initializeGoogleSignIn();
       final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
-
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 
       final credential = GoogleAuthProvider.credential(
@@ -113,7 +149,6 @@ class AuthService {
       );
 
       final userCredential = await _auth.signInWithCredential(credential);
-
       final isNewUser = userCredential.additionalUserInfo?.isNewUser ?? false;
 
       if (isNewUser) {
@@ -141,6 +176,7 @@ class AuthService {
       throw Exception('Sign out failed: $e');
     }
   }
+  
 
   Future<void> _initializeGoogleSignIn() async {
     if (_isGoogleSignInInitialized) return;
@@ -155,6 +191,7 @@ class AuthService {
       throw _handleAuthException(e);
     }
   }
+
 
   /// Sends a verification link to the current user's email.
   Future<void> sendEmailVerification() async {
