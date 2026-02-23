@@ -27,7 +27,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> _signInWithEmail() async {
+  Future<void> _signInWithIdentifier() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() {
       _isLoading = true;
@@ -35,8 +35,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     try {
-      await ref.read(authProvider).signInWithUsernameOrEmail(
-            usernameOrEmail: _identifierController.text,
+      await ref.read(authProvider).signInWithIdentifier(
+            identifier: _identifierController.text,
             password: _passwordController.text,
           );
       if (mounted) {
@@ -142,7 +142,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   controller: _passwordController,
                   obscureText: true,
                   textInputAction: TextInputAction.done,
-                  onFieldSubmitted: (_) => _signInWithEmail(),
+                  onFieldSubmitted: (_) => _signInWithIdentifier(),
                   decoration: const InputDecoration(
                     labelText: 'Password',
                     border: OutlineInputBorder(),
@@ -173,7 +173,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ],
                 const SizedBox(height: 24),
                 FilledButton(
-                  onPressed: _isLoading ? null : _signInWithEmail,
+                  onPressed: _isLoading ? null : _signInWithIdentifier,
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
