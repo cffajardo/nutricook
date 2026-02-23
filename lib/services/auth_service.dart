@@ -32,8 +32,6 @@ class AuthService {
     }
   }
 
-  /// Sign in with either username or email. If the identifier contains '@',
-  /// treats it as email. Otherwise looks up the email from the username in Firestore.
   Future<void> signInWithIdentifier({
     required String identifier,
     required String password,
@@ -193,7 +191,6 @@ class AuthService {
   }
 
 
-  /// Sends a verification link to the current user's email.
   Future<void> sendEmailVerification() async {
     final user = _auth.currentUser;
     if (user == null) throw Exception('You must be signed in to verify your email.');
@@ -207,7 +204,6 @@ class AuthService {
     }
   }
 
-  /// Reloads the current user from Firebase to get the latest emailVerified status.
   Future<void> reloadCurrentUser() async {
     await _auth.currentUser?.reload();
   }
