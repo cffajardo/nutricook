@@ -65,11 +65,11 @@ final currentUserProvider = StreamProvider<AppUser?>((ref) {
 });
 
 
-//Email Sign In Provider
-final signInWithEmailProvider = FutureProvider.autoDispose.family<void, Map<String, String>>((ref, credentials) async {
+//Sign In Provider
+final signInWithIdentifierProvider = FutureProvider.autoDispose.family<void, Map<String, String>>((ref, credentials) async {
   final authService = ref.read(authProvider);
-  await authService.signInWithEmail(
-    email: credentials['email']!,
+  await authService.signInWithIdentifier(
+    identifier: credentials['identifier']!,
     password: credentials['password']!,
   );
 });
