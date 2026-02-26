@@ -139,8 +139,18 @@ class AuthService {
   Future<void> signInWithGoogle() async {
     try {
       await _initializeGoogleSignIn();
-      final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      // Use authenticate() as before; treat cancel/failures as errors so UI
+      // can show the appropriate message.
+      final GoogleSignInAccount? googleUser =
+          await _googleSignIn.authenticate();
+
+      if (googleUser == null) {
+        throw Exception('Google sign-in was cancelled.');
+      }
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
 
       final credential = GoogleAuthProvider.credential(
         idToken: googleAuth.idToken,
@@ -160,7 +170,10 @@ class AuthService {
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
     } catch (e) {
-      throw Exception('Google Sign In failed: $e');
+      if (kDebugMode) {
+        debugPrint('Google sign-in failed or cancelled: $e');
+      }
+      throw Exception('Google sign-in was cancelled or failed.');
     }
   }
 
