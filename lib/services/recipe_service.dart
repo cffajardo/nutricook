@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nutricook/core/constants.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
 
+import '../models/media/media.dart';
+
 class RecipeService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
@@ -141,13 +143,45 @@ Future<void> removeFavorite(String recipeId, String userId) async {
     'favoritedBy': FieldValue.arrayRemove([userId]),
   });
 }
+
+// Stream<List<Recipe>> findByIngredient({
+//   List<String> ingredientIds = const [],
+// }) {
+//   var ref = _db
+//     .collection(FirestoreConstants.recipes)
+//     .where('isPublic', isEqualTo: true);
+
+//   if (ingredientIds.isNotEmpty) {
+//     ref = ref.where('ingredients', arrayContains: ingredientIds);
+//   }
+
+//   return ref
+//     .orderBy('createdAt', descending: true)
+//     .snapshots()
+//     .map((snapshot) => snapshot.docs
+//         .map((doc) => Recipe.fromJson(doc.data()))
+//         .toList());
+// }
+
+Stream<List<Media>> getRecipeMedia(List<String> mediaIDs) {
+  if (mediaIDs.isEmpty) {
+    return Stream.value([]);
+  }
+
+  return _db
+    .collection(FirestoreConstants.media)
+    .where(FieldPath.documentId, whereIn: mediaIDs)
+    .snapshots()
+    .map((snapshot) => snapshot.docs
+        .map((doc) => Media.fromJson(doc.data()))
+        .toList());
 }
 
-//ingredient lookup
+//to do: add content moderation (e.g. check for inappropriate content in recipe name/description/steps)
 
 
-//recently viewed?
 
-//get recipe media
+}
 
-//verify recipe for public listing (check for prohibited content, etc.)
+
+
