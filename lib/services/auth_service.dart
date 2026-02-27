@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nutricook/core/validators.dart';
-
 import '../core/constants.dart';
 
 class AuthService {
