@@ -1,3 +1,5 @@
+import '../models/recipe/recipe.dart';
+
 bool isValidEmail(String email) {
   if (email.trim().isEmpty) return false;
   final pattern = RegExp(
@@ -23,5 +25,13 @@ bool isValidUsername(String username) {
   final usernameRegex = RegExp(r'^[A-Za-z0-9_]{3,}$');
 
   return trimmed.isNotEmpty && usernameRegex.hasMatch(trimmed);
+}
+
+bool validateRecipe(Recipe recipe) {
+  if (recipe.name.trim().length < 5) return false;
+  if (recipe.ingredients.isEmpty) return false;
+  if (recipe.steps.isEmpty) return false;
+  if (recipe.description.length < 20) return false;
+  return true;
 }
 
