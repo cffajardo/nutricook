@@ -1,11 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nutricook/services/recipe_service.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
+import 'package:nutricook/models/nutrition_info/nutrition_info.dart';
 import 'package:nutricook/features/auth/providers/auth_provider.dart';
 import 'package:nutricook/features/recipe/providers/recipe_notifier.dart';
 import 'package:nutricook/features/profile/provider/user_provider.dart';
 import 'package:nutricook/features/search/provider/search_provider.dart';
 import 'package:nutricook/features/recipe/recipe_util/recipe_filters.dart';
+import 'package:nutricook/features/recipe/recipe_util/recipe_nutrition_total.dart';
 
 
 
@@ -40,6 +42,15 @@ final userRecipesProvider = StreamProvider<List<Recipe>>((ref) {
   if (userId == null) return Stream.value([]);
   return ref.watch(recipeServiceProvider).getUserRecipes(userId);
 });
+
+final recipeNutritionTotalsProvider = Provider<NutritionInfo Function(Recipe)>((ref) {
+  return (recipe) => calculateRecipeNutritionTotals(recipe);
+});
+
+final recipeNutritionPerServingProvider = Provider<NutritionInfo Function(Recipe)>((ref) {
+  return (recipe) => calculateRecipeNutritionPerServing(recipe);
+});
+
 
 final filteredRecipesProvider = Provider<AsyncValue<List<Recipe>>>((ref) {
   final recipesAsync = ref.watch(publicRecipesProvider); 
