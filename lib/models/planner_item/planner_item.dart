@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../features/utils/timestamp_convert.dart';
+import '../nutrition_info/nutrition_info.dart';
 
 part 'planner_item.freezed.dart';
 part 'planner_item.g.dart';
@@ -21,6 +22,7 @@ abstract class PlannerItem with _$PlannerItem {
     required int cookTime,
     String? notes,
     @Default(false) bool isCompleted,
+    NutritionInfo? nutritionPerServing
   }) = _PlannerItem;
 
   factory PlannerItem.fromJson(Map<String, dynamic> json) =>

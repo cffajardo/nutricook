@@ -22,6 +22,11 @@ _PlannerItem _$PlannerItemFromJson(Map<String, dynamic> json) => _PlannerItem(
   cookTime: (json['cookTime'] as num).toInt(),
   notes: json['notes'] as String?,
   isCompleted: json['isCompleted'] as bool? ?? false,
+  nutritionPerServing: json['nutritionPerServing'] == null
+      ? null
+      : NutritionInfo.fromJson(
+          json['nutritionPerServing'] as Map<String, dynamic>,
+        ),
 );
 
 Map<String, dynamic> _$PlannerItemToJson(_PlannerItem instance) =>
@@ -39,4 +44,5 @@ Map<String, dynamic> _$PlannerItemToJson(_PlannerItem instance) =>
       'cookTime': instance.cookTime,
       'notes': instance.notes,
       'isCompleted': instance.isCompleted,
+      'nutritionPerServing': instance.nutritionPerServing,
     };
