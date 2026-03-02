@@ -12,7 +12,7 @@ abstract class Collection with _$Collection {
     required String ownerId,
     required String name,
     required String description,
-    String? thumnailUrl,
+    String? thumbnailUrl,
     @Default(0) int recipeCount,
     @TimestampConverter() required DateTime createdAt,
     @TimestampConverter() required DateTime updatedAt,
