@@ -139,8 +139,6 @@ class AuthService {
     try {
       await _initializeGoogleSignIn();
 
-      // Use authenticate() as before; treat cancel/failures as errors so UI
-      // can show the appropriate message.
       final GoogleSignInAccount? googleUser =
           await _googleSignIn.authenticate();
 
