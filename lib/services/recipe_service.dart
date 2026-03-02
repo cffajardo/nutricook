@@ -1,13 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nutricook/core/constants.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/media/media.dart';
 
 class RecipeService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  /// Get all public recipes (for browse/discover)
+  /// Get all public recipes 
   Stream<List<Recipe>> getPublicRecipes({int limit = 20}) {
     return _db
       .collection(FirestoreConstants.recipes)
@@ -57,6 +59,14 @@ class RecipeService {
           .toList());
   }
 
+  Stream<List<Recipe>> getFilteredRecipesWithUserAllergens(List<String> userAllergens) {
+    return getPublicRecipes().map((recipes) {
+      return recipes.where((recipe) {
+        return recipe.ingredients.every((ingredient) => !userAllergens.contains(ingredient.name));
+      }).toList();
+    });
+  }
+
   /// Create new recipe
   Future<String> createRecipe(Recipe recipe) async {
     // Generate ID if not provided
@@ -64,8 +74,11 @@ class RecipeService {
         ? _db.collection(FirestoreConstants.recipes).doc()
         : _db.collection(FirestoreConstants.recipes).doc(recipe.id);
 
+    final userID = _auth.currentUser?.uid ?? 'anonymous';
+
     final recipeWithId = recipe.copyWith(
       id: recipeRef.id,
+      ownerID: userID,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
@@ -95,38 +108,38 @@ class RecipeService {
   }
 
   /// Search recipes by tags and/or name
-  Stream<List<Recipe>> searchRecipes({
-    String? query,
-    List<String> tags = const [],
-  }) {
-    var ref = _db
-      .collection(FirestoreConstants.recipes)
-      .where('isPublic', isEqualTo: true);
+  // Stream<List<Recipe>> searchRecipes({
+  //   String? query,
+  //   List<String> tags = const [],
+  // }) {
+  //   var ref = _db
+  //     .collection(FirestoreConstants.recipes)
+  //     .where('isPublic', isEqualTo: true);
 
-    // Filter by tags if provided
-    if (tags.isNotEmpty) {
-      ref = ref.where('tags', arrayContainsAny: tags);
-    }
+  //   // Filter by tags if provided
+  //   if (tags.isNotEmpty) {
+  //     ref = ref.where('tags', arrayContainsAny: tags);
+  //   }
 
-    return ref
-      .orderBy('createdAt', descending: true)
-      .limit(50)
-      .snapshots()
-      .map((snapshot) {
-        var recipes = snapshot.docs
-          .map((doc) => Recipe.fromJson(doc.data()))
-          .toList();
+  //   return ref
+  //     .orderBy('createdAt', descending: true)
+  //     .limit(50)
+  //     .snapshots()
+  //     .map((snapshot) {
+  //       var recipes = snapshot.docs
+  //         .map((doc) => Recipe.fromJson(doc.data()))
+  //         .toList();
 
-        // Filter by name query (client-side)
-        if (query != null && query.isNotEmpty) {
-          recipes = recipes.where((recipe) =>
-            recipe.name.toLowerCase().contains(query.toLowerCase())
-          ).toList();
-        }
+  //       // Filter by name query (client-side)
+  //       if (query != null && query.isNotEmpty) {
+  //         recipes = recipes.where((recipe) =>
+  //           recipe.name.toLowerCase().contains(query.toLowerCase())
+  //         ).toList();
+  //       }
 
-        return recipes;
-      });
-  }
+  //       return recipes;
+  //     });
+  // }
 
   Future<void> addFavorite(String recipeId, String userId) async {
   final recipeRef = _db.collection(FirestoreConstants.recipes).doc(recipeId);
@@ -144,25 +157,6 @@ Future<void> removeFavorite(String recipeId, String userId) async {
   });
 }
 
-// Stream<List<Recipe>> findByIngredient({
-//   List<String> ingredientIds = const [],
-// }) {
-//   var ref = _db
-//     .collection(FirestoreConstants.recipes)
-//     .where('isPublic', isEqualTo: true);
-
-//   if (ingredientIds.isNotEmpty) {
-//     ref = ref.where('ingredients', arrayContains: ingredientIds);
-//   }
-
-//   return ref
-//     .orderBy('createdAt', descending: true)
-//     .snapshots()
-//     .map((snapshot) => snapshot.docs
-//         .map((doc) => Recipe.fromJson(doc.data()))
-//         .toList());
-// }
-
 Stream<List<Media>> getRecipeMedia(List<String> mediaIDs) {
   if (mediaIDs.isEmpty) {
     return Stream.value([]);
@@ -175,6 +169,10 @@ Stream<List<Media>> getRecipeMedia(List<String> mediaIDs) {
     .map((snapshot) => snapshot.docs
         .map((doc) => Media.fromJson(doc.data()))
         .toList());
+}
+
+bool doesRecipeNotHaveAllergen(Recipe recipe, List<String> userAllergens) {
+  return recipe.ingredients.every((ingredient) => !userAllergens.contains(ingredient.name));
 }
 
 //to do: add content moderation (e.g. check for inappropriate content in recipe name/description/steps)
