@@ -43,8 +43,8 @@ _Recipe _$RecipeFromJson(Map<String, dynamic> json) => _Recipe(
           ?.map((e) => e as String)
           .toList() ??
       const <String>[],
-  mediaIDs:
-      (json['mediaIDs'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+  imageURL:
+      (json['imageURL'] as List<dynamic>?)?.map((e) => e as String).toList() ??
       const <String>[],
 );
 
@@ -67,5 +67,5 @@ Map<String, dynamic> _$RecipeToJson(_Recipe instance) => <String, dynamic>{
   'favoriteCount': instance.favoriteCount,
   'tags': instance.tags,
   'techniqueIDs': instance.techniqueIDs,
-  'mediaIDs': instance.mediaIDs,
+  'imageURL': instance.imageURL,
 };

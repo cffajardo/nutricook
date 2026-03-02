@@ -29,7 +29,7 @@ abstract class Recipe with _$Recipe {
     @Default(0) int favoriteCount,
     @Default(<String>[]) List<String> tags,
     @Default(<String>[]) List<String> techniqueIDs,
-    @Default(<String>[]) List<String> mediaIDs,
+    @Default(<String>[]) List<String> imageURL,
   }) = _Recipe;
 
   factory Recipe.fromJson(Map<String, dynamic> json) =>
