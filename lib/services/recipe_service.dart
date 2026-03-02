@@ -3,7 +3,6 @@ import 'package:nutricook/core/constants.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../models/media/media.dart';
 
 class RecipeService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -155,20 +154,6 @@ Future<void> removeFavorite(String recipeId, String userId) async {
     'favoriteCount': FieldValue.increment(-1),
     'favoritedBy': FieldValue.arrayRemove([userId]),
   });
-}
-
-Stream<List<Media>> getRecipeMedia(List<String> mediaIDs) {
-  if (mediaIDs.isEmpty) {
-    return Stream.value([]);
-  }
-
-  return _db
-    .collection(FirestoreConstants.media)
-    .where(FieldPath.documentId, whereIn: mediaIDs)
-    .snapshots()
-    .map((snapshot) => snapshot.docs
-        .map((doc) => Media.fromJson(doc.data()))
-        .toList());
 }
 
 bool doesRecipeNotHaveAllergen(Recipe recipe, List<String> userAllergens) {
