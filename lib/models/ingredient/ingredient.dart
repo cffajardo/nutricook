@@ -14,7 +14,7 @@ abstract class Ingredient with _$Ingredient {
     NutritionInfo? nutritionPer100g,
     double? densityGPerMl,   // for liquids
     double? avgWeightG,      // for whole items
-    @Default(<String>[]) List<String> mediaIDs,
+    @Default(<String>[]) List<String> imageURL,
     @Default(<String>[]) List<String> substituteIDs,
   }) = _Ingredient;
 
