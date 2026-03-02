@@ -47,3 +47,10 @@ class RecipeTags {
   static const nutrition = ['low-carb', 'high-protein', 'low-fat', 'keto', 'paleo', 'whole30', 'low-calorie', 'high-fiber', 'high-carb', 'low-sugar'];
   
 }
+
+class MealType {
+  static const breakfast = 'Breakfast';
+  static const lunch = 'Lunch';
+  static const dinner = 'Dinner';
+  static const snack = 'Snack';
+}
