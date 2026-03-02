@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Technique {
 
- String get id; String get name; String get category; String? get description; List<String> get mediaIDs;
+ String get id; String get name; String get category; String? get description; List<String> get imageURL;
 /// Create a copy of Technique
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $TechniqueCopyWith<Technique> get copyWith => _$TechniqueCopyWithImpl<Technique>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Technique&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.category, category) || other.category == category)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other.mediaIDs, mediaIDs));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Technique&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.category, category) || other.category == category)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other.imageURL, imageURL));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,category,description,const DeepCollectionEquality().hash(mediaIDs));
+int get hashCode => Object.hash(runtimeType,id,name,category,description,const DeepCollectionEquality().hash(imageURL));
 
 @override
 String toString() {
-  return 'Technique(id: $id, name: $name, category: $category, description: $description, mediaIDs: $mediaIDs)';
+  return 'Technique(id: $id, name: $name, category: $category, description: $description, imageURL: $imageURL)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $TechniqueCopyWith<$Res>  {
   factory $TechniqueCopyWith(Technique value, $Res Function(Technique) _then) = _$TechniqueCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String category, String? description, List<String> mediaIDs
+ String id, String name, String category, String? description, List<String> imageURL
 });
 
 
@@ -65,13 +65,13 @@ class _$TechniqueCopyWithImpl<$Res>
 
 /// Create a copy of Technique
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? category = null,Object? description = freezed,Object? mediaIDs = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? category = null,Object? description = freezed,Object? imageURL = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
 as String,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
-as String?,mediaIDs: null == mediaIDs ? _self.mediaIDs : mediaIDs // ignore: cast_nullable_to_non_nullable
+as String?,imageURL: null == imageURL ? _self.imageURL : imageURL // ignore: cast_nullable_to_non_nullable
 as List<String>,
   ));
 }
@@ -157,10 +157,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String category,  String? description,  List<String> mediaIDs)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String category,  String? description,  List<String> imageURL)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Technique() when $default != null:
-return $default(_that.id,_that.name,_that.category,_that.description,_that.mediaIDs);case _:
+return $default(_that.id,_that.name,_that.category,_that.description,_that.imageURL);case _:
   return orElse();
 
 }
@@ -178,10 +178,10 @@ return $default(_that.id,_that.name,_that.category,_that.description,_that.media
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String category,  String? description,  List<String> mediaIDs)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String category,  String? description,  List<String> imageURL)  $default,) {final _that = this;
 switch (_that) {
 case _Technique():
-return $default(_that.id,_that.name,_that.category,_that.description,_that.mediaIDs);case _:
+return $default(_that.id,_that.name,_that.category,_that.description,_that.imageURL);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -198,10 +198,10 @@ return $default(_that.id,_that.name,_that.category,_that.description,_that.media
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String category,  String? description,  List<String> mediaIDs)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String category,  String? description,  List<String> imageURL)?  $default,) {final _that = this;
 switch (_that) {
 case _Technique() when $default != null:
-return $default(_that.id,_that.name,_that.category,_that.description,_that.mediaIDs);case _:
+return $default(_that.id,_that.name,_that.category,_that.description,_that.imageURL);case _:
   return null;
 
 }
@@ -213,18 +213,18 @@ return $default(_that.id,_that.name,_that.category,_that.description,_that.media
 @JsonSerializable()
 
 class _Technique implements Technique {
-  const _Technique({required this.id, required this.name, required this.category, this.description, final  List<String> mediaIDs = const <String>[]}): _mediaIDs = mediaIDs;
+  const _Technique({required this.id, required this.name, required this.category, this.description, final  List<String> imageURL = const <String>[]}): _imageURL = imageURL;
   factory _Technique.fromJson(Map<String, dynamic> json) => _$TechniqueFromJson(json);
 
 @override final  String id;
 @override final  String name;
 @override final  String category;
 @override final  String? description;
- final  List<String> _mediaIDs;
-@override@JsonKey() List<String> get mediaIDs {
-  if (_mediaIDs is EqualUnmodifiableListView) return _mediaIDs;
+ final  List<String> _imageURL;
+@override@JsonKey() List<String> get imageURL {
+  if (_imageURL is EqualUnmodifiableListView) return _imageURL;
   // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(_mediaIDs);
+  return EqualUnmodifiableListView(_imageURL);
 }
 
 
@@ -241,16 +241,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Technique&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.category, category) || other.category == category)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other._mediaIDs, _mediaIDs));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Technique&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.category, category) || other.category == category)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other._imageURL, _imageURL));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,category,description,const DeepCollectionEquality().hash(_mediaIDs));
+int get hashCode => Object.hash(runtimeType,id,name,category,description,const DeepCollectionEquality().hash(_imageURL));
 
 @override
 String toString() {
-  return 'Technique(id: $id, name: $name, category: $category, description: $description, mediaIDs: $mediaIDs)';
+  return 'Technique(id: $id, name: $name, category: $category, description: $description, imageURL: $imageURL)';
 }
 
 
@@ -261,7 +261,7 @@ abstract mixin class _$TechniqueCopyWith<$Res> implements $TechniqueCopyWith<$Re
   factory _$TechniqueCopyWith(_Technique value, $Res Function(_Technique) _then) = __$TechniqueCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String category, String? description, List<String> mediaIDs
+ String id, String name, String category, String? description, List<String> imageURL
 });
 
 
@@ -278,13 +278,13 @@ class __$TechniqueCopyWithImpl<$Res>
 
 /// Create a copy of Technique
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? category = null,Object? description = freezed,Object? mediaIDs = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? category = null,Object? description = freezed,Object? imageURL = null,}) {
   return _then(_Technique(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
 as String,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
-as String?,mediaIDs: null == mediaIDs ? _self._mediaIDs : mediaIDs // ignore: cast_nullable_to_non_nullable
+as String?,imageURL: null == imageURL ? _self._imageURL : imageURL // ignore: cast_nullable_to_non_nullable
 as List<String>,
   ));
 }

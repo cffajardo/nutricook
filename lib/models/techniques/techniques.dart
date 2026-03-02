@@ -10,7 +10,7 @@ abstract class Technique with _$Technique {
     required String name,
     required String category,
     String? description,
-    @Default(<String>[]) List<String> mediaIDs,
+    @Default(<String>[]) List<String> imageURL,
   }) = _Technique;
 
   factory Technique.fromJson(Map<String, dynamic> json) =>

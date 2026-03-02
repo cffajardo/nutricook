@@ -11,8 +11,8 @@ _Technique _$TechniqueFromJson(Map<String, dynamic> json) => _Technique(
   name: json['name'] as String,
   category: json['category'] as String,
   description: json['description'] as String?,
-  mediaIDs:
-      (json['mediaIDs'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+  imageURL:
+      (json['imageURL'] as List<dynamic>?)?.map((e) => e as String).toList() ??
       const <String>[],
 );
 
@@ -22,5 +22,5 @@ Map<String, dynamic> _$TechniqueToJson(_Technique instance) =>
       'name': instance.name,
       'category': instance.category,
       'description': instance.description,
-      'mediaIDs': instance.mediaIDs,
+      'imageURL': instance.imageURL,
     };
