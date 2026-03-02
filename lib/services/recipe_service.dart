@@ -36,13 +36,15 @@ class RecipeService {
   /// Get user's own recipes
   Stream<List<Recipe>> getUserRecipes(String userId) {
     return _db
-      .collection(FirestoreConstants.recipes)
-      .where('ownerId', isEqualTo: userId)
-      .orderBy('createdAt', descending: true)
-      .snapshots()
-      .map((snapshot) => snapshot.docs
-          .map((doc) => Recipe.fromJson(doc.data()))
-          .toList());
+        .collection(FirestoreConstants.recipes)
+        // Match the `ownerID` field defined in the Recipe model / JSON.
+        .where('ownerID', isEqualTo: userId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map(
+          (snapshot) =>
+              snapshot.docs.map((doc) => Recipe.fromJson(doc.data())).toList(),
+        );
   }
 
   /// Get trending recipes (most favorited)
