@@ -54,3 +54,9 @@ class MealType {
   static const dinner = 'Dinner';
   static const snack = 'Snack';
 }
+
+class CollectionSort {
+  static const date = 'Date Added';
+  static const name = 'Name';
+  static const recipeCount = 'Recipe Count';
+}
