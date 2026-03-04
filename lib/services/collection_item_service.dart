@@ -1,5 +1,4 @@
 import 'auth_service.dart';
-import '../models/collection/collection.dart';
 import '../models/collection_item/collection_item.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
