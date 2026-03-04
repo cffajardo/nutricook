@@ -7,8 +7,7 @@ final userServiceProvider = Provider<UserService>((ref) {
   return UserService();
 });
 
-
-
+// Stream Provider for current user's data (Requires user ID from auth provider)
 final userDataProvider = StreamProvider((ref) {
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) return Stream.value(null);
@@ -17,6 +16,7 @@ final userDataProvider = StreamProvider((ref) {
   return userService.getUserDataStream(userId);
 });
 
+// Stream Provider for current user's allergens 
 final userAllergenProvider = StreamProvider<List<String>>((ref) {
   final uid = ref.watch(currentUserIdProvider);
 
