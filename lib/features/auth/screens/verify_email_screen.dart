@@ -79,6 +79,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
     final email = ref.watch(authProvider).currentUser?.email ?? '';
 
     return Scaffold(
+      backgroundColor: const Color(0xFFFF8BA7),
       body: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 24),
