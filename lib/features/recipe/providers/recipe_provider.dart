@@ -8,37 +8,48 @@ import 'package:nutricook/features/recipe/recipe_util/recipe_filters.dart';
 import 'package:nutricook/features/recipe/recipe_util/recipe_nutrition_total.dart';
 
 
-
+// Recipe Service Provider
 final recipeServiceProvider = Provider<RecipeService>((ref) {
   return RecipeService();
 });
 
+
+// Stream Provider for Public Recipes (Streams updates in real-time)
 final publicRecipesProvider = StreamProvider<List<Recipe>>((ref) {
   return ref.watch(recipeServiceProvider).getPublicRecipes();
 });
 
+// Stream Provider for Trending Recipes (Based on favoriteCount)
 final trendingRecipesProvider = StreamProvider<List<Recipe>>((ref) {
   return ref.watch(recipeServiceProvider).getTrendingRecipes();
 });
 
+// Stream Provider for single recipe details by ID
 final recipeDetailsProvider = StreamProvider.family<Recipe?, String>((ref, recipeId) {
   return ref.watch(recipeServiceProvider).getRecipeById(recipeId);
 });
 
+// Stream Provider for user's own recipes (Requires user ID from auth provider)
 final userRecipesProvider = StreamProvider<List<Recipe>>((ref) {
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) return Stream.value([]);
   return ref.watch(recipeServiceProvider).getUserRecipes(userId);
 });
 
+
+// Provider for calculating total nutrition information for a recipe (used in recipe details)
 final recipeNutritionTotalsProvider = Provider<NutritionInfo Function(Recipe)>((ref) {
   return (recipe) => calculateRecipeNutritionTotals(recipe);
 });
 
+// Provider for calculating nutrition information per serving for a recipe 
+// Serving Size Calculation: Total Nutrition / Servings 
 final recipeNutritionPerServingProvider = Provider<NutritionInfo Function(Recipe)>((ref) {
   return (recipe) => calculateRecipeNutritionPerServing(recipe);
 });
 
+// For Recipe Filtering - Combines multiple filters (Query and Tags)
+// Allergen Filtering is handled separately in the filteredRecipesProvider to ensure it applies to all recipe lists based on user preferences
 class RecipeFilterInput {
   RecipeFilterInput({
     this.query = '',
@@ -59,6 +70,7 @@ class RecipeFilterInput {
   int get hashCode => Object.hash(query, Object.hashAll(tags));
 }
 
+// Helper function for list equality (since List doesn't override == by default)
 bool _listEquals<T>(List<T> a, List<T> b) {
   if (identical(a, b)) return true;
   if (a.length != b.length) return false;
@@ -68,6 +80,7 @@ bool _listEquals<T>(List<T> a, List<T> b) {
   return true;
 }
 
+// Provider that combines multiple filters (query, tags) and applies allergen filtering based on user preferences
 final filteredRecipesProvider = Provider.family<AsyncValue<List<Recipe>>, RecipeFilterInput>((ref, input) {
   final recipesAsync = ref.watch(publicRecipesProvider); 
   final allergensAsync = ref.watch(userAllergenProvider);
