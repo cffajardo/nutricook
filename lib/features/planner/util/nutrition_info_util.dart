@@ -1,10 +1,12 @@
 import 'package:nutricook/models/nutrition_info/nutrition_info.dart';
 import 'package:nutricook/models/planner_item/planner_item.dart';
 
+
+// Calculates the total nutrition information for a list of planner items
 NutritionInfo calculatePlannerNutrition({
   required List<PlannerItem> plannerItems,
 }) {
-  return plannerItems.fold(
+  return plannerItems.fold( // fold - used to accumulate values through a list with an initial value
     const NutritionInfo(
       calories: 0,
       carbohydrates: 0,
@@ -18,8 +20,8 @@ NutritionInfo calculatePlannerNutrition({
       final n = item.nutritionPerServing;
       if (n == null) return total;
       final scale = item.servingMultiplier;
-      return total.copyWith(
-        calories: total.calories + (n.calories * scale).round(),
+      return total.copyWith( //
+        calories: total.calories + (n.calories * scale).round(), // Round calories to nearest integer
         carbohydrates: total.carbohydrates + n.carbohydrates * scale,
         protein: total.protein + n.protein * scale,
         fat: total.fat + n.fat * scale,
