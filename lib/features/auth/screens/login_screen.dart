@@ -185,6 +185,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFFF8BA7),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -381,9 +382,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 30),
-                    InkWell(
+                    GestureDetector(
                       onTap: _isLoading ? null : _signInWithGoogle,
-                      borderRadius: BorderRadius.circular(50),
                       child: const CircleAvatar(
                         radius: 28,
                         backgroundColor: Colors.white,
