@@ -54,7 +54,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
       if (mounted) {
         setState(() => _isChecking = false);
         if (user?.emailVerified == true) {
-          ref.read(verificationRefreshProvider.notifier).increment();
+          ref.invalidate(currentUserWithVerificationProvider);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Email verified!')),
           );
