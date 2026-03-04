@@ -9,7 +9,7 @@ List<Recipe> filterRecipesByAllergens(List<Recipe> recipes, List<String> userAll
 
   return recipes.where((recipe) {
     return recipe.ingredients.every((ingredient) {
-      return !userAllergens.contains(ingredient.name.toLowerCase());
+      return !userAllergens.contains(ingredient.ingredientID.toLowerCase());
     });
   }).toList();
 }
