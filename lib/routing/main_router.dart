@@ -6,16 +6,20 @@ import '../features/auth/screens/login_screen.dart';
 import '../features/auth/screens/register_screen.dart';
 import '../features/auth/screens/verify_email_screen.dart';
 import '../screens/home_screen.dart';
+import '../screens/splash_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final userAsync = ref.watch(authStateProvider);
 
   return GoRouter(
-    initialLocation: '/',
+    initialLocation: '/splash',
     redirect: (context, state) {
       final path = state.uri.path;
       final isAuthRoute = path == '/login' || path == '/register';
       final isVerifyEmailRoute = path == '/verify-email';
+      final isSplashRoute = path == '/splash';
+
+      if (isSplashRoute) return null;
 
       return userAsync.when(
         loading: () => null,
@@ -43,6 +47,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       );
     },
     routes: [
+      GoRoute(
+        path: '/splash',
+        name: 'splash',
+        builder: (context, state) => const SplashScreen(),
+      ),
       GoRoute(
         path: '/',
         name: 'home',
