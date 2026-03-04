@@ -43,7 +43,7 @@ NutritionInfo calculateRecipeNutritionTotals(Recipe recipe) {
 /// Calculate nutrition per serving for a recipe.
 NutritionInfo calculateRecipeNutritionPerServing(Recipe recipe) {
   final totals = calculateRecipeNutritionTotals(recipe);
-  final servings = max(recipe.servings, 1); // Avoid division by zero
+  final servings = max(recipe.servings, 1); 
 
   return NutritionInfo(
     calories: (totals.calories / servings).round(),
