@@ -5,11 +5,12 @@ import 'package:nutricook/models/planner_item/planner_item.dart';
 import 'package:nutricook/models/nutrition_info/nutrition_info.dart';
 import 'package:nutricook/features/planner/util/nutrition_info_util.dart';
 
-
+// Service provider for PlannerService
 final plannerServiceProvider = Provider<PlannerService>((ref) {
   return PlannerService();
 });
 
+// Stream of planner items for a specific date (Only for single day for now)
 final plannerItemsForDateProvider = StreamProvider.family<List<PlannerItem>, DateTime>((ref, selectedDate) {
   final userId = ref.watch(currentUserIdProvider);
   
@@ -18,13 +19,15 @@ final plannerItemsForDateProvider = StreamProvider.family<List<PlannerItem>, Dat
   return ref.watch(plannerServiceProvider).getPlannerItemStream(userId, selectedDate);
 });
 
-
+// Filtered planner items by meal type (breakfast, lunch, dinner, snacks)
 final plannerItemsByMealTypeProvider =
     Provider.family<List<PlannerItem>, ({DateTime date, String mealType})>((ref, input) {
   final items = ref.watch(plannerItemsForDateProvider(input.date)).value ?? [];
   return items.where((item) => item.mealType == input.mealType).toList();
 });
 
+
+// Daily nutrition total for the day based on planner items
 final dailyNutritionTotalProvider = Provider.family<AsyncValue<NutritionInfo>, DateTime>((ref, date) {
   final plannerItemsAsync = ref.watch(plannerItemsForDateProvider(date));
   return plannerItemsAsync.whenData((plannerItems) {
