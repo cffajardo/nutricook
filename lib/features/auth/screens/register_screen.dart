@@ -16,9 +16,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   final _usernameController = TextEditingController();
 
   bool _isPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -26,6 +28,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _usernameController.dispose();
     super.dispose();
   }
@@ -33,6 +36,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   void _togglePasswordVisibility() {
     setState(() {
       _isPasswordVisible = !_isPasswordVisible;
+    });
+  }
+
+  void _toggleConfirmPasswordVisibility() {
+    setState(() {
+      _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
     });
   }
 
@@ -121,6 +130,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFFF8BA7),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -242,8 +252,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           TextFormField(
                             controller: _passwordController,
                             obscureText: !_isPasswordVisible,
-                            textInputAction: TextInputAction.done,
-                            onFieldSubmitted: (_) => _register(),
+                            textInputAction: TextInputAction.next,
                             decoration: _inputDecoration(
                               'Enter password',
                               Icons.lock_outline,
@@ -257,6 +266,31 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               }
                               if (!isValidPassword(value)) {
                                 return 'Min 6 chars, include a number';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          const Text('Confirm Password'),
+                          const SizedBox(height: 6),
+                          TextFormField(
+                            controller: _confirmPasswordController,
+                            obscureText: !_isConfirmPasswordVisible,
+                            textInputAction: TextInputAction.done,
+                            onFieldSubmitted: (_) => _register(),
+                            decoration: _inputDecoration(
+                              'Re-enter password',
+                              Icons.lock_outline,
+                              isPassword: true,
+                              isPasswordVisible: _isConfirmPasswordVisible,
+                              onSuffixPressed: _toggleConfirmPasswordVisibility,
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please confirm your password';
+                              }
+                              if (value != _passwordController.text) {
+                                return 'Passwords do not match';
                               }
                               return null;
                             },
@@ -323,9 +357,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ),
                     ),
                     const SizedBox(height: 30),
-                    InkWell(
+                    GestureDetector(
                       onTap: _isLoading ? null : _registerWithGoogle,
-                      borderRadius: BorderRadius.circular(50),
                       child: const CircleAvatar(
                         radius: 28,
                         backgroundColor: Colors.white,
