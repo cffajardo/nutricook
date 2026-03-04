@@ -25,7 +25,7 @@ abstract class Recipe with _$Recipe {
     @TimestampConverter() required DateTime updatedAt,
     NutritionInfo? nutritionTotal,
     NutritionInfo? nutritionPerServing,
-    String? ownerID,
+    String? ownerId,
     @Default(0) int favoriteCount,
     @Default(<String>[]) List<String> tags,
     @Default(<String>[]) List<String> techniqueIDs,

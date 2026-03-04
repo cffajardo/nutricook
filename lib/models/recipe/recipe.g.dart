@@ -33,7 +33,7 @@ _Recipe _$RecipeFromJson(Map<String, dynamic> json) => _Recipe(
       : NutritionInfo.fromJson(
           json['nutritionPerServing'] as Map<String, dynamic>,
         ),
-  ownerID: json['ownerID'] as String?,
+  ownerId: json['ownerId'] as String?,
   favoriteCount: (json['favoriteCount'] as num?)?.toInt() ?? 0,
   tags:
       (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList() ??
@@ -63,7 +63,7 @@ Map<String, dynamic> _$RecipeToJson(_Recipe instance) => <String, dynamic>{
   'updatedAt': const TimestampConverter().toJson(instance.updatedAt),
   'nutritionTotal': instance.nutritionTotal,
   'nutritionPerServing': instance.nutritionPerServing,
-  'ownerID': instance.ownerID,
+  'ownerId': instance.ownerId,
   'favoriteCount': instance.favoriteCount,
   'tags': instance.tags,
   'techniqueIDs': instance.techniqueIDs,
