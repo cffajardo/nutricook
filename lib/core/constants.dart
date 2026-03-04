@@ -28,6 +28,7 @@ class IngredientCategory {
   static const seafood = 'Seafood';
   static const nutsAndSeeds = 'Nuts & Seeds';
   static const beverages = 'Beverages';
+  static const custom = 'Custom';
 }
 
 class TechniqueCategory {
