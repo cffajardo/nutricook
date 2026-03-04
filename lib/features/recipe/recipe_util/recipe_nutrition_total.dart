@@ -2,6 +2,8 @@ import 'dart:math';
 import 'package:nutricook/models/nutrition_info/nutrition_info.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
 
+// Calculates the total nutrition information for a recipe by summing the nutrition of each ingredient based on its weight and nutrition per 100g
+// Different from the planner nutrition calculation as it needs to account for the weight of each ingredient and its specific nutrition per 100g, rather than just multiplying by servings
 NutritionInfo calculateRecipeNutritionTotals(Recipe recipe) {
   double totalCalories = 0;
   double totalCarbohydrates = 0;
@@ -40,7 +42,7 @@ NutritionInfo calculateRecipeNutritionTotals(Recipe recipe) {
   );
 }
 
-/// Calculate nutrition per serving for a recipe.
+// Calculate nutrition per serving for a recipe
 NutritionInfo calculateRecipeNutritionPerServing(Recipe recipe) {
   final totals = calculateRecipeNutritionTotals(recipe);
   final servings = max(recipe.servings, 1); 
