@@ -11,7 +11,7 @@ final ingredientServiceProvider = Provider<IngredientService>((ref) {
 });
 
 
-// All Ingredients Cached
+// All Ingredients (Cached)
 final ingredientsProvider = FutureProvider<List<Ingredient>>((ref) async {
   final service = ref.watch(ingredientServiceProvider);
   return service.getAllIngredients();
@@ -25,7 +25,7 @@ final ingredientByIdProvider =
 });
 
 // Real Time Stream of User's Custom Ingredients 
-// to-do: modify to account for custom densities and other user‑specific overrides in the future
+// to-do: modify to account for custom densities/avgWeight and other user‑specific overrides in the future
 final userCustomIngredientsProvider =
     StreamProvider<List<Ingredient>>((ref) {
   final userId = ref.watch(currentUserIdProvider);
@@ -97,7 +97,7 @@ final ingredientsByCategoryProvider =
 });
 
 // All Ingredient Categories
-// Custom for User owned
+// "Custom" for User owned
 final ingredientCategoriesProvider =
     Provider<AsyncValue<List<String>>>((ref) {
   final ingredientsAsync = ref.watch(ingredientsProvider);
