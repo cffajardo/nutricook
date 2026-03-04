@@ -114,7 +114,7 @@ class RecipeService {
 
     final recipeWithId = recipe.copyWith(
       id: recipeRef.id,
-      ownerID: userId,
+      ownerId: userId,
       ingredients: enrichedIngredients,
       nutritionTotal: totalNutrition,
       createdAt: DateTime.now(),
