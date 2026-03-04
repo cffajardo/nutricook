@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="nutricook"
-        android:name="${applicationName}"
+        android:label="NutriCook"
+        android:name="NutriCook"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
