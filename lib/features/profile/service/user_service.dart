@@ -1,12 +1,7 @@
-// ignore_for_file: unused_field
-
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 
-
 class UserService {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   Future<void> updateUserProfile(String uid, Map<String, dynamic> data) async {
@@ -44,6 +39,7 @@ class UserService {
     await _db.collection('users').doc(uid).delete();
   }
 
+  // Stream for user allergens (used in recipe filtering to apply allergen filters in real-time)
   Stream<List<String>> getUserAllergensStream(String uid) {
     return _db.collection('users').doc(uid).snapshots().map((doc) {
       if (doc.exists) {
@@ -56,6 +52,7 @@ class UserService {
     });
   }
 
+  // Stream for user data (used in profile screen to listen for real-time updates)
   Stream<Map<String, dynamic>?> getUserDataStream(String uid) {
     return _db.collection('users').doc(uid).snapshots().map((doc) {
       if (doc.exists) {
