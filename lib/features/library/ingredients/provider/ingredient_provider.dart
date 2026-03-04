@@ -4,93 +4,28 @@ import 'package:nutricook/features/auth/providers/auth_provider.dart';
 import 'package:nutricook/models/ingredient/ingredient.dart';
 import 'package:nutricook/services/ingredient_service.dart';
 
-// ---------------------------------------------------------------------------
-// Example usage
-// ---------------------------------------------------------------------------
-//
-// class IngredientListScreen extends ConsumerStatefulWidget {
-//   const IngredientListScreen({super.key});
-//
-//   @override
-//   ConsumerState<IngredientListScreen> createState() =>
-//       _IngredientListScreenState();
-// }
-//
-// class _IngredientListScreenState
-//     extends ConsumerState<IngredientListScreen> {
-//   String _query = '';
-//   String? _category;
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     // 1) Load all ingredients (cached FutureProvider)
-//     final allAsync = ref.watch(ingredientsProvider);
-//
-//     // 2) Apply filters using a family Provider
-//     final filteredAsync = ref.watch(
-//       filteredIngredientsProvider(
-//         IngredientFilterInput(query: _query, category: _category),
-//       ),
-//     );
-//
-//     return Column(
-//       children: [
-//         TextField(
-//           onChanged: (value) => setState(() => _query = value),
-//         ),
-//         filteredAsync.when(
-//           loading: () => const CircularProgressIndicator(),
-//           error: (e, _) => Text('Error: $e'),
-//           data: (items) => Expanded(
-//             child: ListView.builder(
-//               itemCount: items.length,
-//               itemBuilder: (_, index) => Text(items[index].name),
-//             ),
-//           ),
-//         ),
-//       ],
-//     );
-//   }
-// }
-//
-// Creating a custom ingredient:
-//
-// final service = ref.read(ingredientServiceProvider);
-// final isTaken = await service.isIngredientNameTaken(draft.name);
-// if (!isTaken) {
-//   await service.createIngredient(draft);
-// }
-//
-// Note: there is deliberately **no StateProvider** here for search/filter
-// state. The widget holds its own local state and passes it into the
-// family providers, in line with using StatefulWidget for forms.
 
-// ---------------------------------------------------------------------------
-// Service provider
-// ---------------------------------------------------------------------------
-
+// Service Provider
 final ingredientServiceProvider = Provider<IngredientService>((ref) {
   return IngredientService();
 });
 
-// ---------------------------------------------------------------------------
-// Future / Stream providers
-// ---------------------------------------------------------------------------
 
-/// All ingredients (seeded + custom) as a cached FutureProvider.
+// All Ingredients Cached
 final ingredientsProvider = FutureProvider<List<Ingredient>>((ref) async {
   final service = ref.watch(ingredientServiceProvider);
   return service.getAllIngredients();
 });
 
-/// Single ingredient by id.
+// Single ingredient by id
 final ingredientByIdProvider =
     FutureProvider.family<Ingredient?, String>((ref, id) async {
   final service = ref.watch(ingredientServiceProvider);
   return service.getIngredientById(id);
 });
 
-/// User's custom ingredients only (real‑time).
+// Real Time Stream of User's Custom Ingredients 
+// to-do: modify to account for custom densities and other user‑specific overrides in the future
 final userCustomIngredientsProvider =
     StreamProvider<List<Ingredient>>((ref) {
   final userId = ref.watch(currentUserIdProvider);
@@ -102,9 +37,6 @@ final userCustomIngredientsProvider =
   return service.getUserCustomIngredients(userId);
 });
 
-// ---------------------------------------------------------------------------
-// Filter input and computed providers
-// ---------------------------------------------------------------------------
 
 class IngredientFilterInput {
   const IngredientFilterInput({
@@ -126,7 +58,7 @@ class IngredientFilterInput {
   int get hashCode => Object.hash(query, category);
 }
 
-/// Ingredients filtered by query + category, using client‑side filtering.
+// Filtered Ingredients by Query or Category
 final filteredIngredientsProvider = Provider.family<
     AsyncValue<List<Ingredient>>, IngredientFilterInput>((ref, input) {
   final ingredientsAsync = ref.watch(ingredientsProvider);
@@ -149,7 +81,7 @@ final filteredIngredientsProvider = Provider.family<
   });
 });
 
-/// Ingredients grouped by category.
+// Ingredients grouped by category
 final ingredientsByCategoryProvider =
     Provider<AsyncValue<Map<String, List<Ingredient>>>>((ref) {
   final ingredientsAsync = ref.watch(ingredientsProvider);
@@ -164,7 +96,8 @@ final ingredientsByCategoryProvider =
   });
 });
 
-/// All available ingredient categories based on current ingredients.
+// All Ingredient Categories
+// Custom for User owned
 final ingredientCategoriesProvider =
     Provider<AsyncValue<List<String>>>((ref) {
   final ingredientsAsync = ref.watch(ingredientsProvider);
@@ -184,7 +117,8 @@ final ingredientCategoriesProvider =
   });
 });
 
-/// Ingredients map for quick lookup: id -> Ingredient.
+// Map for faster lookup (id, ingredient)
+// Performance issues still needs to be fixed for recipe editing 
 final ingredientsMapProvider =
     Provider<AsyncValue<Map<String, Ingredient>>>((ref) {
   final ingredientsAsync = ref.watch(ingredientsProvider);
