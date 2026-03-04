@@ -8,13 +8,14 @@ part 'ingredient.g.dart';
 abstract class Ingredient with _$Ingredient {
   const factory Ingredient({
     required String id,
+    String? ownerId,
     required String name,
     required String category,
     String? description,
     NutritionInfo? nutritionPer100g,
     double? densityGPerMl,   // for liquids
     double? avgWeightG,      // for whole items
-    @Default(<String>[]) List<String> imageURL,
+    String? imageURL,
     @Default(<String>[]) List<String> substituteIDs,
   }) = _Ingredient;
 
