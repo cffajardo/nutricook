@@ -1,9 +1,8 @@
 import 'package:nutricook/models/collection/collection.dart';
 import 'package:nutricook/models/collection_item/collection_item.dart';
-import 'package:nutricook/features/collection/provider/collection_notifier.dart';
 import 'package:nutricook/services/collection_service.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nutricook/features/auth/providers/auth_provider.dart';
 
 
 final collectionProvider = Provider<CollectionService>((ref) {
@@ -12,9 +11,9 @@ final collectionProvider = Provider<CollectionService>((ref) {
 
 final userCollectionsProvider = StreamProvider<List<Collection>>((ref) {
   final collectionService = ref.watch(collectionProvider);
-  final user = FirebaseAuth.instance.currentUser;
+  final userId = ref.watch(currentUserIdProvider);
 
-  if (user == null) {
+  if (userId == null) {
     return Stream.value([]);
   }
 
@@ -30,15 +29,3 @@ final collectionItemsProvider = StreamProvider.family<List<CollectionItem>, Stri
   final collectionService = ref.watch(collectionProvider);
   return collectionService.getCollectionItems(collectionId);
 });
-
-final selectedCollectionIdProvider =
-    NotifierProvider<SelectedCollectionIdNotifier, String?>(
-  SelectedCollectionIdNotifier.new,
-);
-
-final collectionSortProvider =
-    NotifierProvider<CollectionSortNotifier, String>(
-  CollectionSortNotifier.new,
-);
-
-
