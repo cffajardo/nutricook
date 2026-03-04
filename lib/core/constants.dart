@@ -10,7 +10,7 @@ class FirestoreConstants {
   static const media = 'media';
   
   // Subcollections
-  static const planner = 'planner';
+  static const plannerItems = 'plannerItems';
   static const favorites = 'favorites';
   static const items = 'items';
 }
