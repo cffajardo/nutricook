@@ -7,17 +7,19 @@ final nutritionServiceProvider = Provider<NutritionService>((ref) {
   return NutritionService();
 });
 
-// All nutrition metadata (cached reference data).
+// Nutrition Data (Cached)
 final nutritionDetailsProvider =
     FutureProvider<List<Nutrition>>((ref) async {
   final service = ref.watch(nutritionServiceProvider);
   return service.getAllNutritionDetails();
 });
 
-// Single nutrition metadata entry by id.
+// Single Nutrition Detail by ID
 final nutritionDetailByIdProvider =
     FutureProvider.family<Nutrition?, String>((ref, id) async {
   final service = ref.watch(nutritionServiceProvider);
   return service.getNutritionDetailById(id);
 });
+
+
 
