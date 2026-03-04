@@ -1,85 +1,122 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:nutricook/core/constants.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-
+import 'package:nutricook/models/ingredient/ingredient.dart';
+import 'package:nutricook/models/unit/unit.dart';
+import 'package:nutricook/features/utils/nutrition_calculator.dart';
 
 class RecipeService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  /// Get all public recipes 
   Stream<List<Recipe>> getPublicRecipes({int limit = 20}) {
     return _db
-      .collection(FirestoreConstants.recipes)
-      .where('isPublic', isEqualTo: true)
-      .orderBy('createdAt', descending: true)
-      .limit(limit)
-      .snapshots()
-      .map((snapshot) => snapshot.docs
-          .map((doc) => Recipe.fromJson(doc.data()))
-          .toList());
+        .collection(FirestoreConstants.recipes)
+        .where('isPublic', isEqualTo: true)
+        .orderBy('createdAt', descending: true)
+        .limit(limit)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => Recipe.fromJson(doc.data()))
+            .toList());
   }
 
-  /// Get single recipe by ID
   Stream<Recipe?> getRecipeById(String recipeId) {
     return _db
-      .collection(FirestoreConstants.recipes)
-      .doc(recipeId)
-      .snapshots()
-      .map((doc) {
-        if (!doc.exists) return null;
-        return Recipe.fromJson(doc.data()!);
-      });
+        .collection(FirestoreConstants.recipes)
+        .doc(recipeId)
+        .snapshots()
+        .map((doc) {
+      if (!doc.exists) return null;
+      return Recipe.fromJson(doc.data()!);
+    });
   }
 
-  /// Get user's own recipes
   Stream<List<Recipe>> getUserRecipes(String userId) {
     return _db
         .collection(FirestoreConstants.recipes)
-        // Match the `ownerID` field defined in the Recipe model / JSON.
         .where('ownerID', isEqualTo: userId)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map(
-          (snapshot) =>
-              snapshot.docs.map((doc) => Recipe.fromJson(doc.data())).toList(),
-        );
+        .map((snapshot) => snapshot.docs
+            .map((doc) => Recipe.fromJson(doc.data()))
+            .toList());
   }
 
-  /// Get trending recipes (most favorited)
   Stream<List<Recipe>> getTrendingRecipes({int limit = 10}) {
     return _db
-      .collection(FirestoreConstants.recipes)
-      .where('isPublic', isEqualTo: true)
-      .orderBy('favoriteCount', descending: true)
-      .limit(limit)
-      .snapshots()
-      .map((snapshot) => snapshot.docs
-          .map((doc) => Recipe.fromJson(doc.data()))
-          .toList());
+        .collection(FirestoreConstants.recipes)
+        .where('isPublic', isEqualTo: true)
+        .orderBy('favoriteCount', descending: true)
+        .limit(limit)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => Recipe.fromJson(doc.data()))
+            .toList());
   }
 
-  Stream<List<Recipe>> getFilteredRecipesWithUserAllergens(List<String> userAllergens) {
+  Stream<List<Recipe>> getFilteredRecipesWithUserAllergens(
+    List<String> userAllergenIds,
+  ) {
     return getPublicRecipes().map((recipes) {
       return recipes.where((recipe) {
-        return recipe.ingredients.every((ingredient) => !userAllergens.contains(ingredient.name));
+        return !recipe.ingredients.any(
+          (ingredient) => userAllergenIds.contains(ingredient.ingredientID),
+        );
       }).toList();
     });
   }
 
-  /// Create new recipe
-  Future<String> createRecipe(Recipe recipe) async {
-    // Generate ID if not provided
+
+  Future<String> createRecipe({
+    required Recipe recipe,
+    required Map<String, Ingredient> ingredientsMap,
+    required Map<String, Unit> unitsMap,
+  }) async {
     final recipeRef = recipe.id.isEmpty
         ? _db.collection(FirestoreConstants.recipes).doc()
         : _db.collection(FirestoreConstants.recipes).doc(recipe.id);
 
-    final userID = _auth.currentUser?.uid ?? 'anonymous';
+    final userId = _auth.currentUser?.uid ?? 'anonymous';
+
+    final enrichedIngredients = recipe.ingredients.map((recipeIng) {
+      final ingredient = ingredientsMap[recipeIng.ingredientID];
+      final unit = unitsMap[recipeIng.unitID];
+
+      if (ingredient == null || unit == null) {
+        throw Exception(
+          'Invalid ingredient or unit: ${recipeIng.ingredientID}, ${recipeIng.unitID}',
+        );
+      }
+
+      final calculatedWeight = NutritionCalculator.convertToGrams(
+        quantity: recipeIng.quantity,
+        unit: unit,
+        ingredient: ingredient,
+      );
+
+      return recipeIng.copyWith(
+        name: ingredient.name,
+        unitName: unit.name,
+        nutritionPer100g: ingredient.nutritionPer100g,
+        densityGPerMl: ingredient.densityGPerMl,
+        avgWeightG: ingredient.avgWeightG,
+        calculatedWeightG: calculatedWeight,
+      );
+    }).toList();
+
+    final totalNutrition = NutritionCalculator.calculateRecipeNutrition(
+      recipeIngredients: enrichedIngredients,
+      ingredientsMap: ingredientsMap,
+      unitsMap: unitsMap,
+    );
 
     final recipeWithId = recipe.copyWith(
       id: recipeRef.id,
-      ownerID: userID,
+      ownerID: userId,
+      ingredients: enrichedIngredients,
+      nutritionTotal: totalNutrition,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
@@ -88,85 +125,90 @@ class RecipeService {
     return recipeRef.id;
   }
 
-  /// Update existing recipe
-  Future<void> updateRecipe(Recipe recipe) async {
+  Future<void> updateRecipe({
+    required Recipe recipe,
+    required Map<String, Ingredient> ingredientsMap,
+    required Map<String, Unit> unitsMap,
+  }) async {
+    final enrichedIngredients = recipe.ingredients.map((recipeIng) {
+      final ingredient = ingredientsMap[recipeIng.ingredientID];
+      final unit = unitsMap[recipeIng.unitID];
+
+      if (ingredient == null || unit == null) {
+        return recipeIng;
+      }
+
+      final calculatedWeight = NutritionCalculator.convertToGrams(
+        quantity: recipeIng.quantity,
+        unit: unit,
+        ingredient: ingredient,
+      );
+
+      return recipeIng.copyWith(
+        name: ingredient.name,
+        unitName: unit.name,
+        nutritionPer100g: ingredient.nutritionPer100g,
+        densityGPerMl: ingredient.densityGPerMl,
+        avgWeightG: ingredient.avgWeightG,
+        calculatedWeightG: calculatedWeight,
+      );
+    }).toList();
+
+    // Recalculate nutrition
+    final totalNutrition = NutritionCalculator.calculateRecipeNutrition(
+      recipeIngredients: enrichedIngredients,
+      ingredientsMap: ingredientsMap,
+      unitsMap: unitsMap,
+    );
+
     final updatedRecipe = recipe.copyWith(
+      ingredients: enrichedIngredients,
+      nutritionTotal: totalNutrition,
       updatedAt: DateTime.now(),
     );
 
     await _db
-      .collection(FirestoreConstants.recipes)
-      .doc(recipe.id)
-      .update(updatedRecipe.toJson());
+        .collection(FirestoreConstants.recipes)
+        .doc(recipe.id)
+        .update(updatedRecipe.toJson());
   }
 
-  /// Delete recipe
   Future<void> deleteRecipe(String recipeId) async {
     await _db
-      .collection(FirestoreConstants.recipes)
-      .doc(recipeId)
-      .delete();
+        .collection(FirestoreConstants.recipes)
+        .doc(recipeId)
+        .delete();
   }
 
-  /// Search recipes by tags and/or name
-  // Stream<List<Recipe>> searchRecipes({
-  //   String? query,
-  //   List<String> tags = const [],
-  // }) {
-  //   var ref = _db
-  //     .collection(FirestoreConstants.recipes)
-  //     .where('isPublic', isEqualTo: true);
-
-  //   // Filter by tags if provided
-  //   if (tags.isNotEmpty) {
-  //     ref = ref.where('tags', arrayContainsAny: tags);
-  //   }
-
-  //   return ref
-  //     .orderBy('createdAt', descending: true)
-  //     .limit(50)
-  //     .snapshots()
-  //     .map((snapshot) {
-  //       var recipes = snapshot.docs
-  //         .map((doc) => Recipe.fromJson(doc.data()))
-  //         .toList();
-
-  //       // Filter by name query (client-side)
-  //       if (query != null && query.isNotEmpty) {
-  //         recipes = recipes.where((recipe) =>
-  //           recipe.name.toLowerCase().contains(query.toLowerCase())
-  //         ).toList();
-  //       }
-
-  //       return recipes;
-  //     });
-  // }
-
   Future<void> addFavorite(String recipeId, String userId) async {
-  final recipeRef = _db.collection(FirestoreConstants.recipes).doc(recipeId);
-  await recipeRef.update({
-    'favoriteCount': FieldValue.increment(1),
-    'favoritedBy': FieldValue.arrayUnion([userId]),
-  });
+    final recipeRef = _db.collection(FirestoreConstants.recipes).doc(recipeId);
+    await recipeRef.update({
+      'favoriteCount': FieldValue.increment(1),
+      'favoritedBy': FieldValue.arrayUnion([userId]),
+    });
+  }
+
+  Future<void> removeFavorite(String recipeId, String userId) async {
+    final recipeRef = _db.collection(FirestoreConstants.recipes).doc(recipeId);
+    await recipeRef.update({
+      'favoriteCount': FieldValue.increment(-1),
+      'favoritedBy': FieldValue.arrayRemove([userId]),
+    });
+  }
+
+  bool doesRecipeContainAllergens(
+    Recipe recipe,
+    List<String> userAllergenIds,
+  ) {
+    return recipe.ingredients.any(
+      (ingredient) => userAllergenIds.contains(ingredient.ingredientID),
+    );
+  }
+
+  Stream<List<Recipe>> getRecipesSafeForUser(String userId) async* {
+    final userDoc = await _db.collection('users').doc(userId).get();
+    final userAllergens = List<String>.from(userDoc.data()?['allergens'] ?? []);
+
+    yield* getFilteredRecipesWithUserAllergens(userAllergens);
+  }
 }
-
-Future<void> removeFavorite(String recipeId, String userId) async {
-  final recipeRef = _db.collection(FirestoreConstants.recipes).doc(recipeId);
-  await recipeRef.update({
-    'favoriteCount': FieldValue.increment(-1),
-    'favoritedBy': FieldValue.arrayRemove([userId]),
-  });
-}
-
-bool doesRecipeNotHaveAllergen(Recipe recipe, List<String> userAllergens) {
-  return recipe.ingredients.every((ingredient) => !userAllergens.contains(ingredient.name));
-}
-
-//to do: add content moderation (e.g. check for inappropriate content in recipe name/description/steps)
-
-
-
-}
-
-
-
