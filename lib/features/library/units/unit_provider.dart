@@ -7,20 +7,20 @@ final unitServiceProvider = Provider<UnitService>((ref) {
   return UnitService();
 });
 
-// All units (cached reference data).
+// All units (Cached)
 final unitsProvider = FutureProvider<List<Unit>>((ref) async {
   final service = ref.watch(unitServiceProvider);
   return service.getAllUnits();
 });
 
-// Single unit by id.
+// Single unit by ID
 final unitByIdProvider =
     FutureProvider.family<Unit?, String>((ref, id) async {
   final service = ref.watch(unitServiceProvider);
   return service.getUnitById(id);
 });
 
-// Units grouped by type (weight, volume, count, etc.).
+// Units by Type (volume, weight, etc.) 
 final unitsByTypeProvider =
     Provider<AsyncValue<Map<String, List<Unit>>>>((ref) {
   final unitsAsync = ref.watch(unitsProvider);
@@ -35,7 +35,8 @@ final unitsByTypeProvider =
   });
 });
 
-// Units map for quick lookup: id -> Unit.
+// Map for faster lookup (id, unit)
+// Used for nested lookups in recipes -> ingredients -> units
 final unitsMapProvider = Provider<AsyncValue<Map<String, Unit>>>((ref) {
   final unitsAsync = ref.watch(unitsProvider);
 
