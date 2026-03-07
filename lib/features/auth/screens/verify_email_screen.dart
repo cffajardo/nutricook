@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../providers/auth_provider.dart';
 
@@ -29,9 +30,9 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
         _isSending = false;
         _message = 'Verification email sent! Check your inbox.';
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Verification email sent')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Verification email sent')));
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -55,11 +56,14 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
       setState(() => _isChecking = false);
       if (user?.emailVerified == true) {
         ref.invalidate(currentUserWithVerificationProvider);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Email verified!')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Email verified!')));
+        context.go('/home');
       } else {
-        setState(() => _message = 'Not verified yet. Click the link in your email.');
+        setState(
+          () => _message = 'Not verified yet. Click the link in your email.',
+        );
       }
     } catch (e) {
       if (!mounted) return;
@@ -87,12 +91,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFFF8BA7),
-              Color(0xFFFAEEE7),
-              Color(0xFFFF8BA7),
-              Color(0xFFFAEEE7),
-            ],
+            colors: [Color(0xFFFF8BA7), Color(0xFFFAEEE7), Color(0xFFFF8BA7)],
             stops: [0.0, 0.5, 1.0],
           ),
         ),
@@ -100,7 +99,8 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
           child: SingleChildScrollView(
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                minHeight: MediaQuery.of(context).size.height -
+                minHeight:
+                    MediaQuery.of(context).size.height -
                     MediaQuery.of(context).padding.top,
               ),
               child: Column(
@@ -124,10 +124,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                   const SizedBox(height: 16),
                   const Text(
                     'We sent a verification link to',
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: Colors.black54,
-                    ),
+                    style: TextStyle(fontSize: 15, color: Colors.black54),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 6),
@@ -144,10 +141,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                   const Text(
                     'Click the link in that email to verify you own this address. '
                     'Then come back here and tap the button below.',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.black54,
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.black54),
                     textAlign: TextAlign.center,
                   ),
                   if (_message != null) ...[
@@ -211,10 +205,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                               height: 18,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Icon(
-                              Icons.refresh,
-                              color: Color(0xFFF07C90),
-                            ),
+                          : const Icon(Icons.refresh, color: Color(0xFFF07C90)),
                       label: const Text(
                         'Resend verification email',
                         style: TextStyle(
