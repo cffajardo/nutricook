@@ -17,7 +17,7 @@ final appThemeModeProvider = Provider<ThemeMode>((ref) {
   return preferences.when(
     data: (value) => value.themeMode,
     loading: () => ThemeMode.system,
-    error: (_, __) => ThemeMode.system,
+    error: (_, _) => ThemeMode.system,
   );
 });
 
