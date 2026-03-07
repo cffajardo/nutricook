@@ -61,3 +61,26 @@ class CollectionSort {
   static const name = 'Name';
   static const recipeCount = 'Recipe Count';
 }
+
+class IngredientProcess {
+  static const raw = 'Raw';
+  static const chopped = 'Chopped';
+  static const sliced = 'Sliced';
+  static const diced = 'Diced';
+  static const minced = 'Minced';
+  static const grated = 'Grated';
+  static const blended = 'Blended';
+}
+
+class ServingTypes {
+  static const portion = 'Portion';
+  static const weight = 'Weight';
+  static const bowl = 'Bowl';
+  static const plate = 'Plate';
+  static const cup = 'Cup';
+  static const piece = 'Piece';
+  static const slice = 'Slice';
+  static const custom = 'Custom';
+  static const grams = 'Grams';
+  static const ounces = 'Ounces';
+}
