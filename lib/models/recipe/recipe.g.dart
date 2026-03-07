@@ -35,6 +35,7 @@ _Recipe _$RecipeFromJson(Map<String, dynamic> json) => _Recipe(
         ),
   ownerId: json['ownerId'] as String?,
   favoriteCount: (json['favoriteCount'] as num?)?.toInt() ?? 0,
+  reportCount: (json['reportCount'] as num?)?.toInt() ?? 0,
   tags:
       (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList() ??
       const <String>[],
@@ -65,6 +66,7 @@ Map<String, dynamic> _$RecipeToJson(_Recipe instance) => <String, dynamic>{
   'nutritionPerServing': instance.nutritionPerServing,
   'ownerId': instance.ownerId,
   'favoriteCount': instance.favoriteCount,
+  'reportCount': instance.reportCount,
   'tags': instance.tags,
   'techniqueIDs': instance.techniqueIDs,
   'imageURL': instance.imageURL,

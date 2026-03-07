@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Recipe {
 
- String get id; String get name; List<RecipeIngredient> get ingredients; List<String> get steps; String get description; bool get isPublic; bool get isVerified; int get servings; int get cookTime; int get prepTime;@TimestampConverter() DateTime get createdAt;@TimestampConverter() DateTime get updatedAt; NutritionInfo? get nutritionTotal; NutritionInfo? get nutritionPerServing; String? get ownerId; int get favoriteCount; List<String> get tags; List<String> get techniqueIDs; List<String> get imageURL;
+ String get id; String get name; List<RecipeIngredient> get ingredients; List<String> get steps; String get description; bool get isPublic; bool get isVerified; int get servings; int get cookTime; int get prepTime;@TimestampConverter() DateTime get createdAt;@TimestampConverter() DateTime get updatedAt; NutritionInfo? get nutritionTotal; NutritionInfo? get nutritionPerServing; String? get ownerId; int get favoriteCount; int get reportCount; List<String> get tags; List<String> get techniqueIDs; List<String> get imageURL;
 /// Create a copy of Recipe
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $RecipeCopyWith<Recipe> get copyWith => _$RecipeCopyWithImpl<Recipe>(this as Rec
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Recipe&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other.ingredients, ingredients)&&const DeepCollectionEquality().equals(other.steps, steps)&&(identical(other.description, description) || other.description == description)&&(identical(other.isPublic, isPublic) || other.isPublic == isPublic)&&(identical(other.isVerified, isVerified) || other.isVerified == isVerified)&&(identical(other.servings, servings) || other.servings == servings)&&(identical(other.cookTime, cookTime) || other.cookTime == cookTime)&&(identical(other.prepTime, prepTime) || other.prepTime == prepTime)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.nutritionTotal, nutritionTotal) || other.nutritionTotal == nutritionTotal)&&(identical(other.nutritionPerServing, nutritionPerServing) || other.nutritionPerServing == nutritionPerServing)&&(identical(other.ownerId, ownerId) || other.ownerId == ownerId)&&(identical(other.favoriteCount, favoriteCount) || other.favoriteCount == favoriteCount)&&const DeepCollectionEquality().equals(other.tags, tags)&&const DeepCollectionEquality().equals(other.techniqueIDs, techniqueIDs)&&const DeepCollectionEquality().equals(other.imageURL, imageURL));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Recipe&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other.ingredients, ingredients)&&const DeepCollectionEquality().equals(other.steps, steps)&&(identical(other.description, description) || other.description == description)&&(identical(other.isPublic, isPublic) || other.isPublic == isPublic)&&(identical(other.isVerified, isVerified) || other.isVerified == isVerified)&&(identical(other.servings, servings) || other.servings == servings)&&(identical(other.cookTime, cookTime) || other.cookTime == cookTime)&&(identical(other.prepTime, prepTime) || other.prepTime == prepTime)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.nutritionTotal, nutritionTotal) || other.nutritionTotal == nutritionTotal)&&(identical(other.nutritionPerServing, nutritionPerServing) || other.nutritionPerServing == nutritionPerServing)&&(identical(other.ownerId, ownerId) || other.ownerId == ownerId)&&(identical(other.favoriteCount, favoriteCount) || other.favoriteCount == favoriteCount)&&(identical(other.reportCount, reportCount) || other.reportCount == reportCount)&&const DeepCollectionEquality().equals(other.tags, tags)&&const DeepCollectionEquality().equals(other.techniqueIDs, techniqueIDs)&&const DeepCollectionEquality().equals(other.imageURL, imageURL));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,name,const DeepCollectionEquality().hash(ingredients),const DeepCollectionEquality().hash(steps),description,isPublic,isVerified,servings,cookTime,prepTime,createdAt,updatedAt,nutritionTotal,nutritionPerServing,ownerId,favoriteCount,const DeepCollectionEquality().hash(tags),const DeepCollectionEquality().hash(techniqueIDs),const DeepCollectionEquality().hash(imageURL)]);
+int get hashCode => Object.hashAll([runtimeType,id,name,const DeepCollectionEquality().hash(ingredients),const DeepCollectionEquality().hash(steps),description,isPublic,isVerified,servings,cookTime,prepTime,createdAt,updatedAt,nutritionTotal,nutritionPerServing,ownerId,favoriteCount,reportCount,const DeepCollectionEquality().hash(tags),const DeepCollectionEquality().hash(techniqueIDs),const DeepCollectionEquality().hash(imageURL)]);
 
 @override
 String toString() {
-  return 'Recipe(id: $id, name: $name, ingredients: $ingredients, steps: $steps, description: $description, isPublic: $isPublic, isVerified: $isVerified, servings: $servings, cookTime: $cookTime, prepTime: $prepTime, createdAt: $createdAt, updatedAt: $updatedAt, nutritionTotal: $nutritionTotal, nutritionPerServing: $nutritionPerServing, ownerId: $ownerId, favoriteCount: $favoriteCount, tags: $tags, techniqueIDs: $techniqueIDs, imageURL: $imageURL)';
+  return 'Recipe(id: $id, name: $name, ingredients: $ingredients, steps: $steps, description: $description, isPublic: $isPublic, isVerified: $isVerified, servings: $servings, cookTime: $cookTime, prepTime: $prepTime, createdAt: $createdAt, updatedAt: $updatedAt, nutritionTotal: $nutritionTotal, nutritionPerServing: $nutritionPerServing, ownerId: $ownerId, favoriteCount: $favoriteCount, reportCount: $reportCount, tags: $tags, techniqueIDs: $techniqueIDs, imageURL: $imageURL)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $RecipeCopyWith<$Res>  {
   factory $RecipeCopyWith(Recipe value, $Res Function(Recipe) _then) = _$RecipeCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, List<RecipeIngredient> ingredients, List<String> steps, String description, bool isPublic, bool isVerified, int servings, int cookTime, int prepTime,@TimestampConverter() DateTime createdAt,@TimestampConverter() DateTime updatedAt, NutritionInfo? nutritionTotal, NutritionInfo? nutritionPerServing, String? ownerId, int favoriteCount, List<String> tags, List<String> techniqueIDs, List<String> imageURL
+ String id, String name, List<RecipeIngredient> ingredients, List<String> steps, String description, bool isPublic, bool isVerified, int servings, int cookTime, int prepTime,@TimestampConverter() DateTime createdAt,@TimestampConverter() DateTime updatedAt, NutritionInfo? nutritionTotal, NutritionInfo? nutritionPerServing, String? ownerId, int favoriteCount, int reportCount, List<String> tags, List<String> techniqueIDs, List<String> imageURL
 });
 
 
@@ -65,7 +65,7 @@ class _$RecipeCopyWithImpl<$Res>
 
 /// Create a copy of Recipe
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? ingredients = null,Object? steps = null,Object? description = null,Object? isPublic = null,Object? isVerified = null,Object? servings = null,Object? cookTime = null,Object? prepTime = null,Object? createdAt = null,Object? updatedAt = null,Object? nutritionTotal = freezed,Object? nutritionPerServing = freezed,Object? ownerId = freezed,Object? favoriteCount = null,Object? tags = null,Object? techniqueIDs = null,Object? imageURL = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? ingredients = null,Object? steps = null,Object? description = null,Object? isPublic = null,Object? isVerified = null,Object? servings = null,Object? cookTime = null,Object? prepTime = null,Object? createdAt = null,Object? updatedAt = null,Object? nutritionTotal = freezed,Object? nutritionPerServing = freezed,Object? ownerId = freezed,Object? favoriteCount = null,Object? reportCount = null,Object? tags = null,Object? techniqueIDs = null,Object? imageURL = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -83,6 +83,7 @@ as DateTime,nutritionTotal: freezed == nutritionTotal ? _self.nutritionTotal : n
 as NutritionInfo?,nutritionPerServing: freezed == nutritionPerServing ? _self.nutritionPerServing : nutritionPerServing // ignore: cast_nullable_to_non_nullable
 as NutritionInfo?,ownerId: freezed == ownerId ? _self.ownerId : ownerId // ignore: cast_nullable_to_non_nullable
 as String?,favoriteCount: null == favoriteCount ? _self.favoriteCount : favoriteCount // ignore: cast_nullable_to_non_nullable
+as int,reportCount: null == reportCount ? _self.reportCount : reportCount // ignore: cast_nullable_to_non_nullable
 as int,tags: null == tags ? _self.tags : tags // ignore: cast_nullable_to_non_nullable
 as List<String>,techniqueIDs: null == techniqueIDs ? _self.techniqueIDs : techniqueIDs // ignore: cast_nullable_to_non_nullable
 as List<String>,imageURL: null == imageURL ? _self.imageURL : imageURL // ignore: cast_nullable_to_non_nullable
@@ -195,10 +196,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  List<RecipeIngredient> ingredients,  List<String> steps,  String description,  bool isPublic,  bool isVerified,  int servings,  int cookTime,  int prepTime, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime updatedAt,  NutritionInfo? nutritionTotal,  NutritionInfo? nutritionPerServing,  String? ownerId,  int favoriteCount,  List<String> tags,  List<String> techniqueIDs,  List<String> imageURL)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  List<RecipeIngredient> ingredients,  List<String> steps,  String description,  bool isPublic,  bool isVerified,  int servings,  int cookTime,  int prepTime, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime updatedAt,  NutritionInfo? nutritionTotal,  NutritionInfo? nutritionPerServing,  String? ownerId,  int favoriteCount,  int reportCount,  List<String> tags,  List<String> techniqueIDs,  List<String> imageURL)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Recipe() when $default != null:
-return $default(_that.id,_that.name,_that.ingredients,_that.steps,_that.description,_that.isPublic,_that.isVerified,_that.servings,_that.cookTime,_that.prepTime,_that.createdAt,_that.updatedAt,_that.nutritionTotal,_that.nutritionPerServing,_that.ownerId,_that.favoriteCount,_that.tags,_that.techniqueIDs,_that.imageURL);case _:
+return $default(_that.id,_that.name,_that.ingredients,_that.steps,_that.description,_that.isPublic,_that.isVerified,_that.servings,_that.cookTime,_that.prepTime,_that.createdAt,_that.updatedAt,_that.nutritionTotal,_that.nutritionPerServing,_that.ownerId,_that.favoriteCount,_that.reportCount,_that.tags,_that.techniqueIDs,_that.imageURL);case _:
   return orElse();
 
 }
@@ -216,10 +217,10 @@ return $default(_that.id,_that.name,_that.ingredients,_that.steps,_that.descript
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  List<RecipeIngredient> ingredients,  List<String> steps,  String description,  bool isPublic,  bool isVerified,  int servings,  int cookTime,  int prepTime, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime updatedAt,  NutritionInfo? nutritionTotal,  NutritionInfo? nutritionPerServing,  String? ownerId,  int favoriteCount,  List<String> tags,  List<String> techniqueIDs,  List<String> imageURL)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  List<RecipeIngredient> ingredients,  List<String> steps,  String description,  bool isPublic,  bool isVerified,  int servings,  int cookTime,  int prepTime, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime updatedAt,  NutritionInfo? nutritionTotal,  NutritionInfo? nutritionPerServing,  String? ownerId,  int favoriteCount,  int reportCount,  List<String> tags,  List<String> techniqueIDs,  List<String> imageURL)  $default,) {final _that = this;
 switch (_that) {
 case _Recipe():
-return $default(_that.id,_that.name,_that.ingredients,_that.steps,_that.description,_that.isPublic,_that.isVerified,_that.servings,_that.cookTime,_that.prepTime,_that.createdAt,_that.updatedAt,_that.nutritionTotal,_that.nutritionPerServing,_that.ownerId,_that.favoriteCount,_that.tags,_that.techniqueIDs,_that.imageURL);case _:
+return $default(_that.id,_that.name,_that.ingredients,_that.steps,_that.description,_that.isPublic,_that.isVerified,_that.servings,_that.cookTime,_that.prepTime,_that.createdAt,_that.updatedAt,_that.nutritionTotal,_that.nutritionPerServing,_that.ownerId,_that.favoriteCount,_that.reportCount,_that.tags,_that.techniqueIDs,_that.imageURL);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -236,10 +237,10 @@ return $default(_that.id,_that.name,_that.ingredients,_that.steps,_that.descript
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  List<RecipeIngredient> ingredients,  List<String> steps,  String description,  bool isPublic,  bool isVerified,  int servings,  int cookTime,  int prepTime, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime updatedAt,  NutritionInfo? nutritionTotal,  NutritionInfo? nutritionPerServing,  String? ownerId,  int favoriteCount,  List<String> tags,  List<String> techniqueIDs,  List<String> imageURL)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  List<RecipeIngredient> ingredients,  List<String> steps,  String description,  bool isPublic,  bool isVerified,  int servings,  int cookTime,  int prepTime, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime updatedAt,  NutritionInfo? nutritionTotal,  NutritionInfo? nutritionPerServing,  String? ownerId,  int favoriteCount,  int reportCount,  List<String> tags,  List<String> techniqueIDs,  List<String> imageURL)?  $default,) {final _that = this;
 switch (_that) {
 case _Recipe() when $default != null:
-return $default(_that.id,_that.name,_that.ingredients,_that.steps,_that.description,_that.isPublic,_that.isVerified,_that.servings,_that.cookTime,_that.prepTime,_that.createdAt,_that.updatedAt,_that.nutritionTotal,_that.nutritionPerServing,_that.ownerId,_that.favoriteCount,_that.tags,_that.techniqueIDs,_that.imageURL);case _:
+return $default(_that.id,_that.name,_that.ingredients,_that.steps,_that.description,_that.isPublic,_that.isVerified,_that.servings,_that.cookTime,_that.prepTime,_that.createdAt,_that.updatedAt,_that.nutritionTotal,_that.nutritionPerServing,_that.ownerId,_that.favoriteCount,_that.reportCount,_that.tags,_that.techniqueIDs,_that.imageURL);case _:
   return null;
 
 }
@@ -251,7 +252,7 @@ return $default(_that.id,_that.name,_that.ingredients,_that.steps,_that.descript
 @JsonSerializable()
 
 class _Recipe implements Recipe {
-  const _Recipe({required this.id, required this.name, required final  List<RecipeIngredient> ingredients, required final  List<String> steps, required this.description, required this.isPublic, required this.isVerified, required this.servings, required this.cookTime, required this.prepTime, @TimestampConverter() required this.createdAt, @TimestampConverter() required this.updatedAt, this.nutritionTotal, this.nutritionPerServing, this.ownerId, this.favoriteCount = 0, final  List<String> tags = const <String>[], final  List<String> techniqueIDs = const <String>[], final  List<String> imageURL = const <String>[]}): _ingredients = ingredients,_steps = steps,_tags = tags,_techniqueIDs = techniqueIDs,_imageURL = imageURL;
+  const _Recipe({required this.id, required this.name, required final  List<RecipeIngredient> ingredients, required final  List<String> steps, required this.description, required this.isPublic, required this.isVerified, required this.servings, required this.cookTime, required this.prepTime, @TimestampConverter() required this.createdAt, @TimestampConverter() required this.updatedAt, this.nutritionTotal, this.nutritionPerServing, this.ownerId, this.favoriteCount = 0, this.reportCount = 0, final  List<String> tags = const <String>[], final  List<String> techniqueIDs = const <String>[], final  List<String> imageURL = const <String>[]}): _ingredients = ingredients,_steps = steps,_tags = tags,_techniqueIDs = techniqueIDs,_imageURL = imageURL;
   factory _Recipe.fromJson(Map<String, dynamic> json) => _$RecipeFromJson(json);
 
 @override final  String id;
@@ -282,6 +283,7 @@ class _Recipe implements Recipe {
 @override final  NutritionInfo? nutritionPerServing;
 @override final  String? ownerId;
 @override@JsonKey() final  int favoriteCount;
+@override@JsonKey() final  int reportCount;
  final  List<String> _tags;
 @override@JsonKey() List<String> get tags {
   if (_tags is EqualUnmodifiableListView) return _tags;
@@ -317,16 +319,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Recipe&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other._ingredients, _ingredients)&&const DeepCollectionEquality().equals(other._steps, _steps)&&(identical(other.description, description) || other.description == description)&&(identical(other.isPublic, isPublic) || other.isPublic == isPublic)&&(identical(other.isVerified, isVerified) || other.isVerified == isVerified)&&(identical(other.servings, servings) || other.servings == servings)&&(identical(other.cookTime, cookTime) || other.cookTime == cookTime)&&(identical(other.prepTime, prepTime) || other.prepTime == prepTime)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.nutritionTotal, nutritionTotal) || other.nutritionTotal == nutritionTotal)&&(identical(other.nutritionPerServing, nutritionPerServing) || other.nutritionPerServing == nutritionPerServing)&&(identical(other.ownerId, ownerId) || other.ownerId == ownerId)&&(identical(other.favoriteCount, favoriteCount) || other.favoriteCount == favoriteCount)&&const DeepCollectionEquality().equals(other._tags, _tags)&&const DeepCollectionEquality().equals(other._techniqueIDs, _techniqueIDs)&&const DeepCollectionEquality().equals(other._imageURL, _imageURL));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Recipe&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other._ingredients, _ingredients)&&const DeepCollectionEquality().equals(other._steps, _steps)&&(identical(other.description, description) || other.description == description)&&(identical(other.isPublic, isPublic) || other.isPublic == isPublic)&&(identical(other.isVerified, isVerified) || other.isVerified == isVerified)&&(identical(other.servings, servings) || other.servings == servings)&&(identical(other.cookTime, cookTime) || other.cookTime == cookTime)&&(identical(other.prepTime, prepTime) || other.prepTime == prepTime)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.nutritionTotal, nutritionTotal) || other.nutritionTotal == nutritionTotal)&&(identical(other.nutritionPerServing, nutritionPerServing) || other.nutritionPerServing == nutritionPerServing)&&(identical(other.ownerId, ownerId) || other.ownerId == ownerId)&&(identical(other.favoriteCount, favoriteCount) || other.favoriteCount == favoriteCount)&&(identical(other.reportCount, reportCount) || other.reportCount == reportCount)&&const DeepCollectionEquality().equals(other._tags, _tags)&&const DeepCollectionEquality().equals(other._techniqueIDs, _techniqueIDs)&&const DeepCollectionEquality().equals(other._imageURL, _imageURL));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,id,name,const DeepCollectionEquality().hash(_ingredients),const DeepCollectionEquality().hash(_steps),description,isPublic,isVerified,servings,cookTime,prepTime,createdAt,updatedAt,nutritionTotal,nutritionPerServing,ownerId,favoriteCount,const DeepCollectionEquality().hash(_tags),const DeepCollectionEquality().hash(_techniqueIDs),const DeepCollectionEquality().hash(_imageURL)]);
+int get hashCode => Object.hashAll([runtimeType,id,name,const DeepCollectionEquality().hash(_ingredients),const DeepCollectionEquality().hash(_steps),description,isPublic,isVerified,servings,cookTime,prepTime,createdAt,updatedAt,nutritionTotal,nutritionPerServing,ownerId,favoriteCount,reportCount,const DeepCollectionEquality().hash(_tags),const DeepCollectionEquality().hash(_techniqueIDs),const DeepCollectionEquality().hash(_imageURL)]);
 
 @override
 String toString() {
-  return 'Recipe(id: $id, name: $name, ingredients: $ingredients, steps: $steps, description: $description, isPublic: $isPublic, isVerified: $isVerified, servings: $servings, cookTime: $cookTime, prepTime: $prepTime, createdAt: $createdAt, updatedAt: $updatedAt, nutritionTotal: $nutritionTotal, nutritionPerServing: $nutritionPerServing, ownerId: $ownerId, favoriteCount: $favoriteCount, tags: $tags, techniqueIDs: $techniqueIDs, imageURL: $imageURL)';
+  return 'Recipe(id: $id, name: $name, ingredients: $ingredients, steps: $steps, description: $description, isPublic: $isPublic, isVerified: $isVerified, servings: $servings, cookTime: $cookTime, prepTime: $prepTime, createdAt: $createdAt, updatedAt: $updatedAt, nutritionTotal: $nutritionTotal, nutritionPerServing: $nutritionPerServing, ownerId: $ownerId, favoriteCount: $favoriteCount, reportCount: $reportCount, tags: $tags, techniqueIDs: $techniqueIDs, imageURL: $imageURL)';
 }
 
 
@@ -337,7 +339,7 @@ abstract mixin class _$RecipeCopyWith<$Res> implements $RecipeCopyWith<$Res> {
   factory _$RecipeCopyWith(_Recipe value, $Res Function(_Recipe) _then) = __$RecipeCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, List<RecipeIngredient> ingredients, List<String> steps, String description, bool isPublic, bool isVerified, int servings, int cookTime, int prepTime,@TimestampConverter() DateTime createdAt,@TimestampConverter() DateTime updatedAt, NutritionInfo? nutritionTotal, NutritionInfo? nutritionPerServing, String? ownerId, int favoriteCount, List<String> tags, List<String> techniqueIDs, List<String> imageURL
+ String id, String name, List<RecipeIngredient> ingredients, List<String> steps, String description, bool isPublic, bool isVerified, int servings, int cookTime, int prepTime,@TimestampConverter() DateTime createdAt,@TimestampConverter() DateTime updatedAt, NutritionInfo? nutritionTotal, NutritionInfo? nutritionPerServing, String? ownerId, int favoriteCount, int reportCount, List<String> tags, List<String> techniqueIDs, List<String> imageURL
 });
 
 
@@ -354,7 +356,7 @@ class __$RecipeCopyWithImpl<$Res>
 
 /// Create a copy of Recipe
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? ingredients = null,Object? steps = null,Object? description = null,Object? isPublic = null,Object? isVerified = null,Object? servings = null,Object? cookTime = null,Object? prepTime = null,Object? createdAt = null,Object? updatedAt = null,Object? nutritionTotal = freezed,Object? nutritionPerServing = freezed,Object? ownerId = freezed,Object? favoriteCount = null,Object? tags = null,Object? techniqueIDs = null,Object? imageURL = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? ingredients = null,Object? steps = null,Object? description = null,Object? isPublic = null,Object? isVerified = null,Object? servings = null,Object? cookTime = null,Object? prepTime = null,Object? createdAt = null,Object? updatedAt = null,Object? nutritionTotal = freezed,Object? nutritionPerServing = freezed,Object? ownerId = freezed,Object? favoriteCount = null,Object? reportCount = null,Object? tags = null,Object? techniqueIDs = null,Object? imageURL = null,}) {
   return _then(_Recipe(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -372,6 +374,7 @@ as DateTime,nutritionTotal: freezed == nutritionTotal ? _self.nutritionTotal : n
 as NutritionInfo?,nutritionPerServing: freezed == nutritionPerServing ? _self.nutritionPerServing : nutritionPerServing // ignore: cast_nullable_to_non_nullable
 as NutritionInfo?,ownerId: freezed == ownerId ? _self.ownerId : ownerId // ignore: cast_nullable_to_non_nullable
 as String?,favoriteCount: null == favoriteCount ? _self.favoriteCount : favoriteCount // ignore: cast_nullable_to_non_nullable
+as int,reportCount: null == reportCount ? _self.reportCount : reportCount // ignore: cast_nullable_to_non_nullable
 as int,tags: null == tags ? _self._tags : tags // ignore: cast_nullable_to_non_nullable
 as List<String>,techniqueIDs: null == techniqueIDs ? _self._techniqueIDs : techniqueIDs // ignore: cast_nullable_to_non_nullable
 as List<String>,imageURL: null == imageURL ? _self._imageURL : imageURL // ignore: cast_nullable_to_non_nullable
