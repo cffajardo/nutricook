@@ -8,7 +8,8 @@ class FirestoreConstants {
   static const nutrition = 'nutrition';
   static const collections = 'collections';
   static const media = 'media';
-  
+  static const recipeReports = 'recipeReports';
+
   // Subcollections
   static const plannerItems = 'plannerItems';
   static const favorites = 'favorites';
@@ -40,13 +41,28 @@ class TechniqueCategory {
   static const presentation = 'Presentation';
 }
 
-
 class RecipeTags {
   static const difficulty = ['easy', 'medium', 'hard'];
-  static const cuisine = ['italian', 'mexican', 'japanese', 'chinese', 'american'];
+  static const cuisine = [
+    'italian',
+    'mexican',
+    'japanese',
+    'chinese',
+    'american',
+  ];
   static const dietary = ['vegetarian', 'vegan', 'gluten-free', 'dairy-free'];
-  static const nutrition = ['low-carb', 'high-protein', 'low-fat', 'keto', 'paleo', 'whole30', 'low-calorie', 'high-fiber', 'high-carb', 'low-sugar'];
-  
+  static const nutrition = [
+    'low-carb',
+    'high-protein',
+    'low-fat',
+    'keto',
+    'paleo',
+    'whole30',
+    'low-calorie',
+    'high-fiber',
+    'high-carb',
+    'low-sugar',
+  ];
 }
 
 class MealType {
