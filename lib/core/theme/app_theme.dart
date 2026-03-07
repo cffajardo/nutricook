@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
   static const Color blushPink = Color(0xFFFF8BA7);
@@ -27,9 +28,16 @@ class AppTheme {
       error: Colors.redAccent,
     );
 
+    final comfortaaFamily = GoogleFonts.comfortaa().fontFamily;
+
+    final comfortaaTextTheme = GoogleFonts.comfortaaTextTheme();
+
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
+      fontFamily: comfortaaFamily,
+      textTheme: comfortaaTextTheme,
+      primaryTextTheme: comfortaaTextTheme,
       scaffoldBackgroundColor: AppColors.blushPink,
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.blushPink,
