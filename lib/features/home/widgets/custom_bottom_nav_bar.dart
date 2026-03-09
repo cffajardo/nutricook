@@ -2,9 +2,9 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart'; // Add GoRouter
 import 'package:nutricook/core/theme/app_theme.dart';
+import 'package:nutricook/routing/app_routes.dart';
 
 class CustomBottomNavBar extends StatelessWidget {
-  // We removed currentIndex and onTap from the constructor!
   const CustomBottomNavBar({super.key});
 
   static const List<IconData> _icons = <IconData>[
@@ -15,44 +15,40 @@ class CustomBottomNavBar extends StatelessWidget {
     Icons.person_rounded,
   ];
 
-  // --- GO ROUTER LOGIC ---
-  // Automatically determines which icon is active based on the current URL
   int _calculateSelectedIndex(BuildContext context) {
     final String location = GoRouterState.of(context).uri.path;
-    
-    if (location.startsWith('/recipes')) return 0; // Replace with actual route
-    if (location.startsWith('/planner')) return 1;
-    if (location == '/') return 2;
-    if (location.startsWith('/library')) return 3; // Replace with actual route
-    if (location.startsWith('/profile')) return 4; // Replace with actual route
-    
-    return 2; // Default to home if unknown
+
+    if (location.startsWith(AppRoutes.recipesPath)) return 0;
+    if (location.startsWith(AppRoutes.plannerPath)) return 1;
+    if (location == AppRoutes.homePath) return 2;
+    if (location.startsWith('/library')) return 3;
+    if (location.startsWith('/profile')) return 4;
+
+    return 2;
   }
 
-  // Triggers the actual navigation
   void _onItemTapped(int index, BuildContext context) {
     switch (index) {
       case 0:
-        // context.go('/recipes'); // Uncomment when you build this screen
+        context.goNamed(AppRoutes.recipesName);
         break;
       case 1:
-        context.go('/planner');
+        context.goNamed(AppRoutes.plannerName);
         break;
       case 2:
-        context.go('/');
+        context.goNamed(AppRoutes.homeName);
         break;
       case 3:
-        // context.go('/library'); // Uncomment when you build this screen
+        // context.go('/library');
         break;
       case 4:
-        // context.go('/profile'); // Uncomment when you build this screen
+        // context.go('/profile');
         break;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Get the active index dynamically
     final currentIndex = _calculateSelectedIndex(context);
 
     return SafeArea(
@@ -67,7 +63,10 @@ class CustomBottomNavBar extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.85),
                 borderRadius: BorderRadius.circular(32),
-                border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.3),
+                  width: 1.5,
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.1),
@@ -82,7 +81,8 @@ class CustomBottomNavBar extends StatelessWidget {
                   final isSelected = index == currentIndex;
                   final isCenter = index == 2;
 
-                  if (isCenter) return _buildCenterItem(index, isSelected, context);
+                  if (isCenter)
+                    return _buildCenterItem(index, isSelected, context);
                   return _buildSideItem(index, isSelected, context);
                 }),
               ),
@@ -95,7 +95,6 @@ class CustomBottomNavBar extends StatelessWidget {
 
   Widget _buildCenterItem(int index, bool selected, BuildContext context) {
     return InkWell(
-      // Removed the grey splash effect for a premium feel
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
       onTap: () => _onItemTapped(index, context),
@@ -106,14 +105,17 @@ class CustomBottomNavBar extends StatelessWidget {
           shape: BoxShape.circle,
           color: selected ? AppColors.rosePink : AppColors.cardRose,
         ),
-        child: Icon(_icons[index], color: selected ? Colors.white : Colors.black87, size: 28),
+        child: Icon(
+          _icons[index],
+          color: selected ? Colors.white : Colors.black87,
+          size: 28,
+        ),
       ),
     );
   }
 
   Widget _buildSideItem(int index, bool selected, BuildContext context) {
     return InkWell(
-      // Removed the grey splash effect for a premium feel
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
       onTap: () => _onItemTapped(index, context),
@@ -125,7 +127,11 @@ class CustomBottomNavBar extends StatelessWidget {
           color: selected ? AppColors.inputRose : Colors.transparent,
           borderRadius: BorderRadius.circular(14),
         ),
-        child: Icon(_icons[index], size: 22, color: selected ? AppColors.rosePink : Colors.black54),
+        child: Icon(
+          _icons[index],
+          size: 22,
+          color: selected ? AppColors.rosePink : Colors.black54,
+        ),
       ),
     );
   }
