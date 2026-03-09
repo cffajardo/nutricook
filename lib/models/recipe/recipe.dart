@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../features/utils/timestamp_convert.dart';
 import '../nutrition_info/nutrition_info.dart';
 import '../recipe_ingredient/recipe_ingredient.dart';
+import '../recipe_step/recipe_step.dart';
 
 part 'recipe.freezed.dart';
 part 'recipe.g.dart';
@@ -14,7 +15,7 @@ abstract class Recipe with _$Recipe {
     required String id,
     required String name,
     required List<RecipeIngredient> ingredients,
-    required List<String> steps,
+    required List<RecipeStep> steps,
     required String description,
     required bool isPublic,
     required bool isVerified,
