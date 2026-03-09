@@ -98,10 +98,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
           _buildFab(left: 24, label: 'N', tag: 'fab_n'),
           _buildFab(right: 24, label: 'M', tag: 'fab_m'),
 
-          const Positioned(
-            left: 0, right: 0, bottom: 0,
-            child: CustomBottomNavBar(),
-          ),
+        
         ],
       ),
     );
