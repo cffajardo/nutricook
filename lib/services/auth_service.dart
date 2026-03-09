@@ -74,73 +74,75 @@ class AuthService {
   }
 
   Future<void> registerWithEmail({
-  required String email,
-  required String password,
-  required String username,
-}) async {
-  final trimmedEmail = email.trim();
-  final trimmedUsername = username.trim().toLowerCase();
-  
-  if (!isValidUsername(trimmedUsername)) {
-    throw Exception('Username must be 6-20 characters, alphanumeric and underscores only');
-  }
-  
-  UserCredential? userCredential;
-  
-  try {
-    final usernameQuery = await FirebaseFirestore.instance
-      .collection('users')
-      .where('username'.toLowerCase(), isEqualTo: trimmedUsername)
-      .limit(1)
-      .get();
-    
-    if (usernameQuery.docs.isNotEmpty) {
-      throw Exception('Username already taken. Please choose another one.');
+    required String email,
+    required String password,
+    required String username,
+  }) async {
+    final trimmedEmail = email.trim();
+    final trimmedUsername = username.trim().toLowerCase();
+
+    if (!isValidUsername(trimmedUsername)) {
+      throw Exception(
+        'Username must be 6-20 characters, alphanumeric and underscores only',
+      );
     }
-    
-    userCredential = await _auth.createUserWithEmailAndPassword(
-      email: trimmedEmail,
-      password: password,
-    );
-    
-    final uid = userCredential.user!.uid;
-    
-    await FirebaseFirestore.instance
-      .collection('users')
-      .doc(uid) 
-      .set({
+
+    UserCredential? userCredential;
+
+    try {
+      final usernameQuery = await FirebaseFirestore.instance
+          .collection('users')
+          .where('username'.toLowerCase(), isEqualTo: trimmedUsername)
+          .limit(1)
+          .get();
+
+      if (usernameQuery.docs.isNotEmpty) {
+        throw Exception('Username already taken. Please choose another one.');
+      }
+
+      userCredential = await _auth.createUserWithEmailAndPassword(
+        email: trimmedEmail,
+        password: password,
+      );
+
+      final uid = userCredential.user!.uid;
+
+      await FirebaseFirestore.instance.collection('users').doc(uid).set({
         'id': uid,
         'email': trimmedEmail,
         'username': username.trim(),
         'profilePictureUrl': null,
         'allergens': [],
+        'following': [],
+        'followers': [],
+        'blockedUsers': [],
+        'blockedBy': [],
         'createdAt': FieldValue.serverTimestamp(),
       });
-    
-    await userCredential.user!.updateDisplayName(username.trim());
-    
-    await userCredential.user!.sendEmailVerification();
-    
-  } on FirebaseAuthException catch (e) {
-    throw _handleAuthException(e);
-  } catch (e) {
-    if (userCredential != null) {
-      try {
-        await userCredential.user!.delete();
-      } catch (deleteError) {
-        debugPrint('Failed to rollback Auth user: $deleteError');
+
+      await userCredential.user!.updateDisplayName(username.trim());
+
+      await userCredential.user!.sendEmailVerification();
+    } on FirebaseAuthException catch (e) {
+      throw _handleAuthException(e);
+    } catch (e) {
+      if (userCredential != null) {
+        try {
+          await userCredential.user!.delete();
+        } catch (deleteError) {
+          debugPrint('Failed to rollback Auth user: $deleteError');
+        }
       }
+      rethrow;
     }
-    rethrow;
   }
-}
 
   Future<void> signInWithGoogle() async {
     try {
       await _initializeGoogleSignIn();
 
-      final GoogleSignInAccount? googleUser =
-          await _googleSignIn.authenticate();
+      final GoogleSignInAccount? googleUser = await _googleSignIn
+          .authenticate();
 
       if (googleUser == null) {
         throw Exception('Google sign-in was cancelled.');
@@ -178,13 +180,12 @@ class AuthService {
     try {
       await _initializeGoogleSignIn();
       await _googleSignIn.signOut();
-      
+
       await _auth.signOut();
     } catch (e) {
       throw Exception('Sign out failed: $e');
     }
   }
-  
 
   Future<void> _initializeGoogleSignIn() async {
     if (_isGoogleSignInInitialized) return;
@@ -200,10 +201,10 @@ class AuthService {
     }
   }
 
-
   Future<void> sendEmailVerification() async {
     final user = _auth.currentUser;
-    if (user == null) throw Exception('You must be signed in to verify your email.');
+    if (user == null)
+      throw Exception('You must be signed in to verify your email.');
     if (user.email == null || user.email!.isEmpty) {
       throw Exception('No email address to verify.');
     }
@@ -230,6 +231,10 @@ class AuthService {
       'username': username,
       'mediaId': profilePictureUrl,
       'allergens': [],
+      'following': [],
+      'followers': [],
+      'blockedUsers': [],
+      'blockedBy': [],
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
