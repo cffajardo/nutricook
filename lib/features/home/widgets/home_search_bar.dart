@@ -25,7 +25,7 @@ class HomeSearchBar extends StatelessWidget {
             onChanged: onChanged,
             onSubmitted: onSubmitted,
             decoration: InputDecoration(
-              hintText: 'Search recipes, ingredients, techniques...',
+              hintText: 'Search recipes',
               prefixIcon: const Icon(Icons.search_rounded),
               filled: true,
               fillColor: Colors.white,
