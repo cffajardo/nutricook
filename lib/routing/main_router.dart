@@ -1,12 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
 import '../features/auth/providers/auth_provider.dart';
 import '../features/auth/screens/login_screen.dart';
 import '../features/auth/screens/register_screen.dart';
 import '../features/auth/screens/verify_email_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/splash_screen.dart';
+import '../features/planner/screens/planner_main.dart'; 
 
 final routerProvider = Provider<GoRouter>((ref) {
   final userAsync = ref.watch(authStateProvider);
@@ -42,6 +42,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             return '/';
           }
 
+          // This allows navigation to '/' or '/planner' or any other protected route
           return null;
         },
       );
@@ -57,6 +58,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'home',
         builder: (context, state) => const HomeScreen(),
       ),
+      // --- NEW PLANNER ROUTE ADDED HERE ---
+      GoRoute(
+        path: '/planner',
+        name: 'planner',
+        builder: (context, state) => const PlannerScreen(),
+      ),
+      // ------------------------------------
       GoRoute(
         path: '/login',
         name: 'login',
