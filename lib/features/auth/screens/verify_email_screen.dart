@@ -59,7 +59,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Email verified!')));
-        context.go('/home');
+        context.go('/');
       } else {
         setState(
           () => _message = 'Not verified yet. Click the link in your email.',
