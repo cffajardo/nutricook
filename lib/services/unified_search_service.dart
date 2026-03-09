@@ -58,7 +58,6 @@ class UnifiedSearchService {
     for (final doc in snapshot.docs) {
       try {
         final recipe = Recipe.fromJson(doc.data());
-        final title = recipe.name;
         final tags = recipe.tags.join(' ');
         final searchText = '${recipe.name} ${recipe.description} $tags';
         if (!_containsQuery(searchText, query)) {
