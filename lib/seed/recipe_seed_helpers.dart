@@ -4,6 +4,7 @@ import 'package:nutricook/features/utils/nutrition_calculator.dart';
 import 'package:nutricook/models/ingredient/ingredient.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
 import 'package:nutricook/models/recipe_ingredient/recipe_ingredient.dart';
+import 'package:nutricook/models/recipe_step/recipe_step.dart';
 import 'package:nutricook/models/unit/unit.dart';
 
 class RecipeIngredientDraft {
@@ -66,8 +67,9 @@ class RecipeSeedHelpers {
   static Future<RecipeSeedReferenceData> loadReferenceData(
     FirebaseFirestore db,
   ) async {
-    final ingredientsSnapshot =
-        await db.collection(FirestoreConstants.ingredients).get();
+    final ingredientsSnapshot = await db
+        .collection(FirestoreConstants.ingredients)
+        .get();
     final unitsSnapshot = await db.collection(FirestoreConstants.units).get();
 
     final ingredientsMap = {
@@ -130,16 +132,19 @@ class RecipeSeedHelpers {
       unitsMap: unitsMap,
     );
 
-    final nutritionPerServing = NutritionCalculator.calculateNutritionPerServing(
-      totalNutrition: nutritionTotal,
-      servings: spec.servings,
-    );
+    final nutritionPerServing =
+        NutritionCalculator.calculateNutritionPerServing(
+          totalNutrition: nutritionTotal,
+          servings: spec.servings,
+        );
 
     return Recipe(
       id: spec.id,
       name: spec.name,
       ingredients: enrichedIngredients,
-      steps: spec.steps,
+      steps: spec.steps
+          .map((instruction) => RecipeStep(instruction: instruction))
+          .toList(),
       description: spec.description,
       isPublic: spec.isPublic,
       isVerified: spec.isVerified,
