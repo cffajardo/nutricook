@@ -12,7 +12,9 @@ _Recipe _$RecipeFromJson(Map<String, dynamic> json) => _Recipe(
   ingredients: (json['ingredients'] as List<dynamic>)
       .map((e) => RecipeIngredient.fromJson(e as Map<String, dynamic>))
       .toList(),
-  steps: (json['steps'] as List<dynamic>).map((e) => e as String).toList(),
+  steps: (json['steps'] as List<dynamic>)
+      .map((e) => RecipeStep.fromJson(e as Map<String, dynamic>))
+      .toList(),
   description: json['description'] as String,
   isPublic: json['isPublic'] as bool,
   isVerified: json['isVerified'] as bool,

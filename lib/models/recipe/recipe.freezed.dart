@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Recipe {
 
- String get id; String get name; List<RecipeIngredient> get ingredients; List<String> get steps; String get description; bool get isPublic; bool get isVerified; int get servings; int get cookTime; int get prepTime;@TimestampConverter() DateTime get createdAt;@TimestampConverter() DateTime get updatedAt; NutritionInfo? get nutritionTotal; NutritionInfo? get nutritionPerServing; String? get ownerId; int get favoriteCount; int get reportCount; List<String> get tags; List<String> get techniqueIDs; List<String> get imageURL;
+ String get id; String get name; List<RecipeIngredient> get ingredients; List<RecipeStep> get steps; String get description; bool get isPublic; bool get isVerified; int get servings; int get cookTime; int get prepTime;@TimestampConverter() DateTime get createdAt;@TimestampConverter() DateTime get updatedAt; NutritionInfo? get nutritionTotal; NutritionInfo? get nutritionPerServing; String? get ownerId; int get favoriteCount; int get reportCount; List<String> get tags; List<String> get techniqueIDs; List<String> get imageURL;
 /// Create a copy of Recipe
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $RecipeCopyWith<$Res>  {
   factory $RecipeCopyWith(Recipe value, $Res Function(Recipe) _then) = _$RecipeCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, List<RecipeIngredient> ingredients, List<String> steps, String description, bool isPublic, bool isVerified, int servings, int cookTime, int prepTime,@TimestampConverter() DateTime createdAt,@TimestampConverter() DateTime updatedAt, NutritionInfo? nutritionTotal, NutritionInfo? nutritionPerServing, String? ownerId, int favoriteCount, int reportCount, List<String> tags, List<String> techniqueIDs, List<String> imageURL
+ String id, String name, List<RecipeIngredient> ingredients, List<RecipeStep> steps, String description, bool isPublic, bool isVerified, int servings, int cookTime, int prepTime,@TimestampConverter() DateTime createdAt,@TimestampConverter() DateTime updatedAt, NutritionInfo? nutritionTotal, NutritionInfo? nutritionPerServing, String? ownerId, int favoriteCount, int reportCount, List<String> tags, List<String> techniqueIDs, List<String> imageURL
 });
 
 
@@ -71,7 +71,7 @@ id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,ingredients: null == ingredients ? _self.ingredients : ingredients // ignore: cast_nullable_to_non_nullable
 as List<RecipeIngredient>,steps: null == steps ? _self.steps : steps // ignore: cast_nullable_to_non_nullable
-as List<String>,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as List<RecipeStep>,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String,isPublic: null == isPublic ? _self.isPublic : isPublic // ignore: cast_nullable_to_non_nullable
 as bool,isVerified: null == isVerified ? _self.isVerified : isVerified // ignore: cast_nullable_to_non_nullable
 as bool,servings: null == servings ? _self.servings : servings // ignore: cast_nullable_to_non_nullable
@@ -196,7 +196,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  List<RecipeIngredient> ingredients,  List<String> steps,  String description,  bool isPublic,  bool isVerified,  int servings,  int cookTime,  int prepTime, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime updatedAt,  NutritionInfo? nutritionTotal,  NutritionInfo? nutritionPerServing,  String? ownerId,  int favoriteCount,  int reportCount,  List<String> tags,  List<String> techniqueIDs,  List<String> imageURL)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  List<RecipeIngredient> ingredients,  List<RecipeStep> steps,  String description,  bool isPublic,  bool isVerified,  int servings,  int cookTime,  int prepTime, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime updatedAt,  NutritionInfo? nutritionTotal,  NutritionInfo? nutritionPerServing,  String? ownerId,  int favoriteCount,  int reportCount,  List<String> tags,  List<String> techniqueIDs,  List<String> imageURL)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Recipe() when $default != null:
 return $default(_that.id,_that.name,_that.ingredients,_that.steps,_that.description,_that.isPublic,_that.isVerified,_that.servings,_that.cookTime,_that.prepTime,_that.createdAt,_that.updatedAt,_that.nutritionTotal,_that.nutritionPerServing,_that.ownerId,_that.favoriteCount,_that.reportCount,_that.tags,_that.techniqueIDs,_that.imageURL);case _:
@@ -217,7 +217,7 @@ return $default(_that.id,_that.name,_that.ingredients,_that.steps,_that.descript
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  List<RecipeIngredient> ingredients,  List<String> steps,  String description,  bool isPublic,  bool isVerified,  int servings,  int cookTime,  int prepTime, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime updatedAt,  NutritionInfo? nutritionTotal,  NutritionInfo? nutritionPerServing,  String? ownerId,  int favoriteCount,  int reportCount,  List<String> tags,  List<String> techniqueIDs,  List<String> imageURL)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  List<RecipeIngredient> ingredients,  List<RecipeStep> steps,  String description,  bool isPublic,  bool isVerified,  int servings,  int cookTime,  int prepTime, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime updatedAt,  NutritionInfo? nutritionTotal,  NutritionInfo? nutritionPerServing,  String? ownerId,  int favoriteCount,  int reportCount,  List<String> tags,  List<String> techniqueIDs,  List<String> imageURL)  $default,) {final _that = this;
 switch (_that) {
 case _Recipe():
 return $default(_that.id,_that.name,_that.ingredients,_that.steps,_that.description,_that.isPublic,_that.isVerified,_that.servings,_that.cookTime,_that.prepTime,_that.createdAt,_that.updatedAt,_that.nutritionTotal,_that.nutritionPerServing,_that.ownerId,_that.favoriteCount,_that.reportCount,_that.tags,_that.techniqueIDs,_that.imageURL);case _:
@@ -237,7 +237,7 @@ return $default(_that.id,_that.name,_that.ingredients,_that.steps,_that.descript
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  List<RecipeIngredient> ingredients,  List<String> steps,  String description,  bool isPublic,  bool isVerified,  int servings,  int cookTime,  int prepTime, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime updatedAt,  NutritionInfo? nutritionTotal,  NutritionInfo? nutritionPerServing,  String? ownerId,  int favoriteCount,  int reportCount,  List<String> tags,  List<String> techniqueIDs,  List<String> imageURL)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  List<RecipeIngredient> ingredients,  List<RecipeStep> steps,  String description,  bool isPublic,  bool isVerified,  int servings,  int cookTime,  int prepTime, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime updatedAt,  NutritionInfo? nutritionTotal,  NutritionInfo? nutritionPerServing,  String? ownerId,  int favoriteCount,  int reportCount,  List<String> tags,  List<String> techniqueIDs,  List<String> imageURL)?  $default,) {final _that = this;
 switch (_that) {
 case _Recipe() when $default != null:
 return $default(_that.id,_that.name,_that.ingredients,_that.steps,_that.description,_that.isPublic,_that.isVerified,_that.servings,_that.cookTime,_that.prepTime,_that.createdAt,_that.updatedAt,_that.nutritionTotal,_that.nutritionPerServing,_that.ownerId,_that.favoriteCount,_that.reportCount,_that.tags,_that.techniqueIDs,_that.imageURL);case _:
@@ -252,7 +252,7 @@ return $default(_that.id,_that.name,_that.ingredients,_that.steps,_that.descript
 @JsonSerializable()
 
 class _Recipe implements Recipe {
-  const _Recipe({required this.id, required this.name, required final  List<RecipeIngredient> ingredients, required final  List<String> steps, required this.description, required this.isPublic, required this.isVerified, required this.servings, required this.cookTime, required this.prepTime, @TimestampConverter() required this.createdAt, @TimestampConverter() required this.updatedAt, this.nutritionTotal, this.nutritionPerServing, this.ownerId, this.favoriteCount = 0, this.reportCount = 0, final  List<String> tags = const <String>[], final  List<String> techniqueIDs = const <String>[], final  List<String> imageURL = const <String>[]}): _ingredients = ingredients,_steps = steps,_tags = tags,_techniqueIDs = techniqueIDs,_imageURL = imageURL;
+  const _Recipe({required this.id, required this.name, required final  List<RecipeIngredient> ingredients, required final  List<RecipeStep> steps, required this.description, required this.isPublic, required this.isVerified, required this.servings, required this.cookTime, required this.prepTime, @TimestampConverter() required this.createdAt, @TimestampConverter() required this.updatedAt, this.nutritionTotal, this.nutritionPerServing, this.ownerId, this.favoriteCount = 0, this.reportCount = 0, final  List<String> tags = const <String>[], final  List<String> techniqueIDs = const <String>[], final  List<String> imageURL = const <String>[]}): _ingredients = ingredients,_steps = steps,_tags = tags,_techniqueIDs = techniqueIDs,_imageURL = imageURL;
   factory _Recipe.fromJson(Map<String, dynamic> json) => _$RecipeFromJson(json);
 
 @override final  String id;
@@ -264,8 +264,8 @@ class _Recipe implements Recipe {
   return EqualUnmodifiableListView(_ingredients);
 }
 
- final  List<String> _steps;
-@override List<String> get steps {
+ final  List<RecipeStep> _steps;
+@override List<RecipeStep> get steps {
   if (_steps is EqualUnmodifiableListView) return _steps;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_steps);
@@ -339,7 +339,7 @@ abstract mixin class _$RecipeCopyWith<$Res> implements $RecipeCopyWith<$Res> {
   factory _$RecipeCopyWith(_Recipe value, $Res Function(_Recipe) _then) = __$RecipeCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, List<RecipeIngredient> ingredients, List<String> steps, String description, bool isPublic, bool isVerified, int servings, int cookTime, int prepTime,@TimestampConverter() DateTime createdAt,@TimestampConverter() DateTime updatedAt, NutritionInfo? nutritionTotal, NutritionInfo? nutritionPerServing, String? ownerId, int favoriteCount, int reportCount, List<String> tags, List<String> techniqueIDs, List<String> imageURL
+ String id, String name, List<RecipeIngredient> ingredients, List<RecipeStep> steps, String description, bool isPublic, bool isVerified, int servings, int cookTime, int prepTime,@TimestampConverter() DateTime createdAt,@TimestampConverter() DateTime updatedAt, NutritionInfo? nutritionTotal, NutritionInfo? nutritionPerServing, String? ownerId, int favoriteCount, int reportCount, List<String> tags, List<String> techniqueIDs, List<String> imageURL
 });
 
 
@@ -362,7 +362,7 @@ id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,ingredients: null == ingredients ? _self._ingredients : ingredients // ignore: cast_nullable_to_non_nullable
 as List<RecipeIngredient>,steps: null == steps ? _self._steps : steps // ignore: cast_nullable_to_non_nullable
-as List<String>,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as List<RecipeStep>,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String,isPublic: null == isPublic ? _self.isPublic : isPublic // ignore: cast_nullable_to_non_nullable
 as bool,isVerified: null == isVerified ? _self.isVerified : isVerified // ignore: cast_nullable_to_non_nullable
 as bool,servings: null == servings ? _self.servings : servings // ignore: cast_nullable_to_non_nullable
