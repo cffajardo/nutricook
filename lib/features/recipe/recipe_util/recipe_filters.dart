@@ -1,8 +1,10 @@
 import 'package:nutricook/models/recipe/recipe.dart';
 
 // Filter recipes based on user allergens
-// Maybe use ingredient IDs instead of names for more accuracy and consistency with database (to-do)
-List<Recipe> filterRecipesByAllergens(List<Recipe> recipes, List<String> userAllergens) {
+List<Recipe> filterRecipesByAllergens(
+  List<Recipe> recipes,
+  List<String> userAllergens,
+) {
   if (userAllergens.isEmpty) {
     return recipes;
   }
@@ -14,7 +16,6 @@ List<Recipe> filterRecipesByAllergens(List<Recipe> recipes, List<String> userAll
   }).toList();
 }
 
-
 // Filter Recipes by query (Mostly names and ingredients for now)
 List<Recipe> filterRecipesByQuery(List<Recipe> recipes, String query) {
   if (query.isEmpty) return recipes;
@@ -22,8 +23,12 @@ List<Recipe> filterRecipesByQuery(List<Recipe> recipes, String query) {
   return recipes.where((recipe) {
     return recipe.name.toLowerCase().contains(lowerQuery) ||
         recipe.description.toLowerCase().contains(lowerQuery) ||
-        recipe.ingredients.any((ingredient) => ingredient.name.toLowerCase().contains(lowerQuery)) ||
-        recipe.steps.any((step) => step.toLowerCase().contains(lowerQuery));
+        recipe.ingredients.any(
+          (ingredient) => ingredient.name.toLowerCase().contains(lowerQuery),
+        ) ||
+        recipe.steps.any(
+          (step) => step.instruction.toLowerCase().contains(lowerQuery),
+        );
   }).toList();
 }
 
@@ -35,6 +40,3 @@ List<Recipe> filterByTag(List<Recipe> recipes, List<String> tags) {
     return recipe.tags.any((t) => lowerTags.contains(t.toLowerCase()));
   }).toList();
 }
-
-
-
