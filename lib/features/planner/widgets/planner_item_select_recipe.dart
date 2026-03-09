@@ -1,0 +1,241 @@
+import 'package:flutter/material.dart';
+import 'package:nutricook/core/theme/app_theme.dart';
+import 'package:nutricook/features/planner/widgets/planner_item_recipe_filter.dart';
+
+class PlannerRecipeSelectModal extends StatefulWidget {
+  const PlannerRecipeSelectModal({super.key});
+
+  @override
+  State<PlannerRecipeSelectModal> createState() => _PlannerRecipeSelectModalState();
+}
+
+class _PlannerRecipeSelectModalState extends State<PlannerRecipeSelectModal> {
+  bool isListView = true;
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return _KeyboardInsetPadding(
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.90,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            // Drag Handle
+            Container(
+              width: 40, 
+              height: 5, 
+              decoration: BoxDecoration(
+                color: Colors.black12, 
+                borderRadius: BorderRadius.circular(10)
+              ),
+            ),
+            
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.chevron_left, color: AppColors.rosePink, size: 32),
+                  ),
+                  const Expanded(
+                    child: Center(
+                      child: Text(
+                        'Select Recipe', 
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 48), 
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 48,
+                      child: TextField(
+                        controller: _searchController,
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                        decoration: InputDecoration(
+                          hintText: 'Search recipe...',
+                          hintStyle: const TextStyle(color: Colors.black26),
+                          prefixIcon: const Icon(Icons.search, color: AppColors.rosePink),
+                          filled: true,
+                          fillColor: AppColors.cardRose.withValues(alpha: 0.5),
+                          contentPadding: EdgeInsets.zero,
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(30),
+                            borderSide: BorderSide(
+                              color: AppColors.rosePink.withValues(alpha: 0.1),
+                              width: 1.5,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(30),
+                            borderSide: const BorderSide(
+                              color: AppColors.rosePink,
+                              width: 1.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  _buildFilterButton(),
+                ],
+              ),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.only(right: 20, bottom: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  IconButton(
+                    onPressed: () => setState(() => isListView = true),
+                    icon: Icon(
+                      Icons.menu_rounded, 
+                      color: isListView ? AppColors.rosePink : Colors.black26
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => setState(() => isListView = false),
+                    icon: Icon(
+                      Icons.grid_view_rounded, 
+                      color: !isListView ? AppColors.rosePink : Colors.black26
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            Flexible(
+              child: isListView ? _buildListView() : _buildTileView(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterButton() {
+    return GestureDetector(
+      onTap: () {
+        showGeneralDialog(
+          context: context,
+          barrierDismissible: true,
+          barrierLabel: 'Filter',
+          transitionDuration: const Duration(milliseconds: 250),
+          pageBuilder: (context, anim1, anim2) => const PlannerRecipeFilterModal(),
+          transitionBuilder: (context, anim1, anim2, child) {
+            return SlideTransition(
+              position: Tween(begin: const Offset(1, 0), end: const Offset(0, 0)).animate(anim1),
+              child: child,
+            );
+          },
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.rosePink.withValues(alpha: 0.2), width: 1.5),
+        ),
+        child: const Text(
+          'Filter', 
+          style: TextStyle(color: AppColors.rosePink, fontWeight: FontWeight.bold)
+        ),
+      ),
+    );
+  }
+
+  Widget _buildListView() {
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      physics: const BouncingScrollPhysics(),
+      itemCount: 10,
+      itemBuilder: (context, index) => _buildRecipeCard(isList: true),
+    );
+  }
+
+  Widget _buildTileView() {
+    return GridView.builder(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      physics: const BouncingScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: 0.8,
+      ),
+      itemCount: 10,
+      itemBuilder: (context, index) => _buildRecipeCard(isList: false),
+    );
+  }
+
+  Widget _buildRecipeCard({required bool isList}) {
+    return GestureDetector(
+      onTap: () => Navigator.pop(context, {'name': 'Creamy Pasta'}),
+      child: Container(
+        margin: isList ? const EdgeInsets.only(bottom: 16) : EdgeInsets.zero,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppColors.rosePink.withValues(alpha: 0.14), width: 1.5),
+        ),
+        child: Column(
+          children: [
+            Expanded(
+              flex: 2,
+              child: Container(
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  color: AppColors.cardRose,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+                ),
+                child: const Icon(Icons.restaurant, color: AppColors.rosePink, size: 30),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                children: const [
+                  Text('Creamy Pasta', style: TextStyle(fontWeight: FontWeight.w900)),
+                  Text('350 Cal • 15 min', style: TextStyle(fontSize: 11, color: Colors.black45)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _KeyboardInsetPadding extends StatelessWidget {
+  final Widget child;
+  const _KeyboardInsetPadding({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 120),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: child,
+    );
+  }
+}
