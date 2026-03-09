@@ -16,7 +16,7 @@ class AppTheme {
     colors: [AppColors.blushPink, AppColors.cream, AppColors.blushPink],
     stops: [0.0, 0.5, 1.0],
   );
-
+  
   static ThemeData get lightTheme {
     const colorScheme = ColorScheme.light(
       primary: AppColors.rosePink,
