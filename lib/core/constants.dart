@@ -9,6 +9,8 @@ class FirestoreConstants {
   static const collections = 'collections';
   static const media = 'media';
   static const recipeReports = 'recipeReports';
+  static const categories = 'categories';
+  static const tags = 'tags';
 
   // Subcollections
   static const plannerItems = 'plannerItems';
@@ -63,6 +65,7 @@ class RecipeTags {
     'high-carb',
     'low-sugar',
   ];
+  static const custom = [];
 }
 
 class MealType {
