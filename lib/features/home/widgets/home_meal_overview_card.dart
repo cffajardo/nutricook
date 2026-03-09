@@ -22,17 +22,26 @@ class HomeMealOverviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Formatting to match the bold, modern header style
     final dateLabel = DateFormat('EEEE, MMM d').format(date);
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24), // Unified corner radius
         border: Border.all(
-          color: Colors.black.withValues(alpha: 0.18),
-          width: 1.2,
+          // Unified border style matching carousels and categories
+          color: AppColors.rosePink.withValues(alpha: 0.14),
+          width: 1.5,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -44,45 +53,51 @@ class HomeMealOverviewCard extends StatelessWidget {
                 Text(
                   dateLabel,
                   style: const TextStyle(
-                    fontSize: 34,
-                    fontWeight: FontWeight.w800,
+                    fontSize: 32, // Large and impactful
+                    fontWeight: FontWeight.w900,
                     height: 0.9,
+                    color: AppColors.rosePink, // Unified primary color
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
                 Text(
                   mealType,
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
+                    color: Colors.black87,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
+                
+                // Inner Recipe Container
                 Container(
                   width: double.infinity,
                   constraints: const BoxConstraints(minHeight: 110),
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: AppColors.cardRose,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: Colors.black.withValues(alpha: 0.16),
+                      color: AppColors.rosePink.withValues(alpha: 0.1),
+                      width: 1.2,
                     ),
                   ),
                   child: items.isEmpty
                       ? const Center(
                           child: Text(
-                            'No recipes for this timeframe yet',
+                            'No recipes planned yet',
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontWeight: FontWeight.w600),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black45,
+                            ),
                           ),
                         )
-                      : ListView.separated(
-                          shrinkWrap: true,
-                          physics: const BouncingScrollPhysics(),
-                          itemBuilder: (context, index) {
-                            final item = items[index];
-                            return Row(
+                      : Column( // Using Column for better shrink-wrap behavior
+                          children: items.map((item) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Row(
                               children: [
                                 const Icon(
                                   Icons.circle,
@@ -96,33 +111,32 @@ class HomeMealOverviewCard extends StatelessWidget {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
-                                      fontWeight: FontWeight.w700,
+                                      fontWeight: FontWeight.bold,
                                       fontSize: 15,
                                     ),
                                   ),
                                 ),
                               ],
-                            );
-                          },
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(height: 8),
-                          itemCount: items.length,
+                            ),
+                          )).toList(),
                         ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
+          
+          // Totals Side Container
           SizedBox(
-            width: 120,
+            width: 130,
             child: Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: AppColors.cardRose,
                 borderRadius: BorderRadius.circular(22),
                 border: Border.all(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  width: 1.4,
+                  color: AppColors.rosePink.withValues(alpha: 0.2),
+                  width: 1.5,
                 ),
               ),
               child: Column(
@@ -134,32 +148,36 @@ class HomeMealOverviewCard extends StatelessWidget {
                       fontSize: 22,
                       fontWeight: FontWeight.w900,
                       height: 1,
+                      color: AppColors.rosePink,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   if (isTotalsLoading)
                     const Center(
                       child: Padding(
-                        padding: EdgeInsets.all(8),
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        padding: EdgeInsets.all(16),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.rosePink,
+                        ),
                       ),
                     )
                   else ...[
                     _MetricRow(
-                      label: 'Calories',
+                      label: 'Cals',
                       value: totals?.calories.toString() ?? '-',
                     ),
                     _MetricRow(
-                      label: 'Protein',
-                      value: (totals?.protein.round()).toString(),
+                      label: 'Prot',
+                      value: '${totals?.protein.round() ?? 0}g',
                     ),
                     _MetricRow(
                       label: 'Fats',
-                      value: (totals?.fat.round()).toString(),
+                      value: '${totals?.fat.round() ?? 0}g',
                     ),
                     _MetricRow(
                       label: 'Carbs',
-                      value: (totals?.carbohydrates.round()).toString(),
+                      value: '${totals?.carbohydrates.round() ?? 0}g',
                     ),
                   ],
                 ],
@@ -181,7 +199,7 @@ class _MetricRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 5),
+      padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -189,16 +207,16 @@ class _MetricRow extends StatelessWidget {
             label,
             style: const TextStyle(
               fontWeight: FontWeight.w700,
-              fontSize: 17,
-              height: 0.9,
+              fontSize: 14,
+              color: Colors.black54,
             ),
           ),
           Text(
             value,
             style: const TextStyle(
               fontWeight: FontWeight.w900,
-              fontSize: 17,
-              height: 0.9,
+              fontSize: 14,
+              color: Colors.black87,
             ),
           ),
         ],
