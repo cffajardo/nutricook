@@ -16,6 +16,21 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
   bool _isChecking = false;
   String? _message;
 
+  void _showRootSnackBar(String message) {
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(
+      Navigator.of(context, rootNavigator: true).context,
+    );
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+  }
+
   Future<void> _resendVerification() async {
     setState(() {
       _isSending = true;
@@ -30,9 +45,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
         _isSending = false;
         _message = 'Verification email sent! Check your inbox.';
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Verification email sent')));
+      _showRootSnackBar('Verification email sent');
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -56,9 +69,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
       setState(() => _isChecking = false);
       if (user?.emailVerified == true) {
         ref.invalidate(currentUserWithVerificationProvider);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Email verified!')));
+        _showRootSnackBar('Email verified!');
         context.go('/');
       } else {
         setState(

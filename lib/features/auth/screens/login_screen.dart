@@ -20,6 +20,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _isPasswordVisible = false;
   String? _errorMessage;
 
+  void _showRootSnackBar(String message) {
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(
+      Navigator.of(context, rootNavigator: true).context,
+    );
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+  }
+
   @override
   void dispose() {
     _identifierController.dispose();
@@ -43,9 +58,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       if (!mounted) return;
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Signed in successfully')),
-      );
+      _showRootSnackBar('Signed in successfully');
       context.go('/');
     } catch (e) {
       if (!mounted) return;
@@ -106,9 +119,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               onPressed: () async {
                 final email = emailController.text.trim();
                 if (!isValidEmail(email)) {
-                  ScaffoldMessenger.of(this.context).showSnackBar(
-                    const SnackBar(content: Text('Please enter a valid email.')),
-                  );
+                  _showRootSnackBar('Please enter a valid email.');
                   return;
                 }
 
@@ -136,9 +147,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (!mounted) return;
 
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password reset email sent.')),
-      );
+      _showRootSnackBar('Password reset email sent.');
     } catch (e) {
       if (!mounted) return;
       setState(() {
