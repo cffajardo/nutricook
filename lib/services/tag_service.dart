@@ -80,4 +80,42 @@ class TagService {
           .toList(),
     );
   }
+
+  Future<void> createCustomTag(String rawName, {String? categoryId}) async {
+    final name = rawName.trim().toLowerCase();
+    if (name.isEmpty) {
+      throw ArgumentError('Tag name cannot be empty.');
+    }
+
+    final existing = await _tags
+        .where('name', isEqualTo: name)
+        .limit(1)
+        .get();
+    if (existing.docs.isNotEmpty) {
+      await existing.docs.first.reference.update({
+        'isActive': true,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      return;
+    }
+
+    final id = _toTagId(name);
+    await _tags.doc(id).set({
+      'id': id,
+      'name': name,
+      'categoryId': categoryId,
+      'isActive': true,
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  String _toTagId(String value) {
+    final normalized = value
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'\s+'), '-')
+        .replaceAll(RegExp(r'[^a-z0-9\-_]'), '');
+    return normalized.isEmpty ? 'custom-tag' : normalized;
+  }
 }
