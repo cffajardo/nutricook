@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
+import 'package:nutricook/features/profile/provider/user_provider.dart';
 import 'package:nutricook/features/planner/widgets/planner_item_recipe_filter.dart';
+import 'package:nutricook/features/recipe/providers/recipe_provider.dart';
 import 'package:nutricook/features/recipe/widgets/recipe_card.dart';
+import 'package:nutricook/models/recipe/recipe.dart';
 
-// Changed to ConsumerStatefulWidget to handle the search controller lifecycle
+
 class RecipeCategoryListScreen extends ConsumerStatefulWidget {
   final String category;
   final String subCategoryName;
@@ -27,42 +30,32 @@ class _RecipeCategoryListScreenState extends ConsumerState<RecipeCategoryListScr
   void initState() {
     super.initState();
     _searchController = TextEditingController();
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  void _onSearchChanged() {
+    setState(() {});
   }
 
   @override
   void dispose() {
+    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xFFFFF9FA), // Branded pink tint
-      child: SafeArea(
+    return Scaffold( 
+      backgroundColor: const Color(0xFFFFF9FA), 
+      body: SafeArea(
         child: Column(
           children: [
             _buildHeader(),
-            _buildSearchAndFilter(), // Added search bar & filter button
+            _buildSearchAndFilter(), 
             const Divider(height: 1),
             Expanded(
-              child: GridView.builder(
-                padding: const EdgeInsets.all(20),
-                physics: const BouncingScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 0.75, 
-                ),
-                itemCount: 8, 
-                itemBuilder: (context, index) {
-                  return RecipeCard(
-                    recipeName: '${widget.subCategoryName} Dish $index',
-                    hasAllergen: index % 4 == 0,
-                  );
-                },
-              ),
+              child: _buildRecipeGrid(ref),
             ),
           ],
         ),
@@ -162,5 +155,91 @@ class _RecipeCategoryListScreenState extends ConsumerState<RecipeCategoryListScr
         icon: const Icon(Icons.tune, color: AppColors.rosePink, size: 22),
       ),
     );
+  }
+
+  Widget _buildRecipeGrid(WidgetRef ref) {
+    final allergenSet = ref
+        .watch(userAllergenProvider)
+        .asData
+        ?.value
+        .map((allergen) => allergen.toLowerCase())
+        .toSet() ?? <String>{};
+
+    if (widget.category == 'My Recipes') {
+      final userRecipesAsync = ref.watch(userRecipesProvider);
+      return userRecipesAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(child: Text('Failed to load recipes: $error')),
+        data: (recipes) {
+          final filtered = recipes
+              .where((recipe) => _matchesQuery(recipe, _searchController.text))
+              .toList();
+          return _buildGrid(filtered, allergenSet);
+        },
+      );
+    }
+
+    final tag = _normalizeTag(widget.subCategoryName);
+    final recipesAsync = ref.watch(
+      filteredRecipesProvider(
+        RecipeFilterInput(
+          query: _searchController.text,
+          tags: <String>[tag],
+        ),
+      ),
+    );
+
+    return recipesAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => Center(child: Text('Failed to load recipes: $error')),
+      data: (recipes) => _buildGrid(recipes, allergenSet),
+    );
+  }
+
+  Widget _buildGrid(List<Recipe> recipes, Set<String> allergenSet) {
+    if (recipes.isEmpty) {
+      return const Center(child: Text('No recipes found in this category.'));
+    }
+
+    return GridView.builder(
+      padding: const EdgeInsets.all(20),
+      physics: const BouncingScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: 0.75,
+      ),
+      itemCount: recipes.length,
+      itemBuilder: (context, index) {
+        final recipe = recipes[index];
+        return RecipeCard(
+          recipe: recipe,
+          hasAllergen: _hasAllergen(recipe, allergenSet),
+        );
+      },
+    );
+  }
+
+  bool _hasAllergen(Recipe recipe, Set<String> allergenSet) {
+    return recipe.ingredients.any(
+      (ingredient) =>
+          allergenSet.contains(ingredient.ingredientID.toLowerCase()) ||
+          allergenSet.contains(ingredient.name.toLowerCase()),
+    );
+  }
+
+  bool _matchesQuery(Recipe recipe, String query) {
+    if (query.trim().isEmpty) return true;
+    final lower = query.toLowerCase();
+    return recipe.name.toLowerCase().contains(lower) ||
+        recipe.description.toLowerCase().contains(lower) ||
+        recipe.ingredients.any(
+          (ingredient) => ingredient.name.toLowerCase().contains(lower),
+        );
+  }
+
+  String _normalizeTag(String value) {
+    return value.trim().toLowerCase().replaceAll(' ', '-');
   }
 }
