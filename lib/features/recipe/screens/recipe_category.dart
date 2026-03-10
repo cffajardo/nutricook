@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nutricook/core/constants.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
+import 'package:nutricook/routing/app_routes.dart';
 
 class RecipeSubCategoryScreen extends ConsumerWidget {
-  final String category; // Passed from GoRouter
+  final String category; 
   const RecipeSubCategoryScreen({super.key, required this.category});
 
   @override
@@ -41,7 +43,7 @@ class RecipeSubCategoryScreen extends ConsumerWidget {
               child: Padding(
                 padding: const EdgeInsets.only(right: 48),
                 child: Text(
-                  category, // Dynamically shows "Cuisine", "Nutrition", etc.
+                  category, 
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -53,7 +55,7 @@ class RecipeSubCategoryScreen extends ConsumerWidget {
   }
 
   Widget _buildDynamicGrid(WidgetRef ref) {
-    final List<Map<String, String>> items = _getMockDataForCategory(category);
+    final List<String> tags = _subCategoriesFor(category);
 
     return GridView.builder(
       padding: const EdgeInsets.all(20),
@@ -64,9 +66,14 @@ class RecipeSubCategoryScreen extends ConsumerWidget {
         mainAxisSpacing: 16,
         childAspectRatio: 1.1,
       ),
-      itemCount: items.length,
+      itemCount: tags.length,
       itemBuilder: (context, index) {
-        return _buildCategoryCard(context, items[index]['name']!, items[index]['icon']!);
+        final tag = tags[index];
+        return _buildCategoryCard(
+          context,
+          _displayName(tag),
+          _iconFor(tag),
+        );
       },
     );
   }
@@ -75,7 +82,7 @@ class RecipeSubCategoryScreen extends ConsumerWidget {
     return GestureDetector(
       onTap: () {
       context.pushNamed(
-        'recipeList', 
+        AppRoutes.recipeListName,
         pathParameters: {
           'category': category,     
           'subCategoryName': name,   
@@ -104,10 +111,73 @@ class RecipeSubCategoryScreen extends ConsumerWidget {
     );
   }
 
-  List<Map<String, String>> _getMockDataForCategory(String cat) {
-    if (cat == 'Cuisine') return [{'name': 'Italian', 'icon': '🍝'}, {'name': 'Mexican', 'icon': '🌮'}];
-    if (cat == 'Nutrition') return [{'name': 'Low Cal', 'icon': '🥗'}, {'name': 'High Pro', 'icon': '🍗'}];
-    // Add logic for Dietary and Difficulty
-    return [];
+  List<String> _subCategoriesFor(String cat) {
+    if (cat == 'Cuisine') return RecipeTags.cuisine;
+    if (cat == 'Nutrition') return RecipeTags.nutrition;
+    if (cat == 'Dietary') return RecipeTags.dietary;
+    if (cat == 'Difficulty') return RecipeTags.difficulty;
+    return <String>[];
+  }
+
+  String _displayName(String tag) {
+    return tag
+        .split('-')
+        .map(
+          (part) => part.isEmpty
+              ? part
+              : '${part[0].toUpperCase()}${part.substring(1)}',
+        )
+        .join(' ');
+  }
+
+  String _iconFor(String tag) {
+    switch (tag) {
+      case 'italian':
+        return '🍝';
+      case 'mexican':
+        return '🌮';
+      case 'japanese':
+        return '🍣';
+      case 'chinese':
+        return '🥢';
+      case 'american':
+        return '🍔';
+      case 'vegetarian':
+        return '🥕';
+      case 'vegan':
+        return '🌱';
+      case 'gluten-free':
+        return '🌾';
+      case 'dairy-free':
+        return '🥛';
+      case 'low-carb':
+        return '🥬';
+      case 'high-protein':
+        return '💪';
+      case 'low-fat':
+        return '🥣';
+      case 'keto':
+        return '🥓';
+      case 'paleo':
+        return '🥩';
+      case 'whole30':
+        return '🍽️';
+      case 'low-calorie':
+        return '🍏';
+      case 'high-fiber':
+        return '🌾';
+      case 'high-carb':
+        return '🍞';
+      case 'low-sugar':
+        return '🫐';
+      case 'easy':
+        return '🙂';
+      case 'medium':
+        return '😎';
+      case 'hard':
+        return '🔥';
+      default:
+        return '🍽️';
+    }
   }
 }
