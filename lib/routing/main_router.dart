@@ -6,14 +6,18 @@ import 'package:nutricook/features/auth/screens/login_screen.dart';
 import 'package:nutricook/features/auth/screens/register_screen.dart';
 import 'package:nutricook/features/auth/screens/verify_email_screen.dart';
 import 'package:nutricook/features/recipe/screens/recipe_main.dart';
-import 'package:nutricook/features/recipe/screens/recipe_category.dart'; 
+import 'package:nutricook/features/recipe/screens/recipe_subcategory_list.dart';
 import 'package:nutricook/features/recipe/screens/recipe_create.dart';
+import 'package:nutricook/features/recipe/screens/recipe_category.dart';
+import 'package:nutricook/features/recipe/screens/recipe_main_details.dart';
 import 'package:nutricook/features/planner/screens/planner_main.dart';
+import 'package:nutricook/features/profile/screens/profile_page.dart';
+import 'package:nutricook/features/home/screens/home_user_search_results_screen.dart';
+import 'package:nutricook/models/recipe/recipe.dart';
 import 'package:nutricook/screens/home_screen.dart';
 import 'package:nutricook/screens/splash_screen.dart';
 import 'package:nutricook/routing/app_routes.dart';
 import 'package:nutricook/features/home/widgets/custom_bottom_nav_bar.dart';
-import 'package:nutricook/features/recipe/screens/recipe_subcategory_list.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final userAsync = ref.watch(authStateProvider);
@@ -22,7 +26,8 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: AppRoutes.splashPath,
     redirect: (context, state) {
       final path = state.uri.path;
-      final isAuthRoute = path == AppRoutes.loginPath || path == AppRoutes.registerPath;
+      final isAuthRoute =
+          path == AppRoutes.loginPath || path == AppRoutes.registerPath;
       final isVerifyEmailRoute = path == AppRoutes.verifyEmailPath;
       final isSplashRoute = path == AppRoutes.splashPath;
 
@@ -33,9 +38,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         error: (_, _) => AppRoutes.loginPath,
         data: (user) {
           if (user == null) return isAuthRoute ? null : AppRoutes.loginPath;
-          
-          final needsVerif = user.email != null && user.email!.isNotEmpty && !user.emailVerified;
-          if (needsVerif) return isVerifyEmailRoute ? null : AppRoutes.verifyEmailPath;
+
+          final needsVerif =
+              user.email != null &&
+              user.email!.isNotEmpty &&
+              !user.emailVerified;
+          if (needsVerif) {
+            return isVerifyEmailRoute ? null : AppRoutes.verifyEmailPath;
+          }
 
           if (isAuthRoute || isVerifyEmailRoute) return AppRoutes.homePath;
           return null;
@@ -66,12 +76,17 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
-          final hideBottomNav = state.uri.path == AppRoutes.recipeCreatePath;
+          // Updated to hide nav on both Create and Details screens
+          final hideBottomNav =
+              state.uri.path == AppRoutes.recipeCreatePath ||
+              state.uri.path == AppRoutes.recipeDetailsPath;
 
           return Scaffold(
-            extendBody: true, 
+            extendBody: true,
             body: navigationShell,
-            bottomNavigationBar: hideBottomNav ? null : const CustomBottomNavBar(),
+            bottomNavigationBar: hideBottomNav
+                ? null
+                : const CustomBottomNavBar(),
           );
         },
         branches: [
@@ -88,40 +103,51 @@ final routerProvider = Provider<GoRouter>((ref) {
                     builder: (context, state) => const CreateRecipeScreen(),
                   ),
                   GoRoute(
-                    path: ':category', 
+                    path: 'view',
+                    name: AppRoutes.recipeDetailsName,
+                    builder: (context, state) {
+                      final recipe = state.extra as Recipe;
+                      return RecipeDetailsScreen(recipe: recipe);
+                    },
+                  ),
+                  GoRoute(
+                    path: ':category',
                     name: 'subCategory',
                     builder: (context, state) {
-                      final category = state.pathParameters['category'] ?? 'Cuisine';
+                      final category =
+                          state.pathParameters['category'] ?? 'Cuisine';
                       return RecipeSubCategoryScreen(category: category);
                     },
                     routes: [
-                          GoRoute(
-                            path: ':subCategoryName', 
-                            name: 'recipeList',
-                            builder: (context, state) {
-                              final category = state.pathParameters['category'] ?? '';
-                              final subName = state.pathParameters['subCategoryName'] ?? '';
-                              return RecipeCategoryListScreen(
-                                category: category, 
-                                subCategoryName: subName,
-                              );
-                            },
-                          ),
+                      GoRoute(
+                        path: ':subCategoryName',
+                        name: 'recipeList',
+                        builder: (context, state) {
+                          final category =
+                              state.pathParameters['category'] ?? '';
+                          final subName =
+                              state.pathParameters['subCategoryName'] ?? '';
+                          return RecipeCategoryListScreen(
+                            category: category,
+                            subCategoryName: subName,
+                          );
+                        },
+                      ),
                     ],
                   ),
                   GoRoute(
-                        path: 'user/custom',
-                        name: 'userCustomRecipes',
-                        builder: (context, state) => const RecipeCategoryListScreen(
-                          category: 'My Recipes', 
-                          subCategoryName: 'Custom',
-                        ),
+                    path: 'user/custom',
+                    name: 'userCustomRecipes',
+                    builder: (context, state) => const RecipeCategoryListScreen(
+                      category: 'My Recipes',
+                      subCategoryName: 'Custom',
+                    ),
                   ),
                 ],
               ),
             ],
           ),
-          
+
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -131,13 +157,42 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          
+
           StatefulShellBranch(
             routes: [
               GoRoute(
                 path: AppRoutes.homePath,
                 name: AppRoutes.homeName,
                 builder: (context, state) => const HomeScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'search-users',
+                    name: AppRoutes.homeUserSearchName,
+                    builder: (context, state) {
+                      final query = state.uri.queryParameters['q'] ?? '';
+                      return HomeUserSearchResultsScreen(query: query);
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.profilePath,
+                name: AppRoutes.profileName,
+                builder: (context, state) => const ProfilePage(),
+                routes: [
+                  GoRoute(
+                    path: ':userId',
+                    name: AppRoutes.profileUserName,
+                    builder: (context, state) {
+                      final userId = state.pathParameters['userId'];
+                      return ProfilePage(userId: userId);
+                    },
+                  ),
+                ],
               ),
             ],
           ),
