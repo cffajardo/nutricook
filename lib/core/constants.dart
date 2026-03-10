@@ -11,6 +11,7 @@ class FirestoreConstants {
   static const recipeReports = 'recipeReports';
   static const categories = 'categories';
   static const tags = 'tags';
+  static const notifications = 'notifications';
 
   // Subcollections
   static const plannerItems = 'plannerItems';
