@@ -55,9 +55,7 @@ class CollectionService {
       throw Exception('Unauthorized');
     }
 
-    final updates = <String, dynamic>{
-      'updatedAt': DateTime.now(),
-    };
+    final updates = <String, dynamic>{'updatedAt': DateTime.now()};
     if (name != null) updates['name'] = name;
     if (description != null) updates['description'] = description;
     if (thumbnailUrl != null) updates['thumbnailUrl'] = thumbnailUrl;
@@ -104,9 +102,24 @@ class CollectionService {
         .where('ownerId', isEqualTo: user.uid)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => Collection.fromJson(doc.data()))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => Collection.fromJson(doc.data()))
+              .toList(),
+        );
+  }
+
+  Stream<List<Collection>> getCollectionsByOwnerId(String ownerId) {
+    return _db
+        .collection('collections')
+        .where('ownerId', isEqualTo: ownerId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => Collection.fromJson(doc.data()))
+              .toList(),
+        );
   }
 
   Stream<Collection> getCollectionById(String collectionId) {
@@ -115,20 +128,18 @@ class CollectionService {
       throw Exception('User not authenticated');
     }
 
-    return _db
-        .collection('collections')
-        .doc(collectionId)
-        .snapshots()
-        .map((snapshot) {
-          if (!snapshot.exists) {
-            throw Exception('Collection not found');
-          }
-          final data = snapshot.data()!;
-          if (data['ownerId'] != user.uid) {
-            throw Exception('Unauthorized');
-          }
-          return Collection.fromJson(data);
-        });
+    return _db.collection('collections').doc(collectionId).snapshots().map((
+      snapshot,
+    ) {
+      if (!snapshot.exists) {
+        throw Exception('Collection not found');
+      }
+      final data = snapshot.data()!;
+      if (data['ownerId'] != user.uid) {
+        throw Exception('Unauthorized');
+      }
+      return Collection.fromJson(data);
+    });
   }
 
   Stream<List<CollectionItem>> getCollectionItems(String collectionId) {
@@ -143,8 +154,10 @@ class CollectionService {
         .collection('items')
         .orderBy('order', descending: false)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => CollectionItem.fromJson(doc.data()))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => CollectionItem.fromJson(doc.data()))
+              .toList(),
+        );
   }
 }
