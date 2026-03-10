@@ -15,6 +15,12 @@ final userDataProvider = StreamProvider((ref) {
   return userService.getUserDataStream(userId);
 });
 
+final userDataByIdProvider =
+    StreamProvider.family<Map<String, dynamic>?, String>((ref, userId) {
+      final userService = ref.watch(userServiceProvider);
+      return userService.getUserDataStream(userId);
+    });
+
 // Stream Provider for current user's allergens
 final userAllergenProvider = StreamProvider<List<String>>((ref) {
   final uid = ref.watch(currentUserIdProvider);
