@@ -1,11 +1,16 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
 import 'package:nutricook/features/home/widgets/home_category_row.dart';
-import 'package:nutricook/features/home/widgets/home_meal_view.dart';
+import 'package:nutricook/features/home/widgets/home_meal_overview_card.dart';
+import 'package:nutricook/features/home/widgets/home_trending_carousel.dart';
 import 'package:nutricook/features/home/widgets/following_social_panel.dart';
 import 'package:nutricook/features/home/widgets/home_search_bar.dart';
+import 'package:nutricook/features/planner/provider/planner_provider.dart';
+import 'package:nutricook/features/recipe/providers/recipe_provider.dart';
+import 'package:nutricook/routing/app_routes.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -59,8 +64,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return 'Snack';
   }
 
+  void _submitHomeSearch(String rawQuery) {
+    final query = rawQuery.trim();
+    if (query.isEmpty) return;
+
+    context.pushNamed(
+      AppRoutes.homeUserSearchName,
+      queryParameters: {'q': query},
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final trendingAsync = ref.watch(visibleTrendingRecipesProvider);
+    final mealItems = ref.watch(
+      plannerItemsByMealTypeProvider((
+        date: _selectedDate,
+        mealType: _autoMealType,
+      )),
+    );
+    final dailyTotalsAsync = ref.watch(
+      dailyNutritionTotalProvider(_selectedDate),
+    );
+
     return Scaffold(
       extendBody: true,
       backgroundColor: const Color(0xFFFFF9FA),
@@ -77,53 +103,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const SizedBox(height: 14),
                   HomeSearchBar(
                     controller: _searchController,
-                    onProfileTap: () {},
+                    onSubmitted: _submitHomeSearch,
+                    onProfileTap: () => context.goNamed(AppRoutes.profileName),
                   ),
                   const SizedBox(height: 20),
                   _buildTabs(),
                   const SizedBox(height: 16),
 
-                  Stack(
-                    alignment: Alignment.bottomCenter,
-                    children: [
-                      Container(
-                        height: 220,
-                        decoration: BoxDecoration(
-                          color: AppColors.cardRose,
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(
-                            color: AppColors.rosePink.withValues(alpha: 0.14),
-                            width: 1.5,
+                  _showFollowing
+                      ? Container(
+                          height: 220,
+                          decoration: BoxDecoration(
+                            color: AppColors.cardRose,
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                              color: AppColors.rosePink.withValues(alpha: 0.14),
+                              width: 1.5,
+                            ),
                           ),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(24),
-                          child: PageView.builder(
-                            controller: _pageController,
-                            onPageChanged: (int page) =>
-                                setState(() => _currentPage = page),
-                            itemCount: 3, // Shows 3 sliding pages
-                            itemBuilder: (context, index) {
-                              return _showFollowing
-                                  ? const _FollowingContent()
-                                  : _TrendingContent(index: index);
-                            },
+                          child: const ClipRRect(
+                            borderRadius: BorderRadius.all(Radius.circular(24)),
+                            child: _FollowingContent(),
                           ),
+                        )
+                      : HomeTrendingCarousel(
+                          recipesAsync: trendingAsync,
+                          pageController: _pageController,
+                          currentIndex: _currentPage,
+                          onPageChanged: (index) {
+                            if (!mounted) return;
+                            setState(() => _currentPage = index);
+                          },
                         ),
-                      ),
-
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: List.generate(
-                            3,
-                            (index) => _buildDot(index),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
 
                   const SizedBox(height: 24),
 
@@ -140,37 +151,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   HomeCategoryRow(
                     categories: _categories,
                     selectedCategory: _selectedCategory,
-                    onCategorySelected: (val) =>
-                        setState(() => _selectedCategory = val),
+                    onCategorySelected: (val) {
+                      setState(() => _selectedCategory = val);
+                      context.goNamed(
+                        AppRoutes.subCategoryName,
+                        pathParameters: {'category': val},
+                      );
+                    },
                   ),
                   const SizedBox(height: 24),
                   HomeMealOverviewCard(
                     date: _selectedDate,
                     mealType: _autoMealType,
-                    items: const [1],
-                    totals: '350 Calories • 12g Protein • 8g Fats • 45g Carbs',
-                    isTotalsLoading: false,
+                    items: mealItems,
+                    totals: dailyTotalsAsync.asData?.value,
+                    isTotalsLoading: dailyTotalsAsync.isLoading,
                   ),
                 ],
               ),
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildDot(int index) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      height: 8,
-      width: _currentPage == index ? 20 : 8,
-      decoration: BoxDecoration(
-        color: _currentPage == index
-            ? AppColors.rosePink
-            : AppColors.rosePink.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(10),
       ),
     );
   }
@@ -191,6 +192,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               onTap: () {
                 setState(() => _showFollowing = false);
                 _pageController.jumpToPage(0);
+                _currentPage = 0;
               },
               child: AnimatedDefaultTextStyle(
                 duration: const Duration(milliseconds: 400),
@@ -215,6 +217,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               onTap: () {
                 setState(() => _showFollowing = true);
                 _pageController.jumpToPage(0);
+                _currentPage = 0;
               },
               child: AnimatedDefaultTextStyle(
                 duration: const Duration(milliseconds: 400),
@@ -230,49 +233,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TrendingContent extends StatelessWidget {
-  final int index;
-  const _TrendingContent({required this.index});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          Text(
-            index == 0 ? 'Creamy Pasta' : 'Spicy Tacos',
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w900,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.rosePink,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Text(
-              'Lunch',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
         ],
       ),
     );
