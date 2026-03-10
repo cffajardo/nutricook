@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:nutricook/core/constants.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
 import 'package:nutricook/models/ingredient/ingredient.dart';
+import 'package:nutricook/models/nutrition_info/nutrition_info.dart';
 import 'package:nutricook/models/unit/unit.dart';
 import 'package:nutricook/features/utils/nutrition_calculator.dart';
 
@@ -10,16 +11,19 @@ class RecipeService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  Stream<List<Recipe>> getPublicRecipes({int limit = 20}) {
-    return _db
+  Stream<List<Recipe>> getPublicRecipes({int? limit}) {
+    var query = _db
         .collection(FirestoreConstants.recipes)
         .where('isPublic', isEqualTo: true)
-        .orderBy('createdAt', descending: true)
-        .limit(limit)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => Recipe.fromJson(doc.data()))
-            .toList());
+        .orderBy('createdAt', descending: true);
+
+    if (limit != null) {
+      query = query.limit(limit);
+    }
+
+    return query.snapshots().map(
+      (snapshot) => snapshot.docs.map((doc) => Recipe.fromJson(doc.data())).toList(),
+    );
   }
 
   Stream<Recipe?> getRecipeById(String recipeId) {
@@ -36,7 +40,7 @@ class RecipeService {
   Stream<List<Recipe>> getUserRecipes(String userId) {
     return _db
         .collection(FirestoreConstants.recipes)
-        .where('ownerID', isEqualTo: userId)
+        .where('ownerId', isEqualTo: userId)
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
@@ -121,7 +125,9 @@ class RecipeService {
       updatedAt: DateTime.now(),
     );
 
-    await recipeRef.set(recipeWithId.toJson());
+    final data = _sanitizeForFirestore(_recipeToFirestoreData(recipeWithId))
+        as Map<String, dynamic>;
+    await recipeRef.set(data);
     return recipeRef.id;
   }
 
@@ -167,10 +173,12 @@ class RecipeService {
       updatedAt: DateTime.now(),
     );
 
+    final data = _sanitizeForFirestore(_recipeToFirestoreData(updatedRecipe))
+        as Map<String, dynamic>;
     await _db
         .collection(FirestoreConstants.recipes)
         .doc(recipe.id)
-        .update(updatedRecipe.toJson());
+        .update(data);
   }
 
   Future<void> deleteRecipe(String recipeId) async {
@@ -210,5 +218,79 @@ class RecipeService {
     final userAllergens = List<String>.from(userDoc.data()?['allergens'] ?? []);
 
     yield* getFilteredRecipesWithUserAllergens(userAllergens);
+  }
+
+  Map<String, dynamic> _recipeToFirestoreData(Recipe recipe) {
+    return <String, dynamic>{
+      'id': recipe.id,
+      'name': recipe.name,
+      'description': recipe.description,
+      'isPublic': recipe.isPublic,
+      'isVerified': recipe.isVerified,
+      'servings': recipe.servings,
+      'cookTime': recipe.cookTime,
+      'prepTime': recipe.prepTime,
+      'createdAt': Timestamp.fromDate(recipe.createdAt),
+      'updatedAt': Timestamp.fromDate(recipe.updatedAt),
+      'ownerId': recipe.ownerId,
+      'favoriteCount': recipe.favoriteCount,
+      'reportCount': recipe.reportCount,
+      'tags': recipe.tags,
+      'techniqueIDs': recipe.techniqueIDs,
+      'imageURL': recipe.imageURL,
+      'ingredients': recipe.ingredients
+          .map(
+            (item) => <String, dynamic>{
+              'ingredientID': item.ingredientID,
+              'name': item.name,
+              'quantity': item.quantity,
+              'unitID': item.unitID,
+              'unitName': item.unitName,
+              'nutritionPer100g': item.nutritionPer100g?.toJson(),
+              'densityGPerMl': item.densityGPerMl,
+              'avgWeightG': item.avgWeightG,
+              'calculatedWeightG': item.calculatedWeightG,
+              'preparation': item.preparation,
+            },
+          )
+          .toList(),
+      'steps': recipe.steps
+          .map(
+            (item) => <String, dynamic>{
+              'instruction': item.instruction,
+              'timerSeconds': item.timerSeconds,
+            },
+          )
+          .toList(),
+      'nutritionTotal': recipe.nutritionTotal?.toJson(),
+      'nutritionPerServing': recipe.nutritionPerServing?.toJson(),
+    };
+  }
+
+  dynamic _sanitizeForFirestore(dynamic value) {
+    if (value == null || value is String || value is num || value is bool) {
+      return value;
+    }
+    if (value is Timestamp) {
+      return value;
+    }
+    if (value is DateTime) {
+      return Timestamp.fromDate(value);
+    }
+    if (value is NutritionInfo) {
+      return value.toJson();
+    }
+    if (value is Map) {
+      return value.map(
+        (key, entryValue) => MapEntry(
+          key.toString(),
+          _sanitizeForFirestore(entryValue),
+        ),
+      );
+    }
+    if (value is Iterable) {
+      return value.map(_sanitizeForFirestore).toList();
+    }
+    return value;
   }
 }
