@@ -5,7 +5,13 @@ import 'package:nutricook/services/tag_service.dart';
 
 class RecipeTagsFilterModal extends StatefulWidget {
   final String title;
-  const RecipeTagsFilterModal({super.key, required this.title});
+  final List<String> initialSelectedTags;
+
+  const RecipeTagsFilterModal({
+    super.key,
+    required this.title,
+    this.initialSelectedTags = const <String>[],
+  });
 
   @override
   State<RecipeTagsFilterModal> createState() => _RecipeTagsFilterModalState();
@@ -16,9 +22,11 @@ class _RecipeTagsFilterModalState extends State<RecipeTagsFilterModal> {
   final TextEditingController _tagSearchController = TextEditingController();
   String _sortBy = 'Popularity';
   String _selectedCategoryId = 'difficulty';
+  bool _isCreatingTag = false;
 
   String _query = '';
   final Set<String> _selectedTags = {};
+  final Set<String> _localCustomTags = {};
 
   static final List<String> _allTags = <String>[
     ...RecipeTags.difficulty,
@@ -34,6 +42,20 @@ class _RecipeTagsFilterModalState extends State<RecipeTagsFilterModal> {
         {'id': 'dietary', 'name': 'Dietary'},
         {'id': 'nutrition', 'name': 'Nutrition'},
       ];
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedTags.addAll(
+      widget.initialSelectedTags.map((tag) => tag.trim().toLowerCase()),
+    );
+  }
+
+  @override
+  void dispose() {
+    _tagSearchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,6 +87,8 @@ class _RecipeTagsFilterModalState extends State<RecipeTagsFilterModal> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildTagSearchField(),
+                  const SizedBox(height: 10),
+                  _buildCreateTagAction(),
 
                   const SizedBox(height: 16),
 
@@ -155,6 +179,34 @@ class _RecipeTagsFilterModalState extends State<RecipeTagsFilterModal> {
             borderRadius: BorderRadius.circular(30),
             borderSide: const BorderSide(color: AppColors.rosePink, width: 1.5),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCreateTagAction() {
+    final candidate = _tagSearchController.text.trim().toLowerCase();
+    final canCreate = !_isCreatingTag;
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: TextButton.icon(
+        onPressed: canCreate ? _handleCreateTagTap : null,
+        icon: _isCreatingTag
+            ? const SizedBox(
+                height: 14,
+                width: 14,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.add, size: 16),
+        label: Text(
+          candidate.isEmpty
+              ? 'Type a tag name to create your own'
+              : 'Create "$candidate"',
+        ),
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.rosePink,
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
         ),
       ),
     );
@@ -311,7 +363,10 @@ class _RecipeTagsFilterModalState extends State<RecipeTagsFilterModal> {
             StreamBuilder<List<String>>(
               stream: _tagService.getUncategorizedTagNames(),
               builder: (context, generalSnapshot) {
-                final generalTags = generalSnapshot.data ?? <String>[];
+                final generalTags = <String>{
+                  ...(generalSnapshot.data ?? <String>[]),
+                  ..._localCustomTags,
+                }.toList();
                 final filteredGeneral = _filteredTagsFrom(generalTags);
 
                 if (filteredGeneral.isEmpty) {
@@ -403,5 +458,105 @@ class _RecipeTagsFilterModalState extends State<RecipeTagsFilterModal> {
     }
 
     return filtered;
+  }
+
+  Future<void> _createCustomTag() async {
+    final tag = _tagSearchController.text.trim().toLowerCase();
+    if (tag.isEmpty || _isCreatingTag) return;
+
+    setState(() => _isCreatingTag = true);
+    // Optimistically keep the custom tag available and selected in this session.
+    setState(() {
+      _selectedTags.add(tag);
+      _localCustomTags.add(tag);
+      _query = '';
+      _tagSearchController.clear();
+    });
+
+    try {
+      await _tagService.createCustomTag(tag);
+    } catch (error) {
+      if (!mounted) return;
+      // Keep local tag even if persistence fails (e.g., rule/network issue).
+      showDialog<void>(
+        context: context,
+        useRootNavigator: true,
+        barrierDismissible: true,
+        builder: (dialogContext) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            content: Text(
+              'Tag added locally but could not be saved to cloud: $error',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          );
+        },
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isCreatingTag = false);
+      }
+    }
+  }
+
+  Future<void> _handleCreateTagTap() async {
+    final candidate = _tagSearchController.text.trim().toLowerCase();
+    if (candidate.isNotEmpty) {
+      await _createCustomTag();
+      return;
+    }
+
+    final created = await _showCreateTagDialog();
+    if (!mounted || created == null || created.isEmpty) return;
+
+    _tagSearchController.text = created;
+    _query = created;
+    await _createCustomTag();
+  }
+
+  Future<String?> _showCreateTagDialog() async {
+    String draft = '';
+    final created = await showDialog<String>(
+      context: context,
+      useRootNavigator: true,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Create Custom Tag'),
+          content: TextField(
+            autofocus: true,
+            textInputAction: TextInputAction.done,
+            decoration: const InputDecoration(
+              hintText: 'e.g. post-workout',
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (value) => draft = value,
+            onSubmitted: (_) =>
+                Navigator.of(dialogContext).pop(draft.trim().toLowerCase()),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () =>
+                  Navigator.of(dialogContext).pop(draft.trim().toLowerCase()),
+              child: const Text(
+                'Create',
+                style: TextStyle(color: AppColors.rosePink),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+    return created;
   }
 }
