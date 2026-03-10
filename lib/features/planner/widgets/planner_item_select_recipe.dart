@@ -1,20 +1,48 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
 import 'package:nutricook/features/planner/widgets/planner_item_recipe_filter.dart';
+import 'package:nutricook/features/recipe/providers/recipe_provider.dart';
+import 'package:nutricook/models/recipe/recipe.dart';
 
-class PlannerRecipeSelectModal extends StatefulWidget {
+class PlannerRecipeSelectModal extends ConsumerStatefulWidget {
   const PlannerRecipeSelectModal({super.key});
 
   @override
-  State<PlannerRecipeSelectModal> createState() => _PlannerRecipeSelectModalState();
+  ConsumerState<PlannerRecipeSelectModal> createState() =>
+      _PlannerRecipeSelectModalState();
 }
 
-class _PlannerRecipeSelectModalState extends State<PlannerRecipeSelectModal> {
+class _PlannerRecipeSelectModalState
+    extends ConsumerState<PlannerRecipeSelectModal> {
   bool isListView = true;
   final TextEditingController _searchController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  void _onSearchChanged() {
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final recipesAsync = ref.watch(
+      filteredRecipesProvider(
+        RecipeFilterInput(query: _searchController.text),
+      ),
+    );
+
     return _KeyboardInsetPadding(
       child: Container(
         height: MediaQuery.of(context).size.height * 0.90,
@@ -122,7 +150,23 @@ class _PlannerRecipeSelectModalState extends State<PlannerRecipeSelectModal> {
             ),
 
             Flexible(
-              child: isListView ? _buildListView() : _buildTileView(),
+              child: recipesAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, _) => Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text('Failed to load recipes: $error'),
+                  ),
+                ),
+                data: (recipes) {
+                  if (recipes.isEmpty) {
+                    return const Center(child: Text('No recipes found.'));
+                  }
+                  return isListView
+                      ? _buildListView(recipes)
+                      : _buildTileView(recipes);
+                },
+              ),
             ),
           ],
         ),
@@ -162,16 +206,19 @@ class _PlannerRecipeSelectModalState extends State<PlannerRecipeSelectModal> {
     );
   }
 
-  Widget _buildListView() {
+  Widget _buildListView(List<Recipe> recipes) {
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       physics: const BouncingScrollPhysics(),
-      itemCount: 10,
-      itemBuilder: (context, index) => _buildRecipeCard(isList: true),
+      itemCount: recipes.length,
+      itemBuilder: (context, index) => _buildRecipeCard(
+        recipe: recipes[index],
+        isList: true,
+      ),
     );
   }
 
-  Widget _buildTileView() {
+  Widget _buildTileView(List<Recipe> recipes) {
     return GridView.builder(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       physics: const BouncingScrollPhysics(),
@@ -181,14 +228,28 @@ class _PlannerRecipeSelectModalState extends State<PlannerRecipeSelectModal> {
         mainAxisSpacing: 16,
         childAspectRatio: 0.8,
       ),
-      itemCount: 10,
-      itemBuilder: (context, index) => _buildRecipeCard(isList: false),
+      itemCount: recipes.length,
+      itemBuilder: (context, index) => _buildRecipeCard(
+        recipe: recipes[index],
+        isList: false,
+      ),
     );
   }
 
-  Widget _buildRecipeCard({required bool isList}) {
+  Widget _buildRecipeCard({
+    required Recipe recipe,
+    required bool isList,
+  }) {
     return GestureDetector(
-      onTap: () => Navigator.pop(context, {'name': 'Creamy Pasta'}),
+      onTap: () => Navigator.pop(context, <String, dynamic>{
+        'id': recipe.id,
+        'name': recipe.name,
+        'servings': recipe.servings,
+        'prepTime': recipe.prepTime,
+        'cookTime': recipe.cookTime,
+        'thumbnailUrl': recipe.imageURL.isNotEmpty ? recipe.imageURL.first : null,
+        'nutritionPerServing': recipe.nutritionPerServing,
+      }),
       child: Container(
         margin: isList ? const EdgeInsets.only(bottom: 16) : EdgeInsets.zero,
         decoration: BoxDecoration(
@@ -211,9 +272,17 @@ class _PlannerRecipeSelectModalState extends State<PlannerRecipeSelectModal> {
             Padding(
               padding: const EdgeInsets.all(12),
               child: Column(
-                children: const [
-                  Text('Creamy Pasta', style: TextStyle(fontWeight: FontWeight.w900)),
-                  Text('350 Cal • 15 min', style: TextStyle(fontSize: 11, color: Colors.black45)),
+                children: [
+                  Text(
+                    recipe.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                  Text(
+                    '${recipe.nutritionPerServing?.calories ?? recipe.nutritionTotal?.calories ?? 0} Cal • ${recipe.prepTime + recipe.cookTime} min',
+                    style: const TextStyle(fontSize: 11, color: Colors.black45),
+                  ),
                 ],
               ),
             ),
