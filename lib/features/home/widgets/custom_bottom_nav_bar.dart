@@ -42,7 +42,7 @@ class CustomBottomNavBar extends StatelessWidget {
         // context.go('/library');
         break;
       case 4:
-        // context.go('/profile');
+        context.goNamed(AppRoutes.profileName);
         break;
     }
   }
