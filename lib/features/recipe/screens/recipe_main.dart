@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
+import 'package:nutricook/features/profile/provider/user_provider.dart';
 import 'package:nutricook/features/planner/widgets/planner_item_recipe_filter.dart';
+import 'package:nutricook/features/recipe/providers/recipe_provider.dart';
 import 'package:nutricook/features/recipe/widgets/recipe_card.dart';
+import 'package:nutricook/models/recipe/recipe.dart';
 import 'package:nutricook/routing/app_routes.dart';
 
 class RecipeMainScreen extends ConsumerStatefulWidget {
@@ -17,6 +20,23 @@ class _RecipeMainScreenState extends ConsumerState<RecipeMainScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  void _onSearchChanged() {
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Container(
       color: const Color(0xFFFFF9FA), // Unified pink tint
@@ -28,7 +48,7 @@ class _RecipeMainScreenState extends ConsumerState<RecipeMainScreen> {
             _buildHeader(),
             _buildSearchAndFilter(),
             _buildCategoryPills(),
-            Expanded(child: _buildDiscoveryFeed()),
+            Expanded(child: _buildDiscoveryFeed(ref)),
           ],
         ),
       ),
@@ -142,10 +162,10 @@ class _RecipeMainScreenState extends ConsumerState<RecipeMainScreen> {
               onPressed: () {
                     final tappedCategory = categories[index];
                     if (tappedCategory == 'Custom') {
-                      context.pushNamed('userCustomRecipes');
+                      context.pushNamed(AppRoutes.userCustomRecipesName);
                     } else {
                       context.pushNamed(
-                        'subCategory',
+                        AppRoutes.subCategoryName,
                         pathParameters: {'category': tappedCategory},
                       );
                     }
@@ -163,15 +183,58 @@ class _RecipeMainScreenState extends ConsumerState<RecipeMainScreen> {
     );
   }
 
-  Widget _buildDiscoveryFeed() {
-    return GridView.builder(
-      padding: const EdgeInsets.all(20),
-      physics: const BouncingScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2, crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 0.75,
+  Widget _buildDiscoveryFeed(WidgetRef ref) {
+    final recipesAsync = ref.watch(
+      filteredRecipesProvider(
+        RecipeFilterInput(query: _searchController.text),
       ),
-      itemCount: 10,
-      itemBuilder: (context, index) => RecipeCard(recipeName: 'Recipe $index', hasAllergen: index == 0),
+    );
+    final allergenSet = ref
+        .watch(userAllergenProvider)
+        .asData
+        ?.value
+        .map((allergen) => allergen.toLowerCase())
+        .toSet() ?? <String>{};
+
+    return recipesAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text('Failed to load recipes: $error'),
+        ),
+      ),
+      data: (recipes) {
+        if (recipes.isEmpty) {
+          return const Center(child: Text('No recipes found.'));
+        }
+        return GridView.builder(
+          padding: const EdgeInsets.all(20),
+          physics: const BouncingScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            childAspectRatio: 0.75,
+          ),
+          itemCount: recipes.length,
+          itemBuilder: (context, index) {
+            final recipe = recipes[index];
+            return RecipeCard(
+              recipe: recipe,
+              hasAllergen: _hasAllergen(recipe, allergenSet),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  bool _hasAllergen(Recipe recipe, Set<String> allergenSet) {
+    return recipe.ingredients.any(
+      (ingredient) =>
+          allergenSet.contains(ingredient.ingredientID.toLowerCase()) ||
+          allergenSet.contains(ingredient.name.toLowerCase()),
     );
   }
 }
