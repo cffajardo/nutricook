@@ -4,7 +4,6 @@ import 'package:nutricook/services/collection_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nutricook/features/auth/providers/auth_provider.dart';
 
-
 final collectionProvider = Provider<CollectionService>((ref) {
   return CollectionService();
 });
@@ -20,12 +19,22 @@ final userCollectionsProvider = StreamProvider<List<Collection>>((ref) {
   return collectionService.getUserCollections();
 });
 
-final collectionDataProvider = StreamProvider.family<Collection, String>((ref, collectionId) {
+final userCollectionsByOwnerProvider =
+    StreamProvider.family<List<Collection>, String>((ref, ownerId) {
+      final collectionService = ref.watch(collectionProvider);
+      return collectionService.getCollectionsByOwnerId(ownerId);
+    });
+
+final collectionDataProvider = StreamProvider.family<Collection, String>((
+  ref,
+  collectionId,
+) {
   final collectionService = ref.watch(collectionProvider);
   return collectionService.getCollectionById(collectionId);
 });
 
-final collectionItemsProvider = StreamProvider.family<List<CollectionItem>, String>((ref, collectionId) {
-  final collectionService = ref.watch(collectionProvider);
-  return collectionService.getCollectionItems(collectionId);
-});
+final collectionItemsProvider =
+    StreamProvider.family<List<CollectionItem>, String>((ref, collectionId) {
+      final collectionService = ref.watch(collectionProvider);
+      return collectionService.getCollectionItems(collectionId);
+    });
