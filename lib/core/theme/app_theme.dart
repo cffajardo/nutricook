@@ -16,25 +16,26 @@ class AppTheme {
     colors: [AppColors.blushPink, AppColors.cream, AppColors.blushPink],
     stops: [0.0, 0.5, 1.0],
   );
-  
-  static ThemeData get lightTheme {
-    const colorScheme = ColorScheme.light(
-      primary: AppColors.rosePink,
-      secondary: AppColors.blushPink,
-      surface: AppColors.cardRose,
-      onPrimary: Colors.white,
-      onSecondary: Colors.white,
-      onSurface: Colors.black87,
-      error: Colors.redAccent,
-    );
 
+  static const ColorScheme lightColorScheme = ColorScheme.light(
+    primary: AppColors.rosePink,
+    secondary: AppColors.blushPink,
+    surface: AppColors.cardRose,
+    onPrimary: Colors.white,
+    onSecondary: Colors.white,
+    onSurface: Colors.black87,
+    error: Colors.redAccent,
+  );
+
+  static ThemeData get lightTheme {
     final comfortaaFamily = GoogleFonts.comfortaa().fontFamily;
 
     final comfortaaTextTheme = GoogleFonts.comfortaaTextTheme();
 
     return ThemeData(
       useMaterial3: true,
-      colorScheme: colorScheme,
+      brightness: Brightness.light,
+      colorScheme: lightColorScheme,
       fontFamily: comfortaaFamily,
       textTheme: comfortaaTextTheme,
       primaryTextTheme: comfortaaTextTheme,

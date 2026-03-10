@@ -29,13 +29,13 @@ class NutriCookApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(appThemeModeProvider);
+    ref.watch(appThemeModeProvider);
 
     return MaterialApp.router(
       title: 'NutriCook',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.lightTheme,
-      themeMode: themeMode,
+      themeMode: ThemeMode.light,
       routerConfig: ref.watch(routerProvider),
       builder: (context, child) {
         if (child == null) {
