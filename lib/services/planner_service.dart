@@ -6,11 +6,23 @@ class PlannerService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Future<void> addPlannerItem(PlannerItem item) async {
-    await _firestore.collection(FirestoreConstants.plannerItems).doc(item.id).set(item.toJson());
+    await _firestore
+        .collection(FirestoreConstants.plannerItems)
+        .doc(item.id)
+        .set(_toFirestoreData(item));
   }
 
   Future<void> updatePlannerItem(PlannerItem item) async {
-    await _firestore.collection(FirestoreConstants.plannerItems).doc(item.id).update(item.toJson());
+    await _firestore
+        .collection(FirestoreConstants.plannerItems)
+        .doc(item.id)
+        .update(_toFirestoreData(item));
+  }
+
+  Map<String, dynamic> _toFirestoreData(PlannerItem item) {
+    final data = item.toJson();
+    data['nutritionPerServing'] = item.nutritionPerServing?.toJson();
+    return data;
   }
 
   Future<void> deletePlannerItem(String id) async {
