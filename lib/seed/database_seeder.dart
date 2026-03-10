@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nutricook/core/constants.dart';
 import 'package:nutricook/models/nutrition/nutrition.dart';
 import 'package:nutricook/seed/ingredient_seeder.dart';
+import 'package:nutricook/seed/recipe_seeder.dart';
 import 'package:nutricook/seed/taxonomy_seeder.dart';
 import 'package:nutricook/seed/technique_seeder.dart';
 import 'package:nutricook/models/unit/unit.dart';
@@ -16,6 +17,7 @@ class DatabaseSeeder {
     await _seedIngredients();
     await _seedTechniques();
     await TaxonomySeeder.seed(_db);
+    await _seedRecipes();
   }
 
   static Future<void> _seedUnits() async {
@@ -196,5 +198,9 @@ class DatabaseSeeder {
 
   static Future<void> _seedTechniques() async {
     await TechniqueSeeder.seed(_db, FirestoreConstants.techniques);
+  }
+
+  static Future<void> _seedRecipes() async {
+    await RecipeSeeder.seed(_db);
   }
 }

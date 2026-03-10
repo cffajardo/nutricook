@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nutricook/core/constants.dart';
 import 'package:nutricook/features/utils/nutrition_calculator.dart';
 import 'package:nutricook/models/ingredient/ingredient.dart';
+import 'package:nutricook/models/nutrition_info/nutrition_info.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
 import 'package:nutricook/models/recipe_ingredient/recipe_ingredient.dart';
 import 'package:nutricook/models/recipe_step/recipe_step.dart';
@@ -21,6 +22,16 @@ class RecipeIngredientDraft {
   });
 }
 
+class RecipeStepDraft {
+  final String instruction;
+  final int timerSeconds;
+
+  const RecipeStepDraft({
+    required this.instruction,
+    this.timerSeconds = 0,
+  });
+}
+
 class RecipeSeedSpec {
   final String id;
   final String name;
@@ -28,7 +39,7 @@ class RecipeSeedSpec {
   final int servings;
   final int prepTime;
   final int cookTime;
-  final List<String> steps;
+  final List<RecipeStepDraft> steps;
   final List<String> tags;
   final List<String> techniqueIDs;
   final List<String> imageURL;
@@ -106,7 +117,7 @@ class RecipeSeedHelpers {
         );
       }
 
-      final calculatedWeight = NutritionCalculator.convertToGrams(
+      final calculatedWeight = _safeConvertToGrams(
         quantity: draft.quantity,
         unit: unit,
         ingredient: ingredient,
@@ -126,10 +137,8 @@ class RecipeSeedHelpers {
       );
     }).toList();
 
-    final nutritionTotal = NutritionCalculator.calculateRecipeNutrition(
-      recipeIngredients: enrichedIngredients,
-      ingredientsMap: ingredientsMap,
-      unitsMap: unitsMap,
+    final nutritionTotal = _calculateRecipeNutritionFromEnrichedIngredients(
+      enrichedIngredients,
     );
 
     final nutritionPerServing =
@@ -143,7 +152,12 @@ class RecipeSeedHelpers {
       name: spec.name,
       ingredients: enrichedIngredients,
       steps: spec.steps
-          .map((instruction) => RecipeStep(instruction: instruction))
+          .map(
+            (step) => RecipeStep(
+              instruction: step.instruction,
+              timerSeconds: step.timerSeconds,
+            ),
+          )
           .toList(),
       description: spec.description,
       isPublic: spec.isPublic,
@@ -159,6 +173,76 @@ class RecipeSeedHelpers {
       tags: spec.tags,
       techniqueIDs: spec.techniqueIDs,
       imageURL: spec.imageURL,
+    );
+  }
+
+  static double _safeConvertToGrams({
+    required double quantity,
+    required Unit unit,
+    required Ingredient ingredient,
+  }) {
+    try {
+      return NutritionCalculator.convertToGrams(
+        quantity: quantity,
+        unit: unit,
+        ingredient: ingredient,
+      );
+    } catch (_) {
+      if (unit.type == 'weight') {
+        return quantity * unit.multiplier;
+      }
+      if (unit.type == 'volume') {
+        // Seeder fallback: when density is missing, treat 1ml ~= 1g.
+        return quantity * unit.multiplier;
+      }
+      if (unit.type == 'count') {
+        return ingredient.avgWeightG != null
+            ? quantity * ingredient.avgWeightG!
+            : quantity;
+      }
+      return 0;
+    }
+  }
+
+  static NutritionInfo _calculateRecipeNutritionFromEnrichedIngredients(
+    List<RecipeIngredient> ingredients,
+  ) {
+    var calories = 0;
+    var protein = 0.0;
+    var carbs = 0.0;
+    var fat = 0.0;
+    var fiber = 0.0;
+    var sugar = 0.0;
+    var sodium = 0.0;
+
+    for (final ingredient in ingredients) {
+      final base = ingredient.nutritionPer100g;
+      if (base == null) {
+        continue;
+      }
+      final grams = ingredient.calculatedWeightG ?? 0;
+      if (grams <= 0) {
+        continue;
+      }
+
+      final factor = grams / 100;
+      calories += (base.calories * factor).round();
+      protein += base.protein * factor;
+      carbs += base.carbohydrates * factor;
+      fat += base.fat * factor;
+      fiber += base.fiber * factor;
+      sugar += base.sugar * factor;
+      sodium += base.sodium * factor;
+    }
+
+    return NutritionInfo(
+      calories: calories,
+      protein: protein,
+      carbohydrates: carbs,
+      fat: fat,
+      fiber: fiber,
+      sugar: sugar,
+      sodium: sodium,
     );
   }
 }

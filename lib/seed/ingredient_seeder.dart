@@ -313,7 +313,11 @@ class IngredientSeeder {
   static Future<void> seed(FirebaseFirestore db, String collectionPath) async {
     final batch = db.batch();
     for (final ingredient in ingredients()) {
-      batch.set(db.collection(collectionPath).doc(ingredient.id), ingredient.toJson());
+      final data = ingredient.toJson();
+      if (ingredient.nutritionPer100g != null) {
+        data['nutritionPer100g'] = ingredient.nutritionPer100g!.toJson();
+      }
+      batch.set(db.collection(collectionPath).doc(ingredient.id), data);
     }
     await batch.commit();
   }
