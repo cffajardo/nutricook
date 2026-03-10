@@ -3,9 +3,11 @@ import 'package:flutter/services.dart'; // Added for HapticFeedback
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
-import 'package:nutricook/features/home/widgets/custom_bottom_nav_bar.dart';
+import 'package:nutricook/features/planner/provider/planner_provider.dart';
 import 'package:nutricook/features/planner/widgets/planner_item_modal_screen.dart';
 import 'package:nutricook/features/planner/widgets/planner_item_edit_modal.dart';
+import 'package:nutricook/features/planner/widgets/planner_nutrition_total_modal.dart';
+import 'package:nutricook/models/planner_item/planner_item.dart';
 
 class PlannerScreen extends ConsumerStatefulWidget {
   const PlannerScreen({super.key});
@@ -24,18 +26,25 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
 
   late List<DateTime> _dateList = _getDatesForMonth(_currentMonth);
 
-  late ScrollController _dateScrollController = ScrollController(
-    initialScrollOffset: _calculateDateOffset(_selectedDate),
-  );
+  late final ScrollController _dateScrollController;
 
-  late PageController _mealPageController = PageController(
-    viewportFraction: 0.45,
-    initialPage: _mealTypes.indexOf(_selectedMeal),
-  );
+  late final PageController _mealPageController;
 
   List<DateTime> _getDatesForMonth(DateTime month) {
     final int days = DateUtils.getDaysInMonth(month.year, month.month);
     return List.generate(days, (i) => DateTime(month.year, month.month, i + 1));
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _dateScrollController = ScrollController(
+      initialScrollOffset: _calculateDateOffset(_selectedDate),
+    );
+    _mealPageController = PageController(
+      viewportFraction: 0.45,
+      initialPage: _mealTypes.indexOf(_selectedMeal),
+    );
   }
 
   double _calculateDateOffset(DateTime date) {
@@ -105,26 +114,45 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
   }
 
   Widget _buildFab({double? left, double? right, required String label, required String tag}) {
-    return Positioned(
-      left: left, right: right, bottom: 120,
-      child: FloatingActionButton(
-        heroTag: tag,
-        backgroundColor: Colors.white,
-        elevation: 2,
-        shape: const CircleBorder(),
-        onPressed: () {
-           showModalBottomSheet(
+  return Positioned(
+    left: left, right: right, bottom: 120,
+    child: FloatingActionButton(
+      heroTag: tag,
+      backgroundColor: Colors.white,
+      elevation: 4, // Increased elevation for better visibility
+      shape: const CircleBorder(
+        side: BorderSide(color: AppColors.rosePink, width: 1.5), // Added thin border
+      ),
+      onPressed: () {
+        if (tag == 'fab_n') {
+          showModalBottomSheet(
             context: context,
             isScrollControlled: true,
+            useRootNavigator: true,
+            backgroundColor: Colors.transparent,
+            builder: (context) => PlannerNutritionTotalsModal(
+              selectedDate: _selectedDate,
+              mealTypes: _mealTypes,
+            ),
+          );
+        } else {
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            useRootNavigator: true,
             useSafeArea: true,
             backgroundColor: Colors.transparent,
-            builder: (context) => const PlannerItemEditModal(),
+            builder: (context) => PlannerItemEditModal(
+              initialDate: _selectedDate,
+              initialMealType: _selectedMeal,
+            ),
           );
-        },
-        child: Text(label, style: const TextStyle(color: AppColors.rosePink, fontWeight: FontWeight.bold, fontSize: 18)),
-      ),
-    );
-  }
+        }
+      },
+      child: Text(label, style: const TextStyle(color: AppColors.rosePink, fontWeight: FontWeight.bold, fontSize: 18)),
+    ),
+  );
+}
 
   Widget _buildHeader() {
     return Padding(
@@ -262,74 +290,178 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
   }
 
   Widget _buildRecipeList() {
-    return ListView.builder(
-    padding: const EdgeInsets.fromLTRB(20, 0, 20, 180),
-    physics: const BouncingScrollPhysics(),
-    itemCount: 4, 
-    itemBuilder: (context, index) {
-      return GestureDetector(
-        onTap: () {
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
-            builder: (context) => PlannerItemModal(recipe: {'name': 'Recipe $index'}), 
+    final itemsAsync = ref.watch(plannerItemsForDateProvider(_selectedDate));
+
+    return itemsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text('Failed to load planner items: $error'),
+        ),
+      ),
+      data: (items) {
+        final filtered = items
+            .where((item) => item.mealType == _selectedMeal)
+            .toList();
+
+        if (filtered.isEmpty) {
+          return const Center(
+            child: Text('No planned recipes for this meal yet.'),
           );
-        },
-        child: Container(
-          height: 180, 
-          width: double.infinity, 
-          margin: const EdgeInsets.only(bottom: 20), 
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: AppColors.rosePink.withValues(alpha: 0.14), width: 1.5),
-            boxShadow: [
-              BoxShadow(color: AppColors.rosePink.withValues(alpha: 0.05), blurRadius: 15, offset: const Offset(0, 8)),
-            ],
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 180),
+          physics: const BouncingScrollPhysics(),
+          itemCount: filtered.length,
+          itemBuilder: (context, index) {
+            final item = filtered[index];
+            return _buildPlannerCard(item);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildPlannerCard(PlannerItem item) {
+    final calories =
+        ((item.nutritionPerServing?.calories ?? 0) * item.servingMultiplier)
+            .round();
+
+    return GestureDetector(
+      onTap: () {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          useRootNavigator: true,
+          useSafeArea: true,
+          backgroundColor: Colors.transparent,
+          builder: (context) => PlannerItemModal(item: item),
+        );
+      },
+      child: Container(
+        height: 180,
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: AppColors.rosePink.withValues(alpha: 0.14),
+            width: 1.5,
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(24),
-            child: Stack(
-              children: [
-                Positioned.fill(child: Container(color: Colors.white)), 
-                Positioned.fill(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Colors.transparent, AppColors.rosePink.withValues(alpha: 0.85)],
-                      ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.rosePink.withValues(alpha: 0.05),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Stack(
+            children: [
+              Positioned.fill(child: Container(color: Colors.white)),
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        AppColors.rosePink.withValues(alpha: 0.85),
+                      ],
                     ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Delicious Recipe $index', style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900)),
-                      const SizedBox(height: 4),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Servings: 2', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600)),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
-                            child: const Text('350 Cal', style: TextStyle(color: AppColors.rosePink, fontWeight: FontWeight.bold, fontSize: 13)),
+              ),
+              if (item.isCompleted)
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.green, width: 1.2),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.check_circle, size: 14, color: Colors.green),
+                        SizedBox(width: 6),
+                        Text(
+                          'Completed',
+                          style: TextStyle(
+                            color: Colors.green,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
                           ),
-                        ],
-                      )
-                    ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ],
-            ),
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.recipeName,
+                      style: TextStyle(
+                        color: item.isCompleted
+                            ? Colors.white.withValues(alpha: 0.9)
+                            : Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        decoration:
+                            item.isCompleted ? TextDecoration.lineThrough : null,
+                        decorationColor: Colors.white70,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Servings: ${item.servingMultiplier}x',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '$calories Cal',
+                            style: const TextStyle(
+                              color: AppColors.rosePink,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
-      );
-    });
+      ),
+    );
   }
 }
