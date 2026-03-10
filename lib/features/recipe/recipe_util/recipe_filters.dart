@@ -9,9 +9,13 @@ List<Recipe> filterRecipesByAllergens(
     return recipes;
   }
 
+  final normalizedAllergens = userAllergens
+      .map((allergen) => allergen.toLowerCase())
+      .toSet();
+
   return recipes.where((recipe) {
     return recipe.ingredients.every((ingredient) {
-      return !userAllergens.contains(ingredient.ingredientID.toLowerCase());
+      return !normalizedAllergens.contains(ingredient.ingredientID.toLowerCase());
     });
   }).toList();
 }
