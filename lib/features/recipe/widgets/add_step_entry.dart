@@ -1,0 +1,155 @@
+import 'package:flutter/material.dart';
+import 'package:nutricook/core/theme/app_theme.dart';
+import 'package:nutricook/models/recipe_step/recipe_step.dart';
+
+class AddStepModal extends StatefulWidget {
+  final RecipeStep? initialStep;
+  final int stepNumber;
+  final ValueChanged<RecipeStep> onStepAdded;
+  final VoidCallback? onStepDeleted;
+
+  const AddStepModal({
+    super.key,
+    this.initialStep,
+    required this.stepNumber,
+    required this.onStepAdded,
+    this.onStepDeleted,
+  });
+
+  @override
+  State<AddStepModal> createState() => _AddStepModalState();
+}
+
+class _AddStepModalState extends State<AddStepModal> {
+  final TextEditingController _instructionController = TextEditingController();
+  final TextEditingController _hController = TextEditingController(text: '0');
+  final TextEditingController _mController = TextEditingController(text: '0');
+  final TextEditingController _sController = TextEditingController(text: '0');
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialStep != null) {
+      _instructionController.text = widget.initialStep!.instruction;
+      final total = widget.initialStep!.timerSeconds;
+      _hController.text = (total ~/ 3600).toString();
+      _mController.text = ((total % 3600) ~/ 60).toString();
+      _sController.text = (total % 60).toString();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    bool isEditing = widget.initialStep != null;
+
+    return Container(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(child: Container(height: 4, width: 40, decoration: BoxDecoration(color: Colors.black12, borderRadius: BorderRadius.circular(2)))),
+            const SizedBox(height: 20),
+            Text('Step ${widget.stepNumber}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 24),
+            TextField(
+              controller: _instructionController,
+              maxLines: 5,
+              decoration: InputDecoration(
+                hintText: 'Describe this cooking step...',
+                filled: true,
+                fillColor: AppColors.cardRose.withValues(alpha: 0.1),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: AppColors.rosePink.withValues(alpha: 0.1), width: 1.5)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.rosePink, width: 1.5)),
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text('Timer (Optional)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(child: _buildTimeInput('Hrs', _hController)),
+                const SizedBox(width: 12),
+                Expanded(child: _buildTimeInput('Min', _mController)),
+                const SizedBox(width: 12),
+                Expanded(child: _buildTimeInput('Sec', _sController)),
+              ],
+            ),
+            const SizedBox(height: 32),
+            Row(
+              children: [
+                if (isEditing)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: IconButton(
+                      onPressed: widget.onStepDeleted == null
+                          ? null
+                          : () {
+                              widget.onStepDeleted!();
+                              Navigator.pop(context);
+                            },
+                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                      style: IconButton.styleFrom(side: const BorderSide(color: Colors.redAccent, width: 1.5), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), padding: const EdgeInsets.all(12)),
+                    ),
+                  ),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      final instruction = _instructionController.text.trim();
+                      if (instruction.isEmpty) {
+                        ScaffoldMessenger.of(context)
+                          ..hideCurrentSnackBar()
+                          ..showSnackBar(
+                            const SnackBar(
+                              content: Text('Instruction cannot be empty.'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        return;
+                      }
+
+                      final totalSec =
+                          (int.tryParse(_hController.text) ?? 0) * 3600 +
+                          (int.tryParse(_mController.text) ?? 0) * 60 +
+                          (int.tryParse(_sController.text) ?? 0);
+                      widget.onStepAdded(
+                        RecipeStep(
+                          instruction: instruction,
+                          timerSeconds: totalSec,
+                        ),
+                      );
+                      Navigator.pop(context);
+                    },
+                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.rosePink, minimumSize: const Size(0, 55), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+                    child: Text(isEditing ? 'Update Step' : 'Add Step', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimeInput(String label, TextEditingController controller) {
+    return Column(
+      children: [
+        TextField(
+          controller: controller,
+          textAlign: TextAlign.center,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            suffixText: label.toLowerCase(),
+            suffixStyle: const TextStyle(fontSize: 10, color: Colors.black26),
+            filled: true,
+            fillColor: AppColors.cardRose.withValues(alpha: 0.3),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.rosePink.withValues(alpha: 0.1), width: 1.5)),
+          ),
+        ),
+      ],
+    );
+  }
+}
