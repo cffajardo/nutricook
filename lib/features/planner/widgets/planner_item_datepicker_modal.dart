@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
+import 'package:nutricook/features/planner/provider/planner_provider.dart';
+import 'package:nutricook/models/planner_item/planner_item.dart';
 
-class PlannerDatePickModal extends StatefulWidget {
+class PlannerDatePickModal extends ConsumerStatefulWidget {
   final DateTime initialDate;
 
   const PlannerDatePickModal({super.key, required this.initialDate});
 
   @override
-  State<PlannerDatePickModal> createState() => _PlannerDatePickModalState();
+  ConsumerState<PlannerDatePickModal> createState() => _PlannerDatePickModalState();
 }
 
-class _PlannerDatePickModalState extends State<PlannerDatePickModal> {
+class _PlannerDatePickModalState extends ConsumerState<PlannerDatePickModal> {
   late DateTime _focusedDate;
   late DateTime _selectedDate;
 
@@ -24,6 +27,8 @@ class _PlannerDatePickModalState extends State<PlannerDatePickModal> {
 
   @override
   Widget build(BuildContext context) {
+    final dayItemsAsync = ref.watch(plannerItemsForDateProvider(_selectedDate));
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.95, 
       decoration: const BoxDecoration(
@@ -59,7 +64,16 @@ class _PlannerDatePickModalState extends State<PlannerDatePickModal> {
               ),
               
               Expanded(
-                child: _buildDailyRecipeList(),
+                child: dayItemsAsync.when(
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (error, _) => Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Text('Failed to load planned meals: $error'),
+                    ),
+                  ),
+                  data: _buildDailyRecipeList,
+                ),
               ),
             ],
           ),
@@ -112,9 +126,43 @@ class _PlannerDatePickModalState extends State<PlannerDatePickModal> {
                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.rosePink)),
               Row(
                 children: [
-                  IconButton(onPressed: () {}, icon: const Icon(Icons.chevron_left, color: AppColors.rosePink)),
-                  const Text('Today', style: TextStyle(color: AppColors.rosePink, fontWeight: FontWeight.bold)),
-                  IconButton(onPressed: () {}, icon: const Icon(Icons.chevron_right, color: AppColors.rosePink)),
+                  IconButton(
+                    onPressed: () {
+                      setState(() {
+                        _focusedDate = DateTime(
+                          _focusedDate.year,
+                          _focusedDate.month - 1,
+                          1,
+                        );
+                      });
+                    },
+                    icon: const Icon(Icons.chevron_left, color: AppColors.rosePink),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      final now = DateTime.now();
+                      setState(() {
+                        _focusedDate = DateTime(now.year, now.month, 1);
+                        _selectedDate = DateTime(now.year, now.month, now.day);
+                      });
+                    },
+                    child: const Text(
+                      'Today',
+                      style: TextStyle(color: AppColors.rosePink, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      setState(() {
+                        _focusedDate = DateTime(
+                          _focusedDate.year,
+                          _focusedDate.month + 1,
+                          1,
+                        );
+                      });
+                    },
+                    icon: const Icon(Icons.chevron_right, color: AppColors.rosePink),
+                  ),
                 ],
               )
             ],
@@ -126,26 +174,48 @@ class _PlannerDatePickModalState extends State<PlannerDatePickModal> {
             initialDate: _selectedDate,
             firstDate: DateTime(2024),
             lastDate: DateTime(2030),
-            onDateChanged: (date) => setState(() => _selectedDate = date),
+            currentDate: _selectedDate,
+            onDisplayedMonthChanged: (month) {
+              setState(() {
+                _focusedDate = DateTime(month.year, month.month, 1);
+              });
+            },
+            onDateChanged: (date) => setState(() {
+              _selectedDate = date;
+              _focusedDate = DateTime(date.year, date.month, 1);
+            }),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildDailyRecipeList() {
+  Widget _buildDailyRecipeList(List<PlannerItem> items) {
+    if (items.isEmpty) {
+      return const Center(
+        child: Text(
+          'No planned meals for this date.',
+          style: TextStyle(color: Colors.black45, fontWeight: FontWeight.w600),
+        ),
+      );
+    }
+
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      itemCount: 3, 
+      itemCount: items.length,
       itemBuilder: (context, index) {
+        final item = items[index];
+        final calories = ((item.nutritionPerServing?.calories ?? 0) * item.servingMultiplier).round();
+
         return Container(
           height: 100,
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-            image: const DecorationImage(
-              image: NetworkImage('https://via.placeholder.com/400x100'),
-              fit: BoxFit.cover,
+            color: AppColors.cardRose,
+            border: Border.all(
+              color: AppColors.rosePink.withValues(alpha: 0.15),
+              width: 1.2,
             ),
           ),
           child: ClipRRect(
@@ -157,11 +227,13 @@ class _PlannerDatePickModalState extends State<PlannerDatePickModal> {
                     gradient: LinearGradient(
                       begin: Alignment.centerLeft,
                       end: Alignment.centerRight,
-                      colors: [Colors.black.withValues(alpha: 0.07), Colors.transparent],
+                      colors: [
+                        AppColors.rosePink.withValues(alpha: 0.9),
+                        AppColors.rosePink.withValues(alpha: 0.65),
+                      ],
                     ),
                   ),
                 ),
-                // Text Content
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
@@ -169,20 +241,43 @@ class _PlannerDatePickModalState extends State<PlannerDatePickModal> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Recipe Name $index',
-                        style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                        item.recipeName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.rosePink.withValues(alpha: 0.8),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          index == 0 ? 'Breakfast' : 'Lunch',
-                          style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
-                        ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.25),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              item.mealType,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '$calories Cal',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
