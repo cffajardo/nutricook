@@ -219,6 +219,48 @@ class AuthService {
     await _auth.currentUser?.reload();
   }
 
+  Future<void> updateDisplayName(String displayName) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('You must be signed in.');
+    try {
+      await user.updateDisplayName(displayName.trim());
+      await user.reload();
+    } on FirebaseAuthException catch (e) {
+      throw _handleAuthException(e);
+    }
+  }
+
+  Future<void> updatePhotoUrl(String photoUrl) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('You must be signed in.');
+    try {
+      await user.updatePhotoURL(photoUrl);
+      await user.reload();
+    } on FirebaseAuthException catch (e) {
+      throw _handleAuthException(e);
+    }
+  }
+
+  Future<void> verifyBeforeUpdateEmail(String newEmail) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('You must be signed in.');
+    try {
+      await user.verifyBeforeUpdateEmail(newEmail.trim());
+    } on FirebaseAuthException catch (e) {
+      throw _handleAuthException(e);
+    }
+  }
+
+  Future<void> deleteCurrentUser() async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('You must be signed in.');
+    try {
+      await user.delete();
+    } on FirebaseAuthException catch (e) {
+      throw _handleAuthException(e);
+    }
+  }
+
   Future<void> _createUserDocument({
     required String uid,
     required String email,
