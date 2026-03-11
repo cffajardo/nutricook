@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Added for HapticFeedback
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:nutricook/core/meal_time_preferences.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
 import 'package:nutricook/features/planner/provider/planner_provider.dart';
+import 'package:nutricook/features/profile/provider/user_preferences_provider.dart';
 import 'package:nutricook/features/planner/widgets/planner_item_modal_screen.dart';
 import 'package:nutricook/features/planner/widgets/planner_item_edit_modal.dart';
 import 'package:nutricook/features/planner/widgets/planner_nutrition_total_modal.dart';
@@ -17,12 +20,14 @@ class PlannerScreen extends ConsumerStatefulWidget {
 }
 
 class _PlannerScreenState extends ConsumerState<PlannerScreen> {
+  Timer? _clockTimer;
   DateTime _currentMonth = DateTime.now();
   DateTime _selectedDate = DateTime.now();
   String _selectedMeal = 'Breakfast';
+  bool _didInitializeAutoMeal = false;
 
-  final List<String> _mealTypes = ['Breakfast', 'Lunch', 'Snack', 'Dinner', 'Other'];
-  final double _dateItemWidth = 70.0; 
+  final List<String> _mealTypes = orderedMealTypes;
+  final double _dateItemWidth = 70.0;
 
   late List<DateTime> _dateList = _getDatesForMonth(_currentMonth);
 
@@ -38,6 +43,11 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
   @override
   void initState() {
     super.initState();
+    _clockTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (!mounted) return;
+      final mealStartHours = ref.read(mealStartHoursProvider);
+      _syncAutoMealSelection(mealStartHours);
+    });
     _dateScrollController = ScrollController(
       initialScrollOffset: _calculateDateOffset(_selectedDate),
     );
@@ -48,20 +58,55 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
   }
 
   double _calculateDateOffset(DateTime date) {
-    final int index = _dateList.indexWhere((d) => 
-        d.day == date.day && d.month == date.month);
+    final int index = _dateList.indexWhere(
+      (d) => d.day == date.day && d.month == date.month,
+    );
     return index != -1 ? index * _dateItemWidth : 0.0;
   }
 
   @override
   void dispose() {
+    _clockTimer?.cancel();
     _dateScrollController.dispose();
     _mealPageController.dispose();
     super.dispose();
   }
 
+  void _syncAutoMealSelection(
+    Map<String, int> mealStartHours, {
+    bool animate = true,
+  }) {
+    if (!isSameCalendarDay(_selectedDate, DateTime.now())) {
+      return;
+    }
+
+    final autoMeal = resolveMealTypeForTime(DateTime.now(), mealStartHours);
+    if (autoMeal == _selectedMeal) {
+      return;
+    }
+
+    final index = _mealTypes.indexOf(autoMeal);
+    if (index == -1) {
+      return;
+    }
+
+    setState(() => _selectedMeal = autoMeal);
+
+    if (_mealPageController.hasClients) {
+      if (animate) {
+        _mealPageController.animateToPage(
+          index,
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeOutCubic,
+        );
+      } else {
+        _mealPageController.jumpToPage(index);
+      }
+    }
+  }
+
   void _snapToDate(int index) {
-    if (_dateScrollController.hasClients && 
+    if (_dateScrollController.hasClients &&
         (_dateScrollController.offset - (index * _dateItemWidth)).abs() > 1.0) {
       _dateScrollController.animateTo(
         index * _dateItemWidth,
@@ -71,20 +116,36 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     }
   }
 
-  void _changeMonth(int offset) {
+  void _changeMonth(int offset, Map<String, int> mealStartHours) {
     setState(() {
-      _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + offset, 1);
+      _currentMonth = DateTime(
+        _currentMonth.year,
+        _currentMonth.month + offset,
+        1,
+      );
       _dateList = _getDatesForMonth(_currentMonth);
       _selectedDate = _dateList.first;
     });
     _dateScrollController.jumpTo(0);
+    _syncAutoMealSelection(mealStartHours, animate: false);
   }
 
   @override
   Widget build(BuildContext context) {
+    final mealStartHours = ref.watch(mealStartHoursProvider);
+    final preferences = ref.watch(userPreferencesProvider).asData?.value;
+
+    if (!_didInitializeAutoMeal && preferences != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _didInitializeAutoMeal) return;
+        _didInitializeAutoMeal = true;
+        _syncAutoMealSelection(mealStartHours, animate: false);
+      });
+    }
+
     return Scaffold(
       extendBody: true,
-      backgroundColor: const Color(0xFFFFF9FA), 
+      backgroundColor: const Color(0xFFFFF9FA),
       body: Stack(
         children: [
           SafeArea(
@@ -93,9 +154,9 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 10),
-                _buildHeader(),
+                _buildHeader(mealStartHours),
                 const SizedBox(height: 16),
-                _buildDateCarousel(),
+                _buildDateCarousel(mealStartHours),
                 const SizedBox(height: 20),
                 _buildMealCarousel(),
                 const SizedBox(height: 16),
@@ -104,57 +165,62 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
             ),
           ),
 
-          _buildFab(left: 24, label: 'N', tag: 'fab_n'),
-          _buildFab(right: 24, label: 'M', tag: 'fab_m'),
-
-        
+          _buildFab(left: 24, icon: Icons.pie_chart_rounded, tag: 'fab_n'),
+          _buildFab(right: 24, icon: Icons.add_rounded, tag: 'fab_m'),
         ],
       ),
     );
   }
 
-  Widget _buildFab({double? left, double? right, required String label, required String tag}) {
-  return Positioned(
-    left: left, right: right, bottom: 120,
-    child: FloatingActionButton(
-      heroTag: tag,
-      backgroundColor: Colors.white,
-      elevation: 4, // Increased elevation for better visibility
-      shape: const CircleBorder(
-        side: BorderSide(color: AppColors.rosePink, width: 1.5), // Added thin border
+  Widget _buildFab({
+    double? left,
+    double? right,
+    required IconData icon,
+    required String tag,
+  }) {
+    return Positioned(
+      left: left,
+      right: right,
+      bottom: 120,
+      child: FloatingActionButton(
+        heroTag: tag,
+        backgroundColor: Colors.white,
+        elevation: 4,
+        shape: const CircleBorder(
+          side: BorderSide(color: AppColors.rosePink, width: 1.5),
+        ),
+        onPressed: () {
+          if (tag == 'fab_n') {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              useRootNavigator: true,
+              backgroundColor: Colors.transparent,
+              builder: (context) => PlannerNutritionTotalsModal(
+                selectedDate: _selectedDate,
+                mealTypes: _mealTypes,
+              ),
+            );
+          } else {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              useRootNavigator: true,
+              useSafeArea: true,
+              backgroundColor: Colors.transparent,
+              builder: (context) => PlannerItemEditModal(
+                initialDate: _selectedDate,
+                initialMealType: _selectedMeal,
+              ),
+            );
+          }
+        },
+        child: Icon(icon, color: AppColors.rosePink, size: 22),
       ),
-      onPressed: () {
-        if (tag == 'fab_n') {
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            useRootNavigator: true,
-            backgroundColor: Colors.transparent,
-            builder: (context) => PlannerNutritionTotalsModal(
-              selectedDate: _selectedDate,
-              mealTypes: _mealTypes,
-            ),
-          );
-        } else {
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            useRootNavigator: true,
-            useSafeArea: true,
-            backgroundColor: Colors.transparent,
-            builder: (context) => PlannerItemEditModal(
-              initialDate: _selectedDate,
-              initialMealType: _selectedMeal,
-            ),
-          );
-        }
-      },
-      child: Text(label, style: const TextStyle(color: AppColors.rosePink, fontWeight: FontWeight.bold, fontSize: 18)),
-    ),
-  );
-}
+    );
+  }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(Map<String, int> mealStartHours) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
@@ -163,23 +229,45 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Planner', style: TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: Colors.black87)),
-              Text(DateFormat('MMMM yyyy').format(_currentMonth),
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.rosePink)),
+              const Text(
+                'Planner',
+                style: TextStyle(
+                  fontSize: 34,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.black87,
+                ),
+              ),
+              Text(
+                DateFormat('MMMM yyyy').format(_currentMonth),
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.rosePink,
+                ),
+              ),
             ],
           ),
           Row(
             children: [
-              IconButton(icon: const Icon(Icons.chevron_left, color: AppColors.rosePink), onPressed: () => _changeMonth(-1)),
-              IconButton(icon: const Icon(Icons.chevron_right, color: AppColors.rosePink), onPressed: () => _changeMonth(1)),
+              IconButton(
+                icon: const Icon(Icons.chevron_left, color: AppColors.rosePink),
+                onPressed: () => _changeMonth(-1, mealStartHours),
+              ),
+              IconButton(
+                icon: const Icon(
+                  Icons.chevron_right,
+                  color: AppColors.rosePink,
+                ),
+                onPressed: () => _changeMonth(1, mealStartHours),
+              ),
             ],
-          )
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildDateCarousel() {
+  Widget _buildDateCarousel(Map<String, int> mealStartHours) {
     final double screenWidth = MediaQuery.of(context).size.width;
     final double padding = (screenWidth / 2) - (_dateItemWidth / 2);
 
@@ -188,13 +276,16 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       child: NotificationListener<ScrollNotification>(
         onNotification: (notification) {
           if (notification is ScrollEndNotification) {
-            final index = (_dateScrollController.offset / _dateItemWidth).round();
+            final index = (_dateScrollController.offset / _dateItemWidth)
+                .round();
             if (index >= 0 && index < _dateList.length) {
               final newDate = _dateList[index];
               // Only trigger setState if the day has actually changed
-              if (newDate.day != _selectedDate.day || newDate.month != _selectedDate.month) {
-                HapticFeedback.lightImpact(); 
+              if (newDate.day != _selectedDate.day ||
+                  newDate.month != _selectedDate.month) {
+                HapticFeedback.lightImpact();
                 setState(() => _selectedDate = newDate);
+                _syncAutoMealSelection(mealStartHours);
               }
               _snapToDate(index);
             }
@@ -210,30 +301,39 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
           itemExtent: _dateItemWidth,
           itemBuilder: (context, index) {
             final date = _dateList[index];
-            final isSelected = date.day == _selectedDate.day && date.month == _selectedDate.month;
+            final isSelected =
+                date.day == _selectedDate.day &&
+                date.month == _selectedDate.month;
 
             return GestureDetector(
               onTap: () {
                 setState(() => _selectedDate = date);
+                _syncAutoMealSelection(mealStartHours);
                 _snapToDate(index);
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 250),
                 margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
                 decoration: BoxDecoration(
-                  color: isSelected ? Colors.white : AppColors.cardRose.withValues(alpha: 0.4),
+                  color: isSelected
+                      ? Colors.white
+                      : AppColors.cardRose.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: isSelected ? AppColors.rosePink : AppColors.rosePink.withValues(alpha: 0.1),
+                    color: isSelected
+                        ? AppColors.rosePink
+                        : AppColors.rosePink.withValues(alpha: 0.1),
                     width: 1.5,
                   ),
-                  boxShadow: isSelected ? [
-                    BoxShadow(
-                      color: AppColors.rosePink.withValues(alpha: 0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    )
-                  ] : null,
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: AppColors.rosePink.withValues(alpha: 0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : null,
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -269,7 +369,8 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       height: 60,
       child: PageView.builder(
         controller: _mealPageController,
-        onPageChanged: (index) => setState(() => _selectedMeal = _mealTypes[index]),
+        onPageChanged: (index) =>
+            setState(() => _selectedMeal = _mealTypes[index]),
         itemCount: _mealTypes.length,
         itemBuilder: (context, index) {
           final isSelected = _mealTypes[index] == _selectedMeal;
@@ -382,7 +483,10 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                   top: 12,
                   right: 12,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
@@ -419,8 +523,9 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                             : Colors.white,
                         fontSize: 24,
                         fontWeight: FontWeight.w900,
-                        decoration:
-                            item.isCompleted ? TextDecoration.lineThrough : null,
+                        decoration: item.isCompleted
+                            ? TextDecoration.lineThrough
+                            : null,
                         decorationColor: Colors.white70,
                       ),
                     ),
