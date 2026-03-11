@@ -13,6 +13,10 @@ class AppRoutes {
   static const String recipeDetailsPath = '/recipes/view';
   static const String userCustomRecipesPath = '/recipes/custom';
   static const String homeUserSearchPath = '/search-users';
+  static const String notificationsPath = '/notifications';
+  static const String settingsPath = 'settings';
+  static const String editProfilePath = 'edit';
+  static const String profileConnectionsPath = 'connections';
 
   static const String splashName = 'splash';
   static const String homeName = 'home';
@@ -29,4 +33,8 @@ class AppRoutes {
   static const String recipeListName = 'recipeList';
   static const String userCustomRecipesName = 'userCustomRecipes';
   static const String homeUserSearchName = 'home_user_search';
+  static const String notificationsName = 'notifications';
+  static const String settingsName = 'settings';
+  static const String editProfileName = 'edit_profile';
+  static const String profileConnectionsName = 'profile_connections';
 }
