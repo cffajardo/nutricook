@@ -22,9 +22,9 @@ class AddStepModal extends StatefulWidget {
 
 class _AddStepModalState extends State<AddStepModal> {
   final TextEditingController _instructionController = TextEditingController();
-  final TextEditingController _hController = TextEditingController(text: '0');
-  final TextEditingController _mController = TextEditingController(text: '0');
-  final TextEditingController _sController = TextEditingController(text: '0');
+  final TextEditingController _hController = TextEditingController();
+  final TextEditingController _mController = TextEditingController();
+  final TextEditingController _sController = TextEditingController();
 
   @override
   void initState() {
@@ -32,9 +32,12 @@ class _AddStepModalState extends State<AddStepModal> {
     if (widget.initialStep != null) {
       _instructionController.text = widget.initialStep!.instruction;
       final total = widget.initialStep!.timerSeconds;
-      _hController.text = (total ~/ 3600).toString();
-      _mController.text = ((total % 3600) ~/ 60).toString();
-      _sController.text = (total % 60).toString();
+      final hours = total ~/ 3600;
+      final minutes = (total % 3600) ~/ 60;
+      final seconds = total % 60;
+      _hController.text = hours == 0 ? '' : hours.toString();
+      _mController.text = minutes == 0 ? '' : minutes.toString();
+      _sController.text = seconds == 0 ? '' : seconds.toString();
     }
   }
 
