@@ -22,7 +22,6 @@ class HomeMealOverviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Formatting to match the bold, modern header style
     final dateLabel = DateFormat('EEEE, MMM d').format(date);
     final previewItems = items.take(3).toList(growable: false);
 
@@ -30,9 +29,8 @@ class HomeMealOverviewCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24), // Unified corner radius
+        borderRadius: BorderRadius.circular(24), 
         border: Border.all(
-          // Unified border style matching carousels and categories
           color: AppColors.rosePink.withValues(alpha: 0.14),
           width: 1.5,
         ),
