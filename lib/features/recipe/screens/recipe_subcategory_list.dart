@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
-import 'package:nutricook/features/profile/provider/user_provider.dart';
 import 'package:nutricook/features/planner/widgets/planner_item_recipe_filter.dart';
 import 'package:nutricook/features/recipe/providers/recipe_provider.dart';
 import 'package:nutricook/features/recipe/widgets/recipe_card.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
-
 
 class RecipeCategoryListScreen extends ConsumerStatefulWidget {
   final String category;
@@ -20,10 +18,12 @@ class RecipeCategoryListScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<RecipeCategoryListScreen> createState() => _RecipeCategoryListScreenState();
+  ConsumerState<RecipeCategoryListScreen> createState() =>
+      _RecipeCategoryListScreenState();
 }
 
-class _RecipeCategoryListScreenState extends ConsumerState<RecipeCategoryListScreen> {
+class _RecipeCategoryListScreenState
+    extends ConsumerState<RecipeCategoryListScreen> {
   late TextEditingController _searchController;
 
   @override
@@ -46,17 +46,15 @@ class _RecipeCategoryListScreenState extends ConsumerState<RecipeCategoryListScr
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold( 
-      backgroundColor: const Color(0xFFFFF9FA), 
+    return Scaffold(
+      backgroundColor: const Color(0xFFFFF9FA),
       body: SafeArea(
         child: Column(
           children: [
             _buildHeader(),
-            _buildSearchAndFilter(), 
+            _buildSearchAndFilter(),
             const Divider(height: 1),
-            Expanded(
-              child: _buildRecipeGrid(ref),
-            ),
+            Expanded(child: _buildRecipeGrid(ref)),
           ],
         ),
       ),
@@ -70,7 +68,11 @@ class _RecipeCategoryListScreenState extends ConsumerState<RecipeCategoryListScr
         children: [
           IconButton(
             onPressed: () => context.pop(),
-            icon: const Icon(Icons.chevron_left, color: AppColors.rosePink, size: 32),
+            icon: const Icon(
+              Icons.chevron_left,
+              color: AppColors.rosePink,
+              size: 32,
+            ),
           ),
           Expanded(
             child: Center(
@@ -78,7 +80,10 @@ class _RecipeCategoryListScreenState extends ConsumerState<RecipeCategoryListScr
                 padding: const EdgeInsets.only(right: 48),
                 child: Text(
                   widget.subCategoryName,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
@@ -100,7 +105,11 @@ class _RecipeCategoryListScreenState extends ConsumerState<RecipeCategoryListScr
                 controller: _searchController,
                 decoration: InputDecoration(
                   hintText: 'Search in ${widget.subCategoryName}...',
-                  prefixIcon: const Icon(Icons.search, color: AppColors.rosePink, size: 20),
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    color: AppColors.rosePink,
+                    size: 20,
+                  ),
                   filled: true,
                   fillColor: AppColors.cardRose.withValues(alpha: 0.3),
                   contentPadding: EdgeInsets.zero,
@@ -114,7 +123,10 @@ class _RecipeCategoryListScreenState extends ConsumerState<RecipeCategoryListScr
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(30),
-                    borderSide: const BorderSide(color: AppColors.rosePink, width: 1.5),
+                    borderSide: const BorderSide(
+                      color: AppColors.rosePink,
+                      width: 1.5,
+                    ),
                   ),
                 ),
               ),
@@ -132,8 +144,8 @@ class _RecipeCategoryListScreenState extends ConsumerState<RecipeCategoryListScr
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: AppColors.rosePink.withValues(alpha: 0.2), 
-          width: 1.5
+          color: AppColors.rosePink.withValues(alpha: 0.2),
+          width: 1.5,
         ),
       ),
       child: IconButton(
@@ -143,10 +155,14 @@ class _RecipeCategoryListScreenState extends ConsumerState<RecipeCategoryListScr
             barrierDismissible: true,
             barrierLabel: 'Filter',
             transitionDuration: const Duration(milliseconds: 250),
-            pageBuilder: (context, anim1, anim2) => const PlannerRecipeFilterModal(),
+            pageBuilder: (context, anim1, anim2) =>
+                const PlannerRecipeFilterModal(),
             transitionBuilder: (context, anim1, anim2, child) {
               return SlideTransition(
-                position: Tween(begin: const Offset(1, 0), end: const Offset(0, 0)).animate(anim1),
+                position: Tween(
+                  begin: const Offset(1, 0),
+                  end: const Offset(0, 0),
+                ).animate(anim1),
                 child: child,
               );
             },
@@ -158,23 +174,22 @@ class _RecipeCategoryListScreenState extends ConsumerState<RecipeCategoryListScr
   }
 
   Widget _buildRecipeGrid(WidgetRef ref) {
-    final allergenSet = ref
-        .watch(userAllergenProvider)
-        .asData
-        ?.value
-        .map((allergen) => allergen.toLowerCase())
-        .toSet() ?? <String>{};
+    final advancedFilters = ref.watch(recipeAdvancedFiltersProvider);
 
     if (widget.category == 'My Recipes') {
       final userRecipesAsync = ref.watch(userRecipesProvider);
       return userRecipesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('Failed to load recipes: $error')),
+        error: (error, _) =>
+            Center(child: Text('Failed to load recipes: $error')),
         data: (recipes) {
-          final filtered = recipes
+          var filtered = recipes
               .where((recipe) => _matchesQuery(recipe, _searchController.text))
               .toList();
-          return _buildGrid(filtered, allergenSet);
+
+          filtered = applyAdvancedRecipeFilters(filtered, advancedFilters);
+
+          return _buildGrid(filtered);
         },
       );
     }
@@ -182,21 +197,19 @@ class _RecipeCategoryListScreenState extends ConsumerState<RecipeCategoryListScr
     final tag = _normalizeTag(widget.subCategoryName);
     final recipesAsync = ref.watch(
       filteredRecipesProvider(
-        RecipeFilterInput(
-          query: _searchController.text,
-          tags: <String>[tag],
-        ),
+        RecipeFilterInput(query: _searchController.text, tags: <String>[tag]),
       ),
     );
 
     return recipesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => Center(child: Text('Failed to load recipes: $error')),
-      data: (recipes) => _buildGrid(recipes, allergenSet),
+      error: (error, _) =>
+          Center(child: Text('Failed to load recipes: $error')),
+      data: (recipes) => _buildGrid(recipes),
     );
   }
 
-  Widget _buildGrid(List<Recipe> recipes, Set<String> allergenSet) {
+  Widget _buildGrid(List<Recipe> recipes) {
     if (recipes.isEmpty) {
       return const Center(child: Text('No recipes found in this category.'));
     }
@@ -213,19 +226,8 @@ class _RecipeCategoryListScreenState extends ConsumerState<RecipeCategoryListScr
       itemCount: recipes.length,
       itemBuilder: (context, index) {
         final recipe = recipes[index];
-        return RecipeCard(
-          recipe: recipe,
-          hasAllergen: _hasAllergen(recipe, allergenSet),
-        );
+        return RecipeCard(recipe: recipe);
       },
-    );
-  }
-
-  bool _hasAllergen(Recipe recipe, Set<String> allergenSet) {
-    return recipe.ingredients.any(
-      (ingredient) =>
-          allergenSet.contains(ingredient.ingredientID.toLowerCase()) ||
-          allergenSet.contains(ingredient.name.toLowerCase()),
     );
   }
 
