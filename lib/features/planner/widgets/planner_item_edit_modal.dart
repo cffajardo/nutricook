@@ -13,16 +13,19 @@ class PlannerItemEditModal extends ConsumerStatefulWidget {
   final PlannerItem? item;
   final DateTime? initialDate;
   final String? initialMealType;
+  final Map<String, dynamic>? initialRecipeData;
 
   const PlannerItemEditModal({
     super.key,
     this.item,
     this.initialDate,
     this.initialMealType,
+    this.initialRecipeData,
   });
 
   @override
-  ConsumerState<PlannerItemEditModal> createState() => _PlannerItemEditModalState();
+  ConsumerState<PlannerItemEditModal> createState() =>
+      _PlannerItemEditModalState();
 }
 
 class _PlannerItemEditModalState extends ConsumerState<PlannerItemEditModal> {
@@ -34,15 +37,21 @@ class _PlannerItemEditModalState extends ConsumerState<PlannerItemEditModal> {
   int _selectedPrepTime = 0;
   int _selectedCookTime = 0;
   NutritionInfo? _selectedNutritionPerServing;
+  List<String> _selectedAllergenWarnings = const <String>[];
+  bool _allergenOverrideAccepted = false;
   bool _isSaving = false;
-  
+
   static final DateFormat _dateFormatter = DateFormat('MMMM d, y');
 
   late TextEditingController _servingsController;
   late TextEditingController _notesController;
 
   static const List<String> _mealOptions = [
-    'Breakfast', 'Lunch', 'Snack', 'Dinner', 'Other',
+    'Breakfast',
+    'Lunch',
+    'Snack',
+    'Dinner',
+    'Other',
   ];
 
   @override
@@ -53,12 +62,25 @@ class _PlannerItemEditModalState extends ConsumerState<PlannerItemEditModal> {
 
     _selectedDate = item?.date ?? widget.initialDate ?? DateTime.now();
     _selectedMeal = item?.mealType ?? widget.initialMealType ?? 'Breakfast';
-    _selectedRecipeName = item?.recipeName;
-    _selectedRecipeId = item?.recipeId;
-    _selectedThumbnailUrl = item?.thumbnailUrl;
-    _selectedPrepTime = item?.prepTime ?? 0;
-    _selectedCookTime = item?.cookTime ?? 0;
-    _selectedNutritionPerServing = item?.nutritionPerServing;
+    _selectedRecipeName =
+        item?.recipeName ?? widget.initialRecipeData?['name'] as String?;
+    _selectedRecipeId =
+        item?.recipeId ?? widget.initialRecipeData?['id'] as String?;
+    _selectedThumbnailUrl =
+        item?.thumbnailUrl ??
+        widget.initialRecipeData?['thumbnailUrl'] as String?;
+    _selectedPrepTime =
+        item?.prepTime ?? widget.initialRecipeData?['prepTime'] as int? ?? 0;
+    _selectedCookTime =
+        item?.cookTime ?? widget.initialRecipeData?['cookTime'] as int? ?? 0;
+    _selectedNutritionPerServing =
+        item?.nutritionPerServing ??
+        widget.initialRecipeData?['nutritionPerServing'] as NutritionInfo?;
+    _selectedAllergenWarnings =
+        (widget.initialRecipeData?['allergenWarnings'] as List<dynamic>? ??
+                const <dynamic>[])
+            .whereType<String>()
+            .toList(growable: false);
 
     _servingsController = TextEditingController(
       text: _formatServingValue(item?.servingMultiplier ?? 1),
@@ -94,29 +116,41 @@ class _PlannerItemEditModalState extends ConsumerState<PlannerItemEditModal> {
       return;
     }
 
-    final existing = widget.item;
-    final now = DateTime.now();
-    final id = existing?.id ?? '${userId}_${now.microsecondsSinceEpoch}';
-
-    final item = PlannerItem(
-      id: id,
-      ownerId: userId,
-      date: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day),
-      createdAt: existing?.createdAt ?? now,
-      mealType: _selectedMeal,
-      recipeId: _selectedRecipeId!,
-      recipeName: _selectedRecipeName!,
-      thumbnailUrl: _selectedThumbnailUrl,
-      servingMultiplier: servings,
-      prepTime: _selectedPrepTime,
-      cookTime: _selectedCookTime,
-      notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
-      isCompleted: existing?.isCompleted ?? false,
-      nutritionPerServing: _selectedNutritionPerServing,
-    );
+    setState(() => _isSaving = true);
 
     try {
-      setState(() => _isSaving = true);
+      final shouldContinue = await _confirmAllergenAddIfNeeded();
+      if (!shouldContinue) {
+        _showMessage('Save cancelled.');
+        return;
+      }
+
+      final existing = widget.item;
+      final now = DateTime.now();
+      final id = existing?.id ?? '${userId}_${now.microsecondsSinceEpoch}';
+
+      final item = PlannerItem(
+        id: id,
+        ownerId: userId,
+        date: DateTime(
+          _selectedDate.year,
+          _selectedDate.month,
+          _selectedDate.day,
+        ),
+        createdAt: existing?.createdAt ?? now,
+        mealType: _selectedMeal,
+        recipeId: _selectedRecipeId!,
+        recipeName: _selectedRecipeName!,
+        thumbnailUrl: _selectedThumbnailUrl,
+        servingMultiplier: servings,
+        prepTime: _selectedPrepTime,
+        cookTime: _selectedCookTime,
+        notes: _notesController.text.trim().isEmpty
+            ? null
+            : _notesController.text.trim(),
+        isCompleted: existing?.isCompleted ?? false,
+        nutritionPerServing: _selectedNutritionPerServing,
+      );
 
       final service = ref.read(plannerServiceProvider);
       if (existing == null) {
@@ -147,6 +181,108 @@ class _PlannerItemEditModalState extends ConsumerState<PlannerItemEditModal> {
         setState(() => _isSaving = false);
       }
     }
+  }
+
+  Future<bool> _confirmAllergenAddIfNeeded() async {
+    if (_selectedAllergenWarnings.isEmpty) {
+      _allergenOverrideAccepted = false;
+      return true;
+    }
+    if (_allergenOverrideAccepted) {
+      return true;
+    }
+
+    final allergenText = _selectedAllergenWarnings.join(', ');
+    final confirmed = await showDialog<bool>(
+      context: context,
+      useRootNavigator: true,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.warning_rounded, color: Color(0xFFD92D20)),
+              SizedBox(width: 10),
+              Text('Allergen Warning'),
+            ],
+          ),
+          content: Text(
+            'Contains Allergen: $allergenText\n\nAdd this meal to your planner anyway?',
+            style: const TextStyle(fontSize: 14.5, height: 1.35),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.black54),
+              ),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.rosePink,
+              ),
+              child: const Text('Add Anyway'),
+            ),
+          ],
+        );
+      },
+    );
+
+    return confirmed ?? false;
+  }
+
+  Future<bool> _confirmAllergenRecipeSelection(
+    List<String> allergenWarnings,
+  ) async {
+    if (allergenWarnings.isEmpty) {
+      return true;
+    }
+
+    final allergenText = allergenWarnings.join(', ');
+    final confirmed = await showDialog<bool>(
+      context: context,
+      useRootNavigator: true,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.warning_rounded, color: Color(0xFFD92D20)),
+              SizedBox(width: 10),
+              Text('Allergen Warning'),
+            ],
+          ),
+          content: Text(
+            'Contains Allergen: $allergenText\n\nUse this recipe anyway?',
+            style: const TextStyle(fontSize: 14.5, height: 1.35),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text(
+                'Choose Another',
+                style: TextStyle(color: Colors.black54),
+              ),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.rosePink,
+              ),
+              child: const Text('Use Anyway'),
+            ),
+          ],
+        );
+      },
+    );
+
+    return confirmed ?? false;
   }
 
   void _showMessage(String message) {
@@ -257,14 +393,25 @@ class _PlannerItemEditModalState extends ConsumerState<PlannerItemEditModal> {
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.chevron_left, color: AppColors.rosePink, size: 32),
+            icon: const Icon(
+              Icons.chevron_left,
+              color: AppColors.rosePink,
+              size: 32,
+            ),
           ),
-          const Text('Plan meal', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text(
+            'Plan meal',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
           TextButton(
             onPressed: _isSaving ? null : _handleSave,
             child: const Text(
               'Save',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.rosePink),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.rosePink,
+              ),
             ),
           ),
         ],
@@ -287,7 +434,8 @@ class _PlannerItemEditModalState extends ConsumerState<PlannerItemEditModal> {
                 isScrollControlled: true,
                 useSafeArea: true,
                 backgroundColor: Colors.transparent,
-                builder: (context) => PlannerDatePickModal(initialDate: _selectedDate),
+                builder: (context) =>
+                    PlannerDatePickModal(initialDate: _selectedDate),
               );
 
               if (pickedDate != null && mounted) {
@@ -314,23 +462,40 @@ class _PlannerItemEditModalState extends ConsumerState<PlannerItemEditModal> {
             'Recipe',
             recipeDisplay,
             onTap: () async {
-              final selectedRecipe = await showModalBottomSheet<Map<String, dynamic>>(
-                context: context,
-                isScrollControlled: true,
-                useSafeArea: true,
-                backgroundColor: Colors.transparent,
-                builder: (context) => const PlannerRecipeSelectModal(),
-              );
+              final selectedRecipe =
+                  await showModalBottomSheet<Map<String, dynamic>>(
+                    context: context,
+                    isScrollControlled: true,
+                    useSafeArea: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => const PlannerRecipeSelectModal(),
+                  );
 
               if (selectedRecipe != null && mounted) {
+                final selectedWarnings =
+                    (selectedRecipe['allergenWarnings'] as List<dynamic>? ??
+                            const <dynamic>[])
+                        .whereType<String>()
+                        .toList(growable: false);
+
+                final shouldUseRecipe = await _confirmAllergenRecipeSelection(
+                  selectedWarnings,
+                );
+                if (!shouldUseRecipe || !mounted) {
+                  return;
+                }
+
                 setState(() {
                   _selectedRecipeId = selectedRecipe['id'] as String?;
                   _selectedRecipeName = selectedRecipe['name'] as String?;
-                  _selectedThumbnailUrl = selectedRecipe['thumbnailUrl'] as String?;
+                  _selectedThumbnailUrl =
+                      selectedRecipe['thumbnailUrl'] as String?;
                   _selectedPrepTime = selectedRecipe['prepTime'] as int? ?? 0;
                   _selectedCookTime = selectedRecipe['cookTime'] as int? ?? 0;
                   _selectedNutritionPerServing =
                       selectedRecipe['nutritionPerServing'] as NutritionInfo?;
+                  _selectedAllergenWarnings = selectedWarnings;
+                  _allergenOverrideAccepted = selectedWarnings.isNotEmpty;
                 });
               }
             },
@@ -386,7 +551,9 @@ class _PlannerItemEditModalState extends ConsumerState<PlannerItemEditModal> {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.rosePink,
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
         ),
         child: _isSaving
             ? const SizedBox(
@@ -414,9 +581,16 @@ class _PlannerItemEditModalState extends ConsumerState<PlannerItemEditModal> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.rosePink.withValues(alpha: 0.14), width: 1.5),
+        border: Border.all(
+          color: AppColors.rosePink.withValues(alpha: 0.14),
+          width: 1.5,
+        ),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: Column(children: children),
@@ -432,12 +606,25 @@ class _PlannerItemEditModalState extends ConsumerState<PlannerItemEditModal> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
             Row(
               children: [
-                Text(value, style: const TextStyle(color: Colors.black45, fontWeight: FontWeight.w600)),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    color: Colors.black45,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(width: 8),
-                const Icon(Icons.chevron_right, color: AppColors.rosePink, size: 24),
+                const Icon(
+                  Icons.chevron_right,
+                  color: AppColors.rosePink,
+                  size: 24,
+                ),
               ],
             ),
           ],
@@ -452,7 +639,10 @@ class _PlannerItemEditModalState extends ConsumerState<PlannerItemEditModal> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
           DropdownButton<String>(
             value: current,
             icon: const Icon(Icons.expand_more, color: AppColors.rosePink),
@@ -460,31 +650,53 @@ class _PlannerItemEditModalState extends ConsumerState<PlannerItemEditModal> {
             onChanged: (val) {
               if (val != null) setState(() => _selectedMeal = val);
             },
-            items: _mealOptions.map((m) => DropdownMenuItem(
-              value: m, 
-              child: Text(m, style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black87)),
-            )).toList(),
+            items: _mealOptions
+                .map(
+                  (m) => DropdownMenuItem(
+                    value: m,
+                    child: Text(
+                      m,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildInputRow(String label, TextEditingController controller, {bool isNumber = false}) {
+  Widget _buildInputRow(
+    String label,
+    TextEditingController controller, {
+    bool isNumber = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
           SizedBox(
             width: 80,
             height: 38,
             child: TextField(
               controller: controller,
               textAlign: TextAlign.center,
-              keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-              style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.rosePink),
+              keyboardType: isNumber
+                  ? TextInputType.number
+                  : TextInputType.text,
+              style: const TextStyle(
+                fontWeight: FontWeight.w900,
+                color: AppColors.rosePink,
+              ),
               decoration: InputDecoration(
                 filled: true,
                 fillColor: AppColors.cardRose.withValues(alpha: 0.3),
@@ -498,7 +710,10 @@ class _PlannerItemEditModalState extends ConsumerState<PlannerItemEditModal> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: AppColors.rosePink, width: 1.5),
+                  borderSide: const BorderSide(
+                    color: AppColors.rosePink,
+                    width: 1.5,
+                  ),
                 ),
                 hintText: '1',
                 hintStyle: const TextStyle(color: Colors.black12),
@@ -511,14 +726,17 @@ class _PlannerItemEditModalState extends ConsumerState<PlannerItemEditModal> {
   }
 }
 
-
 class _DragHandle extends StatelessWidget {
   const _DragHandle();
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 40, height: 5,
-      decoration: BoxDecoration(color: Colors.black12, borderRadius: BorderRadius.circular(10)),
+      width: 40,
+      height: 5,
+      decoration: BoxDecoration(
+        color: Colors.black12,
+        borderRadius: BorderRadius.circular(10),
+      ),
     );
   }
 }
@@ -531,8 +749,12 @@ class _SectionTitle extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 12),
       child: Text(
-        title, 
-        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.rosePink),
+        title,
+        style: const TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: AppColors.rosePink,
+        ),
       ),
     );
   }
