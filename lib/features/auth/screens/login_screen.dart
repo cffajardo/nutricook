@@ -22,9 +22,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   void _showRootSnackBar(String message) {
     if (!mounted) return;
-    final messenger = ScaffoldMessenger.of(
-      Navigator.of(context, rootNavigator: true).context,
-    );
+    final messenger = ScaffoldMessenger.of(context);
     messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(
@@ -90,50 +88,68 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _showForgotPasswordDialog() async {
-    final emailController = TextEditingController();
-
+    var emailDraft = '';
     if (looksLikeEmail(_identifierController.text) &&
         isValidEmail(_identifierController.text)) {
-      emailController.text = _identifierController.text.trim();
+      emailDraft = _identifierController.text.trim();
     }
 
-    await showDialog<void>(
+    final submittedEmail = await showDialog<String>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Reset Password'),
-          content: TextField(
-            controller: emailController,
-            keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(
-              hintText: 'Enter your email',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () async {
-                final email = emailController.text.trim();
-                if (!isValidEmail(email)) {
-                  _showRootSnackBar('Please enter a valid email.');
-                  return;
-                }
+      builder: (dialogContext) {
+        var validationError = '';
 
-                Navigator.of(context).pop();
-                await _sendPasswordResetEmail(email);
-              },
-              child: const Text('Send'),
-            ),
-          ],
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            return AlertDialog(
+              title: const Text('Reset Password'),
+              content: TextFormField(
+                initialValue: emailDraft,
+                keyboardType: TextInputType.emailAddress,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                onChanged: (value) {
+                  setDialogState(() {
+                    emailDraft = value.trim();
+                    validationError = '';
+                  });
+                },
+                decoration: InputDecoration(
+                  hintText: 'Enter your email',
+                  border: const OutlineInputBorder(),
+                  errorText: validationError.isEmpty ? null : validationError,
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    final email = emailDraft.trim();
+                    if (!isValidEmail(email)) {
+                      setDialogState(() {
+                        validationError = 'Please enter a valid email.';
+                      });
+                      return;
+                    }
+
+                    Navigator.of(dialogContext).pop(email);
+                  },
+                  child: const Text('Send'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
 
-    emailController.dispose();
+    if (submittedEmail == null || submittedEmail.isEmpty) {
+      return;
+    }
+
+    await _sendPasswordResetEmail(submittedEmail);
   }
 
   Future<void> _sendPasswordResetEmail(String email) async {
