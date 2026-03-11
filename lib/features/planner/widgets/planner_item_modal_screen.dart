@@ -16,6 +16,7 @@ class PlannerItemModal extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final trimmedNotes = item.notes?.trim() ?? '';
     final calories =
         ((item.nutritionPerServing?.calories ?? 0) * item.servingMultiplier)
             .round();
@@ -182,6 +183,49 @@ class PlannerItemModal extends ConsumerWidget {
             sugar: (item.nutritionPerServing?.sugar ?? 0) * item.servingMultiplier,
             sodium: (item.nutritionPerServing?.sodium ?? 0) * item.servingMultiplier,
           ),
+
+          if (trimmedNotes.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Notes',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.rosePink,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: Colors.black.withValues(alpha: 0.05),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.02),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Text(
+                trimmedNotes,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                  height: 1.45,
+                ),
+              ),
+            ),
+          ],
 
           const SizedBox(height: 16),
 
