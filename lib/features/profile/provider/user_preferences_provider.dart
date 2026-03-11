@@ -42,8 +42,12 @@ class UserPreferencesNotifier extends AsyncNotifier<UserPreferences> {
   Future<UserPreferences> build() async {
     final uid = ref.watch(currentUserIdProvider);
     final localPreferences = await _service.loadPreferences(userId: uid);
-    final firestoreAllergens = await _loadAllergensFromFirestore(uid);
-    return localPreferences.copyWith(allergens: firestoreAllergens);
+    final remote = await _loadRemotePreferencesFromFirestore(uid);
+    return localPreferences.copyWith(
+      allergens: remote.allergens,
+      mealStartHours: remote.mealStartHours,
+      dailyCalorieGoal: remote.dailyCalorieGoal,
+    );
   }
 
   Future<void> updateThemeMode(ThemeMode themeMode) {
@@ -103,7 +107,11 @@ class UserPreferencesNotifier extends AsyncNotifier<UserPreferences> {
     final defaults = UserPreferences.defaults;
     final uid = ref.read(currentUserIdProvider);
     await _service.savePreferences(defaults, userId: uid);
-    await _syncAllergensToFirestore(defaults.allergens);
+    await _syncRemotePreferencesToFirestore(
+      allergens: defaults.allergens,
+      mealStartHours: defaults.mealStartHours,
+      dailyCalorieGoal: defaults.dailyCalorieGoal,
+    );
     state = AsyncData(defaults);
   }
 
@@ -117,40 +125,78 @@ class UserPreferencesNotifier extends AsyncNotifier<UserPreferences> {
 
     state = AsyncData(updated);
     await _service.savePreferences(updated, userId: uid);
-    if (!_stringListEquals(current.allergens, updated.allergens)) {
-      await _syncAllergensToFirestore(updated.allergens);
+
+    final didAllergensChange =
+        !_stringListEquals(current.allergens, updated.allergens);
+    final didMealStartHoursChange =
+        !_intMapEquals(current.mealStartHours, updated.mealStartHours);
+    final didDailyCalorieGoalChange =
+        current.dailyCalorieGoal != updated.dailyCalorieGoal;
+
+    if (didAllergensChange || didMealStartHoursChange || didDailyCalorieGoalChange) {
+      await _syncRemotePreferencesToFirestore(
+        allergens: didAllergensChange ? updated.allergens : null,
+        mealStartHours: didMealStartHoursChange ? updated.mealStartHours : null,
+        dailyCalorieGoal: didDailyCalorieGoalChange
+            ? updated.dailyCalorieGoal
+            : null,
+      );
     }
   }
 
-  Future<void> _syncAllergensToFirestore(List<String> allergens) async {
+  Future<void> _syncRemotePreferencesToFirestore({
+    List<String>? allergens,
+    Map<String, int>? mealStartHours,
+    int? dailyCalorieGoal,
+  }) async {
     final uid = ref.read(currentUserIdProvider);
-    if (uid == null) {
+    if (uid == null || uid.trim().isEmpty) {
       return;
     }
 
-    final normalized =
-        allergens
-            .map((item) => item.trim())
-            .where((item) => item.isNotEmpty)
-            .toSet()
-            .toList()
-          ..sort();
+    final update = <String, dynamic>{};
+
+    if (allergens != null) {
+      final normalizedAllergens =
+          allergens
+              .map((item) => item.trim())
+              .where((item) => item.isNotEmpty)
+              .toSet()
+              .toList()
+            ..sort();
+      update['allergens'] = normalizedAllergens;
+    }
+
+    if (mealStartHours != null) {
+      update['mealStartHours'] = sanitizeMealStartHours(mealStartHours);
+    }
+
+    if (dailyCalorieGoal != null) {
+      final normalizedCalories = dailyCalorieGoal < 100
+          ? 100
+          : dailyCalorieGoal;
+      update['dailyCalorieGoal'] = normalizedCalories;
+    }
+
+    if (update.isEmpty) {
+      return;
+    }
 
     try {
       await FirebaseFirestore.instance
           .collection(FirestoreConstants.users)
           .doc(uid)
-          .set(<String, dynamic>{
-            'allergens': normalized,
-          }, SetOptions(merge: true));
+          .set(update, SetOptions(merge: true));
     } catch (_) {
       // Ignore remote sync failures to avoid blocking local UI updates.
     }
   }
 
-  Future<List<String>> _loadAllergensFromFirestore(String? uid) async {
+  Future<_RemotePreferenceValues> _loadRemotePreferencesFromFirestore(
+    String? uid,
+  ) async {
     if (uid == null || uid.trim().isEmpty) {
-      return const <String>[];
+      return _RemotePreferenceValues.defaults();
     }
 
     try {
@@ -159,19 +205,43 @@ class UserPreferencesNotifier extends AsyncNotifier<UserPreferences> {
           .doc(uid)
           .get();
       final data = snapshot.data();
-      final raw = data?['allergens'];
-      if (raw is! List) {
-        return const <String>[];
+      if (data == null) {
+        return _RemotePreferenceValues.defaults();
       }
 
-      return raw
-          .map((item) => item.toString().trim())
-          .where((item) => item.isNotEmpty)
-          .toSet()
-          .toList()
-        ..sort();
+      final rawAllergens = data['allergens'];
+      final allergens = rawAllergens is List
+          ? (rawAllergens
+                .map((item) => item.toString().trim())
+                .where((item) => item.isNotEmpty)
+                .toSet()
+                .toList()
+              ..sort())
+          : const <String>[];
+
+      final rawMealStartHours = data['mealStartHours'];
+      final mealStartHours = rawMealStartHours is Map
+          ? sanitizeMealStartHours(
+              rawMealStartHours.map(
+                (key, value) => MapEntry(
+                  key.toString(),
+                  (value as num?)?.toInt() ?? defaultMealStartHours[key.toString()] ?? 0,
+                ),
+              ),
+            )
+          : defaultMealStartHours;
+
+      final dailyCalorieGoal =
+          (data['dailyCalorieGoal'] as num?)?.toInt() ??
+          UserPreferences.defaults.dailyCalorieGoal;
+
+      return _RemotePreferenceValues(
+        allergens: allergens,
+        mealStartHours: mealStartHours,
+        dailyCalorieGoal: dailyCalorieGoal < 100 ? 100 : dailyCalorieGoal,
+      );
     } catch (_) {
-      return const <String>[];
+      return _RemotePreferenceValues.defaults();
     }
   }
 
@@ -182,5 +252,36 @@ class UserPreferencesNotifier extends AsyncNotifier<UserPreferences> {
       if (a[i] != b[i]) return false;
     }
     return true;
+  }
+
+  bool _intMapEquals(Map<String, int> a, Map<String, int> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (final entry in a.entries) {
+      if (b[entry.key] != entry.value) {
+        return false;
+      }
+    }
+    return true;
+  }
+}
+
+class _RemotePreferenceValues {
+  const _RemotePreferenceValues({
+    required this.allergens,
+    required this.mealStartHours,
+    required this.dailyCalorieGoal,
+  });
+
+  final List<String> allergens;
+  final Map<String, int> mealStartHours;
+  final int dailyCalorieGoal;
+
+  factory _RemotePreferenceValues.defaults() {
+    return const _RemotePreferenceValues(
+      allergens: <String>[],
+      mealStartHours: defaultMealStartHours,
+      dailyCalorieGoal: 2000,
+    );
   }
 }
