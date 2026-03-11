@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
 import 'package:nutricook/features/auth/providers/auth_provider.dart';
+import 'package:nutricook/routing/app_routes.dart';
 import 'package:nutricook/features/collection/provider/collection_provider.dart';
-import 'package:nutricook/features/profile/provider/user_preferences_provider.dart';
 import 'package:nutricook/features/profile/provider/user_provider.dart';
 import 'package:nutricook/features/recipe/providers/recipe_provider.dart';
 import 'package:nutricook/features/recipe/widgets/recipe_card.dart';
 import 'package:nutricook/models/collection/collection.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
-import 'package:nutricook/models/user_preferences/user_preferences.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key, this.userId});
@@ -37,27 +37,21 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     super.dispose();
   }
 
-  Future<void> _signOut() async {
-    try {
-      await ref.read(authProvider).signOut();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            content: Text('Sign out failed: $e'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-    }
+  void _openSettings() {
+    context.push('${AppRoutes.profilePath}/${AppRoutes.settingsPath}');
   }
 
-  void _showSettingsSheet() {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => const _ProfileSettingsSheet(),
+  void _openEditProfile() {
+    context.push('${AppRoutes.profilePath}/${AppRoutes.editProfilePath}');
+  }
+
+  void _openConnections({required String userId, required int initialTab}) {
+    context.pushNamed(
+      AppRoutes.profileConnectionsName,
+      queryParameters: {
+        'userId': userId,
+        'tab': '$initialTab',
+      },
     );
   }
 
@@ -101,15 +95,19 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final authUser = ref.watch(authStateProvider).asData?.value;
     final currentUserId = ref.watch(currentUserIdProvider);
     final viewedUserId = widget.userId ?? currentUserId;
 
     if (viewedUserId == null) {
-      return const Scaffold(
+      return Scaffold(
         body: Center(
           child: Text(
             'Sign in to view profile.',
-            style: TextStyle(color: Colors.black54),
+            style: TextStyle(
+              color: colorScheme.onSurface.withValues(alpha: 0.75),
+            ),
           ),
         ),
       );
@@ -128,26 +126,35 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     final userCollectionsAsync = isOwnProfile
         ? ref.watch(userCollectionsProvider)
         : ref.watch(userCollectionsByOwnerProvider(viewedUserId));
+    final followersUsersAsync = ref.watch(
+      followersUsersByUserIdQueryProvider(viewedUserId),
+    );
+    final followingUsersAsync = ref.watch(
+      followingUsersByUserIdQueryProvider(viewedUserId),
+    );
 
     final followingIds =
         ref.watch(userFollowingIdsProvider).asData?.value ?? const <String>[];
     final isFollowing = followingIds.contains(viewedUserId);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFFFF9FA),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFFFF9FA),
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          "Profile",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900),
+        title: Text(
+          'Profile',
+          style: TextStyle(
+            color: colorScheme.onSurface,
+            fontWeight: FontWeight.w900,
+          ),
         ),
         actions: [
           if (isOwnProfile)
             IconButton(
-              onPressed: _showSettingsSheet,
-              icon: const Icon(Icons.settings_outlined, color: Colors.black),
+              onPressed: _openSettings,
+              icon: Icon(Icons.settings_outlined, color: colorScheme.onSurface),
             ),
         ],
       ),
@@ -156,15 +163,30 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
         error: (error, _) => Center(
           child: Text(
             'Failed to load profile: $error',
-            style: const TextStyle(color: Colors.black54),
+            style: TextStyle(
+              color: colorScheme.onSurface.withValues(alpha: 0.75),
+            ),
           ),
         ),
         data: (userData) {
-          if (userData == null) {
-            return const Center(
+          final resolvedUserData =
+              userData ??
+              (isOwnProfile && authUser != null
+                  ? <String, dynamic>{
+                      'username': authUser.displayName ?? 'Chef',
+                      'email': authUser.email ?? '',
+                      'followers': const <String>[],
+                      'following': const <String>[],
+                    }
+                  : null);
+
+          if (resolvedUserData == null) {
+            return Center(
               child: Text(
                 'Profile unavailable. Please sign in again.',
-                style: TextStyle(color: Colors.black54),
+                style: TextStyle(
+                  color: colorScheme.onSurface.withValues(alpha: 0.75),
+                ),
               ),
             );
           }
@@ -172,13 +194,20 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
           final recipeCount = userRecipesAsync.asData?.value.length ?? 0;
           final collectionCount =
               userCollectionsAsync.asData?.value.length ?? 0;
+            final followersCount =
+              followersUsersAsync.asData?.value.length ?? 0;
+            final followingCount =
+              followingUsersAsync.asData?.value.length ?? 0;
 
           return Column(
             children: [
               _buildProfileHeader(
-                userData: userData,
+                userData: resolvedUserData,
+                viewedUserId: viewedUserId,
                 recipeCount: recipeCount,
                 collectionCount: collectionCount,
+                followersCount: followersCount,
+                followingCount: followingCount,
                 isOwnProfile: isOwnProfile,
                 isFollowing: isFollowing,
                 canFollow: !isOwnProfile && currentUserId != null,
@@ -194,7 +223,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                 indicatorColor: AppColors.rosePink,
                 indicatorWeight: 3,
                 labelColor: AppColors.rosePink,
-                unselectedLabelColor: Colors.black26,
+                unselectedLabelColor: colorScheme.onSurface.withValues(
+                  alpha: 0.45,
+                ),
                 labelStyle: const TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 14,
@@ -223,103 +254,152 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
 
   Widget _buildProfileHeader({
     required Map<String, dynamic> userData,
+    required String viewedUserId,
     required int recipeCount,
     required int collectionCount,
+    required int followersCount,
+    required int followingCount,
     required bool isOwnProfile,
     required bool isFollowing,
     required bool canFollow,
     required VoidCallback onToggleFollow,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     final username = (userData['username'] ?? 'Chef').toString();
     final email = (userData['email'] ?? '').toString();
-    final followers = List<String>.from(
-      userData['followers'] ?? const <String>[],
-    );
-    final following = List<String>.from(
-      userData['following'] ?? const <String>[],
-    );
-
+    final profileImageUrl =
+        (userData['mediaId'] ?? userData['profilePictureUrl'])?.toString();
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 14),
       child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.rosePink, width: 2),
-            ),
-            child: const CircleAvatar(
-              radius: 45,
-              backgroundColor: AppColors.cardRose,
-              child: Icon(Icons.person, size: 40, color: AppColors.rosePink),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            username,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
-          ),
-          if (email.isNotEmpty)
-            Text(
-              email,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.black45,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          const SizedBox(height: 24),
-
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              _buildStatItem('$recipeCount', 'Recipes'),
-              _buildStatItem('${followers.length}', 'Followers'),
-              _buildStatItem('${following.length}', 'Following'),
+              Container(
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.rosePink, width: 1.8),
+                ),
+                child: CircleAvatar(
+                  radius: 34,
+                  backgroundColor: AppColors.cardRose,
+                  backgroundImage: profileImageUrl != null &&
+                          profileImageUrl.isNotEmpty
+                      ? NetworkImage(profileImageUrl)
+                      : null,
+                  child: profileImageUrl == null || profileImageUrl.isEmpty
+                      ? const Icon(
+                          Icons.person,
+                          size: 30,
+                          color: AppColors.rosePink,
+                        )
+                      : null,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      username,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 21,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    if (email.isNotEmpty)
+                      Text(
+                        email,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colorScheme.onSurface.withValues(alpha: 0.65),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$collectionCount collections',
+                      style: TextStyle(
+                        color: colorScheme.onSurface.withValues(alpha: 0.65),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 10),
-          Text(
-            '$collectionCount collections',
-            style: const TextStyle(
-              color: Colors.black45,
-              fontWeight: FontWeight.w700,
+          const SizedBox(height: 16),
+
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: AppColors.rosePink.withValues(alpha: 0.16),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildStatItem('$recipeCount', 'Recipes'),
+                _buildStatItem(
+                  '$followersCount',
+                  'Followers',
+                  onTap: () =>
+                      _openConnections(userId: viewedUserId, initialTab: 0),
+                ),
+                _buildStatItem(
+                  '$followingCount',
+                  'Following',
+                  onTap: () =>
+                      _openConnections(userId: viewedUserId, initialTab: 1),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 14),
 
           SizedBox(
             width: double.infinity,
-            height: 50,
+            height: 44,
             child: ElevatedButton(
               onPressed: isOwnProfile
-                  ? _signOut
+                  ? _openEditProfile
                   : canFollow && !_isFollowActionLoading
                   ? onToggleFollow
                   : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: isOwnProfile
-                    ? Colors.white
+                    ? colorScheme.surface
                     : isFollowing
-                    ? Colors.white
+                    ? colorScheme.surface
                     : AppColors.rosePink,
                 elevation: 0,
                 side: BorderSide(
                   color: isOwnProfile
-                      ? Colors.black12
+                      ? colorScheme.onSurface.withValues(alpha: 0.18)
                       : isFollowing
-                      ? Colors.black12
+                      ? colorScheme.onSurface.withValues(alpha: 0.18)
                       : AppColors.rosePink,
                   width: 1.5,
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(14),
                 ),
               ),
               child: Text(
                 isOwnProfile
-                    ? 'Sign Out'
+                    ? 'Edit Profile'
                     : _isFollowActionLoading
                     ? 'Working...'
                     : isFollowing
@@ -327,7 +407,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                     : 'Follow',
                 style: TextStyle(
                   color: isOwnProfile || isFollowing
-                      ? Colors.black54
+                      ? colorScheme.onSurface.withValues(alpha: 0.75)
                       : Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
@@ -339,22 +419,33 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     );
   }
 
-  Widget _buildStatItem(String value, String label) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-        ),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.black38,
-            fontWeight: FontWeight.bold,
+  Widget _buildStatItem(String value, String label, {VoidCallback? onTap}) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          child: Column(
+            children: [
+              Text(
+                value,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+              ),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: colorScheme.onSurface.withValues(alpha: 0.5),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 
@@ -362,11 +453,13 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     return userRecipesAsync.when(
       data: (recipes) {
         if (recipes.isEmpty) {
-          return const Center(
+          return Center(
             child: Text(
               'No recipes yet',
               style: TextStyle(
-                color: Colors.black45,
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.65),
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -392,7 +485,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
       error: (error, _) => Center(
         child: Text(
           'Failed to load recipes: $error',
-          style: const TextStyle(color: Colors.black54),
+          style: TextStyle(
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.75),
+          ),
         ),
       ),
     );
@@ -414,10 +511,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                   color: AppColors.rosePink.withValues(alpha: 0.2),
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'No collections yet',
                   style: TextStyle(
-                    color: Colors.black38,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.5),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -435,7 +534,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
             return Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: AppColors.rosePink.withValues(alpha: 0.18),
@@ -455,14 +554,20 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                     const SizedBox(height: 4),
                     Text(
                       collection.description,
-                      style: const TextStyle(color: Colors.black54),
+                      style: TextStyle(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.75),
+                      ),
                     ),
                   ],
                   const SizedBox(height: 8),
                   Text(
                     '${collection.recipeCount} recipes',
-                    style: const TextStyle(
-                      color: Colors.black45,
+                    style: TextStyle(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.65),
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -476,136 +581,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
       error: (error, _) => Center(
         child: Text(
           'Failed to load collections: $error',
-          style: const TextStyle(color: Colors.black54),
+          style: TextStyle(
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.75),
+          ),
         ),
       ),
     );
   }
 }
 
-class _ProfileSettingsSheet extends ConsumerWidget {
-  const _ProfileSettingsSheet();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final preferencesAsync = ref.watch(userPreferencesProvider);
-
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        child: preferencesAsync.when(
-          loading: () => const SizedBox(
-            height: 220,
-            child: Center(child: CircularProgressIndicator()),
-          ),
-          error: (error, _) => SizedBox(
-            height: 220,
-            child: Center(
-              child: Text(
-                'Failed to load settings: $error',
-                style: const TextStyle(color: Colors.black54),
-              ),
-            ),
-          ),
-          data: (preferences) {
-            final notifier = ref.read(userPreferencesProvider.notifier);
-
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(height: 10),
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Profile settings',
-                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                SwitchListTile.adaptive(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Notifications'),
-                  value: preferences.notificationsEnabled,
-                  activeThumbColor: AppColors.rosePink,
-                  onChanged: notifier.updateNotificationsEnabled,
-                ),
-                SwitchListTile.adaptive(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Only verified recipes'),
-                  value: preferences.showOnlyVerifiedRecipes,
-                  activeThumbColor: AppColors.rosePink,
-                  onChanged: notifier.updateShowOnlyVerifiedRecipes,
-                ),
-                SwitchListTile.adaptive(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Nutrition per serving'),
-                  value: preferences.showNutritionPerServing,
-                  activeThumbColor: AppColors.rosePink,
-                  onChanged: notifier.updateShowNutritionPerServing,
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    const Text(
-                      'Unit system',
-                      style: TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    const Spacer(),
-                    SegmentedButton<UnitSystem>(
-                      showSelectedIcon: false,
-                      selected: {preferences.unitSystem},
-                      onSelectionChanged: (selection) {
-                        notifier.updateUnitSystem(selection.first);
-                      },
-                      segments: const [
-                        ButtonSegment<UnitSystem>(
-                          value: UnitSystem.metric,
-                          label: Text('Metric'),
-                        ),
-                        ButtonSegment<UnitSystem>(
-                          value: UnitSystem.imperial,
-                          label: Text('Imperial'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    const Text(
-                      'Theme',
-                      style: TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    const Spacer(),
-                    SegmentedButton<ThemeMode>(
-                      showSelectedIcon: false,
-                      selected: {preferences.themeMode},
-                      onSelectionChanged: (selection) {
-                        notifier.updateThemeMode(selection.first);
-                      },
-                      segments: const [
-                        ButtonSegment<ThemeMode>(
-                          value: ThemeMode.system,
-                          label: Text('System'),
-                        ),
-                        ButtonSegment<ThemeMode>(
-                          value: ThemeMode.light,
-                          label: Text('Light'),
-                        ),
-                        ButtonSegment<ThemeMode>(
-                          value: ThemeMode.dark,
-                          label: Text('Dark'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
