@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nutricook/core/meal_time_preferences.dart';
 
 enum UnitSystem { metric, imperial }
 
@@ -10,6 +11,9 @@ class UserPreferences {
     this.showOnlyVerifiedRecipes = false,
     this.showNutritionPerServing = true,
     this.dailyCalorieGoal = 2000,
+    this.allergens = const <String>[],
+    this.showRecipesWithAllergens = true,
+    this.mealStartHours = defaultMealStartHours,
   });
 
   final ThemeMode themeMode;
@@ -18,6 +22,9 @@ class UserPreferences {
   final bool showOnlyVerifiedRecipes;
   final bool showNutritionPerServing;
   final int dailyCalorieGoal;
+  final List<String> allergens;
+  final bool showRecipesWithAllergens;
+  final Map<String, int> mealStartHours;
 
   static const UserPreferences defaults = UserPreferences();
 
@@ -28,6 +35,9 @@ class UserPreferences {
     bool? showOnlyVerifiedRecipes,
     bool? showNutritionPerServing,
     int? dailyCalorieGoal,
+    List<String>? allergens,
+    bool? showRecipesWithAllergens,
+    Map<String, int>? mealStartHours,
   }) {
     return UserPreferences(
       themeMode: themeMode ?? this.themeMode,
@@ -38,6 +48,12 @@ class UserPreferences {
       showNutritionPerServing:
           showNutritionPerServing ?? this.showNutritionPerServing,
       dailyCalorieGoal: dailyCalorieGoal ?? this.dailyCalorieGoal,
+      allergens: allergens ?? this.allergens,
+      showRecipesWithAllergens:
+          showRecipesWithAllergens ?? this.showRecipesWithAllergens,
+      mealStartHours: sanitizeMealStartHours(
+        mealStartHours ?? this.mealStartHours,
+      ),
     );
   }
 
@@ -49,6 +65,9 @@ class UserPreferences {
       'showOnlyVerifiedRecipes': showOnlyVerifiedRecipes,
       'showNutritionPerServing': showNutritionPerServing,
       'dailyCalorieGoal': dailyCalorieGoal,
+      'allergens': allergens,
+      'showRecipesWithAllergens': showRecipesWithAllergens,
+      'mealStartHours': mealStartHours,
     };
   }
 
@@ -73,6 +92,15 @@ class UserPreferences {
         (json['dailyCalorieGoal'] as num?)?.toInt() ??
         UserPreferences.defaults.dailyCalorieGoal;
 
+    final parsedMealStartHours = sanitizeMealStartHours(
+      (json['mealStartHours'] as Map?)?.map(
+        (key, value) => MapEntry(
+          key.toString(),
+          (value as num?)?.toInt() ?? defaultMealStartHours[key.toString()] ?? 0,
+        ),
+      ),
+    );
+
     return UserPreferences(
       themeMode: parsedThemeMode ?? UserPreferences.defaults.themeMode,
       unitSystem: parsedUnitSystem ?? UserPreferences.defaults.unitSystem,
@@ -86,6 +114,13 @@ class UserPreferences {
           json['showNutritionPerServing'] as bool? ??
           UserPreferences.defaults.showNutritionPerServing,
       dailyCalorieGoal: calorieGoal < 100 ? 100 : calorieGoal,
+      allergens: (json['allergens'] as List<dynamic>? ?? const <dynamic>[])
+          .map((e) => e.toString())
+          .toList(),
+      showRecipesWithAllergens:
+          json['showRecipesWithAllergens'] as bool? ??
+          UserPreferences.defaults.showRecipesWithAllergens,
+      mealStartHours: parsedMealStartHours,
     );
   }
 }
