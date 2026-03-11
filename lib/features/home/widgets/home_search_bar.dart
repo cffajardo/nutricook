@@ -7,16 +7,20 @@ class HomeSearchBar extends StatelessWidget {
     required this.controller,
     this.onChanged,
     this.onSubmitted,
-    this.onProfileTap,
+    this.onNotificationTap,
+    this.unreadCount = 0,
   });
 
   final TextEditingController controller;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
-  final VoidCallback? onProfileTap;
+  final VoidCallback? onNotificationTap;
+  final int unreadCount;
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Row(
       children: [
         Expanded(
@@ -26,9 +30,12 @@ class HomeSearchBar extends StatelessWidget {
             onSubmitted: onSubmitted,
             decoration: InputDecoration(
               hintText: 'Search recipes',
-              prefixIcon: const Icon(Icons.search_rounded),
+              prefixIcon: Icon(
+                Icons.search_rounded,
+                color: colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: colorScheme.surface,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 12,
                 vertical: 12,
@@ -49,17 +56,56 @@ class HomeSearchBar extends StatelessWidget {
         ),
         const SizedBox(width: 10),
         InkWell(
-          onTap: onProfileTap,
+          onTap: onNotificationTap,
           borderRadius: BorderRadius.circular(24),
           child: Container(
             width: 44,
             height: 44,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white,
-              border: Border.all(color: Colors.black.withValues(alpha: 0.18)),
+              color: colorScheme.surface,
+              border: Border.all(
+                color: colorScheme.onSurface.withValues(alpha: 0.2),
+              ),
             ),
-            child: const Icon(Icons.person_rounded, color: Colors.black87),
+            child: Stack(
+              children: [
+                Center(
+                  child: Icon(
+                    Icons.notifications_none_rounded,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                if (unreadCount > 0)
+                  Positioned(
+                    top: 6,
+                    right: 4,
+                    child: Container(
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.rosePink,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        unreadCount > 99 ? '99+' : '$unreadCount',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ],
