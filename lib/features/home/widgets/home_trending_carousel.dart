@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:nutricook/core/allergen_entries.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
+import 'package:nutricook/core/widgets/allergen_warning_badge.dart';
+import 'package:nutricook/features/library/ingredients/provider/ingredient_provider.dart';
+import 'package:nutricook/features/profile/provider/user_provider.dart';
+import 'package:nutricook/routing/app_routes.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
 
 class HomeTrendingCarousel extends StatelessWidget {
@@ -10,12 +16,14 @@ class HomeTrendingCarousel extends StatelessWidget {
     required this.pageController,
     required this.currentIndex,
     required this.onPageChanged,
+    this.emptyMessage = 'No trending recipes yet',
   });
 
   final AsyncValue<List<Recipe>> recipesAsync;
   final PageController pageController;
   final int currentIndex;
   final ValueChanged<int> onPageChanged;
+  final String emptyMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -42,10 +50,10 @@ class HomeTrendingCarousel extends StatelessWidget {
         if (top.isEmpty) {
           return _buildShell(
             context,
-            const Center(
+            Center(
               child: Text(
-                'No trending recipes yet',
-                style: TextStyle(fontWeight: FontWeight.w600),
+                emptyMessage,
+                style: const TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
             count: 1,
@@ -60,82 +68,7 @@ class HomeTrendingCarousel extends StatelessWidget {
             onPageChanged: onPageChanged,
             itemBuilder: (context, index) {
               final recipe = top[index];
-              return Container(
-                margin: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  color: Colors.white,
-                  border: Border.all(
-                    color: Colors.black.withValues(alpha: 0.1),
-                  ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          _RecipeThumb(
-                            imageUrl: recipe.imageURL.isNotEmpty
-                                ? recipe.imageURL.first
-                                : null,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              recipe.name,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        recipe.description,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Colors.black.withValues(alpha: 0.75),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const Spacer(),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: recipe.tags
-                            .take(3)
-                            .map((tag) {
-                              return Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.cardRose,
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                                child: Text(
-                                  tag,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              );
-                            })
-                            .toList(growable: false),
-                      ),
-                    ],
-                  ),
-                ),
-              );
+              return _RecipeStackCard(recipe: recipe);
             },
           ),
           count: top.length,
@@ -183,29 +116,173 @@ class HomeTrendingCarousel extends StatelessWidget {
   }
 }
 
-class _RecipeThumb extends StatelessWidget {
-  const _RecipeThumb({this.imageUrl});
+class _RecipeStackCard extends ConsumerWidget {
+  const _RecipeStackCard({required this.recipe});
 
-  final String? imageUrl;
+  final Recipe recipe;
+
+  String _formatLikesCount(int count) {
+    if (count >= 1000000) {
+      return '${(count / 1000000).toStringAsFixed(1)}M';
+    }
+    if (count >= 1000) {
+      return '${(count / 1000).toStringAsFixed(1)}K';
+    }
+    return count.toString();
+  }
 
   @override
-  Widget build(BuildContext context) {
-    final isNetwork = imageUrl != null && imageUrl!.startsWith('http');
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ownerId = recipe.ownerId;
+    final ownerAsync = ownerId == null
+        ? const AsyncValue<Map<String, dynamic>?>.data(null)
+        : ref.watch(userDataByIdProvider(ownerId));
+
+    final username = ownerAsync.asData?.value?['username']?.toString();
+    final allergenEntries = ref.watch(userAllergenProvider).asData?.value ??
+        const <String>[];
+    final ingredientsMap = ref.watch(ingredientsMapProvider).asData?.value;
+    final allergenLabels = matchedRecipeAllergenLabels(
+      recipe: recipe,
+      allergenEntries: allergenEntries,
+      ingredientsMap: ingredientsMap,
+    );
+    final calories =
+        recipe.nutritionPerServing?.calories ?? recipe.nutritionTotal?.calories;
+    final imageUrl = recipe.imageURL.isNotEmpty ? recipe.imageURL.first : null;
+    final isNetwork = imageUrl != null && imageUrl.startsWith('http');
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        width: 56,
-        height: 56,
-        color: AppColors.inputRose,
-        child: isNetwork
-            ? Image.network(
-                imageUrl!,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) =>
-                    const Icon(Icons.restaurant_menu_rounded),
-              )
-            : const Icon(Icons.restaurant_menu_rounded, color: Colors.black87),
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: () {
+          context.pushNamed(AppRoutes.recipeDetailsName, extra: recipe);
+        },
+        child: Container(
+          margin: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: Colors.black.withValues(alpha: 0.18),
+              width: 1.3,
+            ),
+          ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (isNetwork)
+                Image.network(
+                  imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => _fallbackBg(),
+                )
+              else
+                _fallbackBg(),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.05),
+                      Colors.black.withValues(alpha: 0.75),
+                    ],
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 14,
+                left: 14,
+                child: AllergenWarningBadge(allergenLabels: allergenLabels),
+              ),
+              Positioned(
+                left: 14,
+                right: 14,
+                bottom: 14,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      recipe.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 20,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        if (calories != null)
+                          Text(
+                            '$calories Cal',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        if (calories != null)
+                          Text(
+                            '  •  ',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.8),
+                            ),
+                          ),
+                        Icon(
+                          Icons.favorite_rounded,
+                          size: 16,
+                          color: Colors.white.withValues(alpha: 0.92),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          _formatLikesCount(recipe.favoriteCount),
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.92),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        Text(
+                          '  •  ',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.8),
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            username == null || username.isEmpty
+                                ? '@unknown'
+                                : '@$username',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.92),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _fallbackBg() {
+    return Container(
+      color: AppColors.cardRose,
+      alignment: Alignment.center,
+      child: const Icon(
+        Icons.restaurant_menu_rounded,
+        size: 38,
+        color: Colors.black45,
       ),
     );
   }
