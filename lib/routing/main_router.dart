@@ -11,8 +11,12 @@ import 'package:nutricook/features/recipe/screens/recipe_create.dart';
 import 'package:nutricook/features/recipe/screens/recipe_category.dart';
 import 'package:nutricook/features/recipe/screens/recipe_main_details.dart';
 import 'package:nutricook/features/planner/screens/planner_main.dart';
+import 'package:nutricook/features/profile/screens/edit_profile_page.dart';
+import 'package:nutricook/features/profile/screens/followers_following_page.dart';
 import 'package:nutricook/features/profile/screens/profile_page.dart';
+import 'package:nutricook/features/settings/screens/settings_page.dart';
 import 'package:nutricook/features/home/screens/home_user_search_results_screen.dart';
+import 'package:nutricook/features/notifications/screens/notifications_page.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
 import 'package:nutricook/screens/home_screen.dart';
 import 'package:nutricook/screens/splash_screen.dart';
@@ -76,10 +80,14 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
-          // Updated to hide nav on both Create and Details screens
+          final path = state.uri.path;
           final hideBottomNav =
-              state.uri.path == AppRoutes.recipeCreatePath ||
-              state.uri.path == AppRoutes.recipeDetailsPath;
+              path == AppRoutes.recipeCreatePath ||
+              path == AppRoutes.recipeDetailsPath ||
+              path == '${AppRoutes.profilePath}/${AppRoutes.settingsPath}' ||
+              path == '${AppRoutes.profilePath}/${AppRoutes.editProfilePath}' ||
+              path ==
+                '${AppRoutes.profilePath}/${AppRoutes.profileConnectionsPath}';
 
           return Scaffold(
             extendBody: true,
@@ -166,6 +174,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                 builder: (context, state) => const HomeScreen(),
                 routes: [
                   GoRoute(
+                    path: 'notifications',
+                    name: AppRoutes.notificationsName,
+                    builder: (context, state) => const NotificationsPage(),
+                  ),
+                  GoRoute(
                     path: 'search-users',
                     name: AppRoutes.homeUserSearchName,
                     builder: (context, state) {
@@ -184,6 +197,30 @@ final routerProvider = Provider<GoRouter>((ref) {
                 name: AppRoutes.profileName,
                 builder: (context, state) => const ProfilePage(),
                 routes: [
+                  GoRoute(
+                    path: AppRoutes.profileConnectionsPath,
+                    name: AppRoutes.profileConnectionsName,
+                    builder: (context, state) {
+                      final userId = state.uri.queryParameters['userId'] ?? '';
+                      final initialTab =
+                          int.tryParse(state.uri.queryParameters['tab'] ?? '0') ??
+                          0;
+                      return FollowersFollowingPage(
+                        userId: userId,
+                        initialTab: initialTab,
+                      );
+                    },
+                  ),
+                  GoRoute(
+                    path: AppRoutes.editProfilePath,
+                    name: AppRoutes.editProfileName,
+                    builder: (context, state) => const EditProfilePage(),
+                  ),
+                  GoRoute(
+                    path: AppRoutes.settingsPath,
+                    name: AppRoutes.settingsName,
+                    builder: (context, state) => const SettingsPage(),
+                  ),
                   GoRoute(
                     path: ':userId',
                     name: AppRoutes.profileUserName,
