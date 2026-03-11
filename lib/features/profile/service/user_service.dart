@@ -45,6 +45,113 @@ class UserService {
     await _users.doc(uid).delete();
   }
 
+  Future<void> deleteUserAccountWithOwnedData(String uid) async {
+    await _removeUserReferences(uid);
+    await _deleteOwnedPlannerItems(uid);
+    await _deleteOwnedRecipes(uid);
+    await _deleteOwnedCollections(uid);
+    await _users.doc(uid).delete();
+  }
+
+  Future<void> _removeUserReferences(String uid) async {
+    final followingSnapshot = await _users
+        .where('following', arrayContains: uid)
+        .get();
+    for (final doc in followingSnapshot.docs) {
+      await doc.reference.update({
+        'following': FieldValue.arrayRemove([uid]),
+      });
+    }
+
+    final followersSnapshot = await _users
+        .where('followers', arrayContains: uid)
+        .get();
+    for (final doc in followersSnapshot.docs) {
+      await doc.reference.update({
+        'followers': FieldValue.arrayRemove([uid]),
+      });
+    }
+
+    final blockedUsersSnapshot = await _users
+        .where('blockedUsers', arrayContains: uid)
+        .get();
+    for (final doc in blockedUsersSnapshot.docs) {
+      await doc.reference.update({
+        'blockedUsers': FieldValue.arrayRemove([uid]),
+      });
+    }
+
+    final blockedBySnapshot = await _users.where('blockedBy', arrayContains: uid).get();
+    for (final doc in blockedBySnapshot.docs) {
+      await doc.reference.update({
+        'blockedBy': FieldValue.arrayRemove([uid]),
+      });
+    }
+  }
+
+  Future<void> _deleteOwnedPlannerItems(String uid) async {
+    final plannerSnapshot = await _db
+        .collection(FirestoreConstants.plannerItems)
+        .where('ownerId', isEqualTo: uid)
+        .get();
+
+    for (final doc in plannerSnapshot.docs) {
+      await doc.reference.delete();
+    }
+  }
+
+  Future<void> _deleteOwnedRecipes(String uid) async {
+    final recipesSnapshot = await _db
+        .collection(FirestoreConstants.recipes)
+        .where('ownerId', isEqualTo: uid)
+        .get();
+
+    for (final doc in recipesSnapshot.docs) {
+      await doc.reference.delete();
+    }
+  }
+
+  Future<void> _deleteOwnedCollections(String uid) async {
+    final collectionsSnapshot = await _db
+        .collection(FirestoreConstants.collections)
+        .where('ownerId', isEqualTo: uid)
+        .get();
+
+    for (final collectionDoc in collectionsSnapshot.docs) {
+      final itemsSnapshot = await collectionDoc.reference
+          .collection(FirestoreConstants.items)
+          .get();
+
+      for (final itemDoc in itemsSnapshot.docs) {
+        await itemDoc.reference.delete();
+      }
+
+      await collectionDoc.reference.delete();
+    }
+  }
+
+  Future<bool> isUsernameTaken(String username, {String? excludeUid}) async {
+    final candidate = username.trim().toLowerCase();
+    final snapshot = await _users.get();
+
+    for (final doc in snapshot.docs) {
+      if (excludeUid != null && doc.id == excludeUid) continue;
+      final existing = (doc.data()['username'] ?? '').toString().trim();
+      if (existing.toLowerCase() == candidate) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  Future<void> updateProfilePictureUrl(String uid, String photoUrl) async {
+    await _users.doc(uid).update({
+      'mediaId': photoUrl,
+      'profilePictureUrl': photoUrl,
+    });
+  }
+
   // Stream for user allergens (used in recipe filtering to apply allergen filters in real-time)
   Stream<List<String>> getUserAllergensStream(String uid) {
     return _users.doc(uid).snapshots().map((doc) {
@@ -108,13 +215,99 @@ class UserService {
   Stream<List<Map<String, dynamic>>> getUsersByIdsStream(List<String> ids) {
     if (ids.isEmpty) return Stream.value(<Map<String, dynamic>>[]);
 
+    final wanted = ids
+        .map(_normalizeConnectionToken)
+        .map((id) => id.toLowerCase())
+        .where((id) => id.isNotEmpty)
+        .toSet();
+
     return _users.snapshots().map((snapshot) {
-      final wanted = ids.toSet();
       return snapshot.docs
-          .map((doc) => doc.data())
-          .where((user) => wanted.contains(user['id']))
+          .map((doc) {
+            final data = doc.data();
+            final userId = (data['id'] ?? doc.id).toString();
+            return <String, dynamic>{...data, 'id': userId};
+          })
+          .where((user) {
+            final id = (user['id'] ?? '').toString().trim().toLowerCase();
+            final username =
+                (user['username'] ?? '').toString().trim().toLowerCase();
+            final email = (user['email'] ?? '').toString().trim().toLowerCase();
+
+            return wanted.contains(id) ||
+                wanted.contains(username) ||
+                wanted.contains(email);
+          })
           .toList();
     });
+  }
+
+  Stream<List<Map<String, dynamic>>> getFollowersOfUserStream(String userId) {
+    return _users
+        .where('following', arrayContains: userId)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) {
+                final data = doc.data();
+                final id = (data['id'] ?? doc.id).toString();
+                return <String, dynamic>{...data, 'id': id};
+              })
+              .toList(growable: false),
+        );
+  }
+
+  Stream<List<Map<String, dynamic>>> getFollowingOfUserStream(String userId) {
+    return _users
+        .where('followers', arrayContains: userId)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) {
+                final data = doc.data();
+                final id = (data['id'] ?? doc.id).toString();
+                return <String, dynamic>{...data, 'id': id};
+              })
+              .toList(growable: false),
+        );
+  }
+
+  Future<List<Map<String, dynamic>>> getFollowersOfUserOnce(String userId) async {
+    final snapshot = await _users.where('following', arrayContains: userId).get();
+    return snapshot.docs
+        .map((doc) {
+          final data = doc.data();
+          final id = (data['id'] ?? doc.id).toString();
+          return <String, dynamic>{...data, 'id': id};
+        })
+        .toList(growable: false);
+  }
+
+  Future<List<Map<String, dynamic>>> getFollowingOfUserOnce(String userId) async {
+    final snapshot = await _users.where('followers', arrayContains: userId).get();
+    return snapshot.docs
+        .map((doc) {
+          final data = doc.data();
+          final id = (data['id'] ?? doc.id).toString();
+          return <String, dynamic>{...data, 'id': id};
+        })
+        .toList(growable: false);
+  }
+
+  String _normalizeConnectionToken(String raw) {
+    final text = raw.trim();
+    if (text.isEmpty) return '';
+
+    final usersIndex = text.lastIndexOf('users/');
+    if (usersIndex >= 0) {
+      final candidate = text.substring(usersIndex + 'users/'.length).trim();
+      final cleaned = candidate
+          .split(RegExp(r'[)\\s/]+'))
+          .firstWhere((part) => part.isNotEmpty, orElse: () => '');
+      if (cleaned.isNotEmpty) return cleaned;
+    }
+
+    return text;
   }
 
   Future<void> followUser({
