@@ -36,7 +36,9 @@ class _CreateRecipeAboutPageState extends ConsumerState<CreateRecipeAboutPage> {
     _cookTimeController = TextEditingController(
       text: state.cookTimeMinutes == 0 ? '' : state.cookTimeMinutes.toString(),
     );
-    _servingsController = TextEditingController(text: state.servings.toString());
+    _servingsController = TextEditingController(
+      text: state.servings <= 0 ? '' : state.servings.toString(),
+    );
   }
 
   @override
