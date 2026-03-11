@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nutricook/core/allergen_entries.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
+import 'package:nutricook/core/widgets/allergen_warning_badge.dart';
+import 'package:nutricook/features/library/ingredients/provider/ingredient_provider.dart';
+import 'package:nutricook/features/profile/provider/user_provider.dart';
 import 'package:nutricook/features/planner/widgets/planner_item_recipe_filter.dart';
 import 'package:nutricook/features/recipe/providers/recipe_provider.dart';
+import 'package:nutricook/features/utils/nutrition_calculator.dart';
+import 'package:nutricook/models/ingredient/ingredient.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
 
 class PlannerRecipeSelectModal extends ConsumerStatefulWidget {
@@ -15,7 +21,6 @@ class PlannerRecipeSelectModal extends ConsumerStatefulWidget {
 
 class _PlannerRecipeSelectModalState
     extends ConsumerState<PlannerRecipeSelectModal> {
-  bool isListView = true;
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -38,10 +43,11 @@ class _PlannerRecipeSelectModalState
   @override
   Widget build(BuildContext context) {
     final recipesAsync = ref.watch(
-      filteredRecipesProvider(
-        RecipeFilterInput(query: _searchController.text),
-      ),
+      filteredRecipesProvider(RecipeFilterInput(query: _searchController.text)),
     );
+    final allergenEntries =
+        ref.watch(userAllergenProvider).asData?.value ?? const <String>[];
+    final ingredientsMap = ref.watch(ingredientsMapProvider).asData?.value;
 
     return _KeyboardInsetPadding(
       child: Container(
@@ -55,31 +61,38 @@ class _PlannerRecipeSelectModalState
             const SizedBox(height: 12),
             // Drag Handle
             Container(
-              width: 40, 
-              height: 5, 
+              width: 40,
+              height: 5,
               decoration: BoxDecoration(
-                color: Colors.black12, 
-                borderRadius: BorderRadius.circular(10)
+                color: Colors.black12,
+                borderRadius: BorderRadius.circular(10),
               ),
             ),
-            
+
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.chevron_left, color: AppColors.rosePink, size: 32),
+                    icon: const Icon(
+                      Icons.chevron_left,
+                      color: AppColors.rosePink,
+                      size: 32,
+                    ),
                   ),
                   const Expanded(
                     child: Center(
                       child: Text(
-                        'Select Recipe', 
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
+                        'Select Recipe',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 48), 
+                  const SizedBox(width: 48),
                 ],
               ),
             ),
@@ -94,11 +107,17 @@ class _PlannerRecipeSelectModalState
                       height: 48,
                       child: TextField(
                         controller: _searchController,
-                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
                         decoration: InputDecoration(
                           hintText: 'Search recipe...',
                           hintStyle: const TextStyle(color: Colors.black26),
-                          prefixIcon: const Icon(Icons.search, color: AppColors.rosePink),
+                          prefixIcon: const Icon(
+                            Icons.search,
+                            color: AppColors.rosePink,
+                          ),
                           filled: true,
                           fillColor: AppColors.cardRose.withValues(alpha: 0.5),
                           contentPadding: EdgeInsets.zero,
@@ -126,29 +145,6 @@ class _PlannerRecipeSelectModalState
               ),
             ),
 
-            Padding(
-              padding: const EdgeInsets.only(right: 20, bottom: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  IconButton(
-                    onPressed: () => setState(() => isListView = true),
-                    icon: Icon(
-                      Icons.menu_rounded, 
-                      color: isListView ? AppColors.rosePink : Colors.black26
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => setState(() => isListView = false),
-                    icon: Icon(
-                      Icons.grid_view_rounded, 
-                      color: !isListView ? AppColors.rosePink : Colors.black26
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
             Flexible(
               child: recipesAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
@@ -162,9 +158,11 @@ class _PlannerRecipeSelectModalState
                   if (recipes.isEmpty) {
                     return const Center(child: Text('No recipes found.'));
                   }
-                  return isListView
-                      ? _buildListView(recipes)
-                      : _buildTileView(recipes);
+                  return _buildTileView(
+                    recipes,
+                    allergenEntries,
+                    ingredientsMap,
+                  );
                 },
               ),
             ),
@@ -182,10 +180,14 @@ class _PlannerRecipeSelectModalState
           barrierDismissible: true,
           barrierLabel: 'Filter',
           transitionDuration: const Duration(milliseconds: 250),
-          pageBuilder: (context, anim1, anim2) => const PlannerRecipeFilterModal(),
+          pageBuilder: (context, anim1, anim2) =>
+              const PlannerRecipeFilterModal(),
           transitionBuilder: (context, anim1, anim2, child) {
             return SlideTransition(
-              position: Tween(begin: const Offset(1, 0), end: const Offset(0, 0)).animate(anim1),
+              position: Tween(
+                begin: const Offset(1, 0),
+                end: const Offset(0, 0),
+              ).animate(anim1),
               child: child,
             );
           },
@@ -196,29 +198,27 @@ class _PlannerRecipeSelectModalState
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.rosePink.withValues(alpha: 0.2), width: 1.5),
+          border: Border.all(
+            color: AppColors.rosePink.withValues(alpha: 0.2),
+            width: 1.5,
+          ),
         ),
         child: const Text(
-          'Filter', 
-          style: TextStyle(color: AppColors.rosePink, fontWeight: FontWeight.bold)
+          'Filter',
+          style: TextStyle(
+            color: AppColors.rosePink,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildListView(List<Recipe> recipes) {
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-      physics: const BouncingScrollPhysics(),
-      itemCount: recipes.length,
-      itemBuilder: (context, index) => _buildRecipeCard(
-        recipe: recipes[index],
-        isList: true,
-      ),
-    );
-  }
-
-  Widget _buildTileView(List<Recipe> recipes) {
+  Widget _buildTileView(
+    List<Recipe> recipes,
+    List<String> allergenEntries,
+    Map<String, Ingredient>? ingredientsMap,
+  ) {
     return GridView.builder(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       physics: const BouncingScrollPhysics(),
@@ -226,20 +226,37 @@ class _PlannerRecipeSelectModalState
         crossAxisCount: 2,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
-        childAspectRatio: 0.8,
+        childAspectRatio: 0.76,
       ),
       itemCount: recipes.length,
       itemBuilder: (context, index) => _buildRecipeCard(
         recipe: recipes[index],
-        isList: false,
+        allergenEntries: allergenEntries,
+        ingredientsMap: ingredientsMap,
       ),
     );
   }
 
   Widget _buildRecipeCard({
     required Recipe recipe,
-    required bool isList,
+    required List<String> allergenEntries,
+    required Map<String, Ingredient>? ingredientsMap,
   }) {
+    final allergenLabels = matchedRecipeAllergenLabels(
+      recipe: recipe,
+      allergenEntries: allergenEntries,
+      ingredientsMap: ingredientsMap,
+    );
+
+    final nutritionPerServing =
+        recipe.nutritionPerServing ??
+        (recipe.nutritionTotal != null && recipe.servings > 0
+            ? NutritionCalculator.calculateNutritionPerServing(
+                totalNutrition: recipe.nutritionTotal!,
+                servings: recipe.servings,
+              )
+            : null);
+
     return GestureDetector(
       onTap: () => Navigator.pop(context, <String, dynamic>{
         'id': recipe.id,
@@ -247,43 +264,82 @@ class _PlannerRecipeSelectModalState
         'servings': recipe.servings,
         'prepTime': recipe.prepTime,
         'cookTime': recipe.cookTime,
-        'thumbnailUrl': recipe.imageURL.isNotEmpty ? recipe.imageURL.first : null,
-        'nutritionPerServing': recipe.nutritionPerServing,
+        'thumbnailUrl': recipe.imageURL.isNotEmpty
+            ? recipe.imageURL.first
+            : null,
+        'nutritionPerServing': nutritionPerServing,
+        'allergenWarnings': allergenLabels,
       }),
       child: Container(
-        margin: isList ? const EdgeInsets.only(bottom: 16) : EdgeInsets.zero,
         decoration: BoxDecoration(
+          color: Colors.white,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.rosePink.withValues(alpha: 0.14), width: 1.5),
+          border: Border.all(
+            color: AppColors.rosePink.withValues(alpha: 0.14),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              flex: 2,
-              child: Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: AppColors.cardRose,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-                ),
-                child: const Icon(Icons.restaurant, color: AppColors.rosePink, size: 30),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
+              flex: 3,
+              child: Stack(
                 children: [
-                  Text(
-                    recipe.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  Container(
+                    width: double.infinity,
+                    decoration: const BoxDecoration(
+                      color: AppColors.cardRose,
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(22),
+                      ),
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.restaurant,
+                        color: AppColors.rosePink,
+                        size: 40,
+                      ),
+                    ),
                   ),
-                  Text(
-                    '${recipe.nutritionPerServing?.calories ?? recipe.nutritionTotal?.calories ?? 0} Cal • ${recipe.prepTime + recipe.cookTime} min',
-                    style: const TextStyle(fontSize: 11, color: Colors.black45),
+                  Positioned(
+                    top: 10,
+                    left: 10,
+                    child: AllergenWarningBadge(allergenLabels: allergenLabels),
                   ),
                 ],
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      recipe.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                    Text(
+                      '${nutritionPerServing?.calories ?? 0} Cal • ${recipe.prepTime + recipe.cookTime} min',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.black45,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
