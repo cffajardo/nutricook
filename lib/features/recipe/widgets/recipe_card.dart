@@ -1,22 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart'; 
+import 'package:nutricook/core/allergen_entries.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
+import 'package:nutricook/core/widgets/allergen_warning_badge.dart';
+import 'package:nutricook/features/library/ingredients/provider/ingredient_provider.dart';
+import 'package:nutricook/features/profile/provider/user_provider.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
 import 'package:nutricook/routing/app_routes.dart'; 
 
 class RecipeCard extends ConsumerWidget {
   final Recipe recipe;
-  final bool hasAllergen;
 
   const RecipeCard({
     super.key, 
     required this.recipe, 
-    this.hasAllergen = false
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final allergenEntries = ref.watch(userAllergenProvider).asData?.value ??
+        const <String>[];
+    final ingredientsMap = ref.watch(ingredientsMapProvider).asData?.value;
+    final allergenLabels = matchedRecipeAllergenLabels(
+      recipe: recipe,
+      allergenEntries: allergenEntries,
+      ingredientsMap: ingredientsMap,
+    );
+
     return InkWell(
       borderRadius: BorderRadius.circular(24),
       onTap: () {
@@ -58,19 +69,11 @@ class RecipeCard extends ConsumerWidget {
                       child: Icon(Icons.restaurant, color: AppColors.rosePink, size: 40)
                     ),
                   ),
-                  if (hasAllergen)
-                    Positioned(
-                      top: 10,
-                      right: 10,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Colors.red, 
-                          shape: BoxShape.circle
-                        ),
-                        child: const Icon(Icons.warning_rounded, color: Colors.white, size: 14),
-                      ),
-                    ),
+                  Positioned(
+                    top: 10,
+                    left: 10,
+                    child: AllergenWarningBadge(allergenLabels: allergenLabels),
+                  ),
                 ],
               ),
             ),
