@@ -2,13 +2,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nutricook/core/meal_time_preferences.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
 import 'package:nutricook/features/home/widgets/home_category_row.dart';
 import 'package:nutricook/features/home/widgets/home_meal_overview_card.dart';
 import 'package:nutricook/features/home/widgets/home_trending_carousel.dart';
-import 'package:nutricook/features/home/widgets/following_social_panel.dart';
 import 'package:nutricook/features/home/widgets/home_search_bar.dart';
+import 'package:nutricook/features/notifications/provider/notification_provider.dart';
 import 'package:nutricook/features/planner/provider/planner_provider.dart';
+import 'package:nutricook/features/profile/provider/user_preferences_provider.dart';
 import 'package:nutricook/features/recipe/providers/recipe_provider.dart';
 import 'package:nutricook/routing/app_routes.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -56,14 +58,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   DateTime get _selectedDate => DateTime(_now.year, _now.month, _now.day);
 
-  String get _autoMealType {
-    final hour = _now.hour;
-    if (hour < 11) return 'Breakfast';
-    if (hour < 16) return 'Lunch';
-    if (hour < 22) return 'Dinner';
-    return 'Snack';
-  }
-
   void _submitHomeSearch(String rawQuery) {
     final query = rawQuery.trim();
     if (query.isEmpty) return;
@@ -76,16 +70,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final mealStartHours = ref.watch(mealStartHoursProvider);
+    final autoMealType = resolveMealTypeForTime(
+      _now,
+      mealStartHours,
+    );
     final trendingAsync = ref.watch(visibleTrendingRecipesProvider);
+    final followingAsync = ref.watch(followingRecipesProvider);
     final mealItems = ref.watch(
       plannerItemsByMealTypeProvider((
         date: _selectedDate,
-        mealType: _autoMealType,
+        mealType: autoMealType,
       )),
     );
     final dailyTotalsAsync = ref.watch(
       dailyNutritionTotalProvider(_selectedDate),
     );
+    final unreadCount =
+        ref.watch(unreadNotificationCountProvider).asData?.value ?? 0;
 
     return Scaffold(
       extendBody: true,
@@ -103,28 +105,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const SizedBox(height: 14),
                   HomeSearchBar(
                     controller: _searchController,
+                    unreadCount: unreadCount,
                     onSubmitted: _submitHomeSearch,
-                    onProfileTap: () => context.goNamed(AppRoutes.profileName),
+                    onNotificationTap: () =>
+                        context.pushNamed(AppRoutes.notificationsName),
                   ),
                   const SizedBox(height: 20),
                   _buildTabs(),
                   const SizedBox(height: 16),
 
                   _showFollowing
-                      ? Container(
-                          height: 220,
-                          decoration: BoxDecoration(
-                            color: AppColors.cardRose,
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(
-                              color: AppColors.rosePink.withValues(alpha: 0.14),
-                              width: 1.5,
-                            ),
-                          ),
-                          child: const ClipRRect(
-                            borderRadius: BorderRadius.all(Radius.circular(24)),
-                            child: _FollowingContent(),
-                          ),
+                      ? HomeTrendingCarousel(
+                          recipesAsync: followingAsync,
+                          pageController: _pageController,
+                          currentIndex: _currentPage,
+                          emptyMessage: 'Follow users to see their recipes',
+                          onPageChanged: (index) {
+                            if (!mounted) return;
+                            setState(() => _currentPage = index);
+                          },
                         )
                       : HomeTrendingCarousel(
                           recipesAsync: trendingAsync,
@@ -162,7 +161,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const SizedBox(height: 24),
                   HomeMealOverviewCard(
                     date: _selectedDate,
-                    mealType: _autoMealType,
+                    mealType: autoMealType,
                     items: mealItems,
                     totals: dailyTotalsAsync.asData?.value,
                     isTotalsLoading: dailyTotalsAsync.isLoading,
@@ -177,6 +176,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildTabs() {
+    final colorScheme = Theme.of(context).colorScheme;
     final double screenWidth = MediaQuery.of(context).size.width - 32;
     return SizedBox(
       height: 60,
@@ -201,7 +201,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   fontWeight: _showFollowing
                       ? FontWeight.bold
                       : FontWeight.w900,
-                  color: _showFollowing ? Colors.black38 : AppColors.rosePink,
+                  color: _showFollowing
+                      ? colorScheme.onSurface.withValues(alpha: 0.5)
+                      : AppColors.rosePink,
                   fontFamily: GoogleFonts.comfortaa().fontFamily,
                 ),
                 child: const Text('Trending'),
@@ -226,7 +228,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   fontWeight: _showFollowing
                       ? FontWeight.w900
                       : FontWeight.bold,
-                  color: _showFollowing ? AppColors.rosePink : Colors.black38,
+                  color: _showFollowing
+                      ? AppColors.rosePink
+                      : colorScheme.onSurface.withValues(alpha: 0.5),
                   fontFamily: GoogleFonts.comfortaa().fontFamily,
                 ),
                 child: const Text('Following'),
@@ -236,14 +240,5 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
       ),
     );
-  }
-}
-
-class _FollowingContent extends StatelessWidget {
-  const _FollowingContent();
-
-  @override
-  Widget build(BuildContext context) {
-    return const FollowingSocialPanel();
   }
 }
