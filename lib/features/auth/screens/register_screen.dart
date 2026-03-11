@@ -181,7 +181,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                     const SizedBox(height: 4),
                     const Text(
-                      'Tagline',
+                      'Sign up to start your healthy cooking journey!',
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.black54,
