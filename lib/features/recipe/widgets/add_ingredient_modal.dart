@@ -8,16 +8,21 @@ import 'package:nutricook/models/recipe_ingredient/recipe_ingredient.dart';
 import 'package:nutricook/models/unit/unit.dart';
 
 class AddIngredientModal extends ConsumerStatefulWidget {
-  final ValueChanged<RecipeIngredient> onIngredientAdded;
+  final ValueChanged<RecipeIngredient>? onIngredientAdded;
+  final ValueChanged<String>? onIngredientPicked;
   final VoidCallback? onIngredientDeleted;
   final RecipeIngredient? initialIngredient;
 
   const AddIngredientModal({
     super.key,
-    required this.onIngredientAdded,
+    this.onIngredientAdded,
+    this.onIngredientPicked,
     this.onIngredientDeleted,
     this.initialIngredient,
-  });
+  }) : assert(
+         onIngredientAdded != null || onIngredientPicked != null,
+         'Provide onIngredientAdded or onIngredientPicked.',
+       );
 
   @override
   ConsumerState<AddIngredientModal> createState() => _AddIngredientModalState();
@@ -54,7 +59,9 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
       _selectedIngredientName = initial.name;
       _selectedProcess = initial.preparation ?? 'None';
       _selectedUnitId = initial.unitID;
-      _amountController = TextEditingController(text: _formatQuantity(initial.quantity));
+      _amountController = TextEditingController(
+        text: _formatQuantity(initial.quantity),
+      );
     } else {
       _stage = 0;
       _selectedProcess = 'None';
@@ -101,6 +108,10 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
   }
 
   Widget _buildModalHeader() {
+    final modalTitle = widget.onIngredientPicked != null
+        ? 'Select Ingredient'
+        : 'Add Ingredient';
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
@@ -113,11 +124,14 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
               size: 28,
             ),
           ),
-          const Expanded(
+          Expanded(
             child: Center(
               child: Text(
-                'Add Ingredient',
-                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                modalTitle,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16,
+                ),
               ),
             ),
           ),
@@ -184,12 +198,14 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
 
     return ingredientsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => Center(child: Text('Failed to load ingredients: $error')),
+      error: (error, _) =>
+          Center(child: Text('Failed to load ingredients: $error')),
       data: (ingredients) {
         final filtered = ingredients.where((ingredient) {
           final inCategory =
               _selectedCategory == null ||
-              ingredient.category.toLowerCase() == _selectedCategory!.toLowerCase();
+              ingredient.category.toLowerCase() ==
+                  _selectedCategory!.toLowerCase();
           if (!inCategory) return false;
           if (query.isEmpty) return true;
           return ingredient.name.toLowerCase().contains(query);
@@ -207,22 +223,31 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
                   ? const Center(child: Text('No ingredients found.'))
                   : GridView.builder(
                       padding: const EdgeInsets.all(24),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                        childAspectRatio: 0.85,
-                      ),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                            childAspectRatio: 0.85,
+                          ),
                       itemCount: filtered.length,
                       itemBuilder: (context, index) {
                         final ingredient = filtered[index];
                         return _buildSelectionTile(
                           label: ingredient.name,
-                          onTap: () => setState(() {
-                            _selectedIngredientId = ingredient.id;
-                            _selectedIngredientName = ingredient.name;
-                            _stage = 2;
-                          }),
+                          onTap: () {
+                            if (widget.onIngredientPicked != null) {
+                              widget.onIngredientPicked!(ingredient.id);
+                              Navigator.pop(context);
+                              return;
+                            }
+
+                            setState(() {
+                              _selectedIngredientId = ingredient.id;
+                              _selectedIngredientName = ingredient.name;
+                              _stage = 2;
+                            });
+                          },
                         );
                       },
                     ),
@@ -246,7 +271,8 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
         }
 
         _selectedUnitId ??= _resolveInitialUnitId(units);
-        final selectedUnit = _findUnitById(units, _selectedUnitId) ?? units.first;
+        final selectedUnit =
+            _findUnitById(units, _selectedUnitId) ?? units.first;
 
         return Padding(
           key: const ValueKey(2),
@@ -277,7 +303,8 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
               _buildDropdownField(
                 value: _selectedProcess,
                 items: _processes,
-                onChanged: (value) => setState(() => _selectedProcess = value ?? 'None'),
+                onChanged: (value) =>
+                    setState(() => _selectedProcess = value ?? 'None'),
               ),
               const SizedBox(height: 24),
               const Text(
@@ -323,7 +350,10 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
                           size: 28,
                         ),
                         style: IconButton.styleFrom(
-                          side: const BorderSide(color: Colors.redAccent, width: 1.5),
+                          side: const BorderSide(
+                            color: Colors.redAccent,
+                            width: 1.5,
+                          ),
                           padding: const EdgeInsets.all(12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
@@ -364,7 +394,9 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
     final ingredientName = _selectedIngredientName;
     final quantity = double.tryParse(_amountController.text.trim());
 
-    if (ingredientId == null || ingredientName == null || ingredientName.isEmpty) {
+    if (ingredientId == null ||
+        ingredientName == null ||
+        ingredientName.isEmpty) {
       _showSnack('Please select an ingredient.');
       return;
     }
@@ -373,7 +405,13 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
       return;
     }
 
-    widget.onIngredientAdded(
+    final onIngredientAdded = widget.onIngredientAdded;
+    if (onIngredientAdded == null) {
+      Navigator.pop(context);
+      return;
+    }
+
+    onIngredientAdded(
       RecipeIngredient(
         ingredientID: ingredientId,
         name: ingredientName,
@@ -394,7 +432,11 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
         onChanged: (_) => setState(() {}),
         decoration: InputDecoration(
           hintText: 'Search...',
-          prefixIcon: const Icon(Icons.search, color: AppColors.rosePink, size: 20),
+          prefixIcon: const Icon(
+            Icons.search,
+            color: AppColors.rosePink,
+            size: 20,
+          ),
           filled: true,
           fillColor: AppColors.cardRose.withValues(alpha: 0.3),
           contentPadding: EdgeInsets.zero,
@@ -466,7 +508,10 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
           isExpanded: true,
           icon: const Icon(Icons.arrow_drop_down, color: AppColors.rosePink),
           items: items
-              .map((item) => DropdownMenuItem<String>(value: item, child: Text(item)))
+              .map(
+                (item) =>
+                    DropdownMenuItem<String>(value: item, child: Text(item)),
+              )
               .toList(),
           onChanged: onChanged,
         ),
@@ -521,7 +566,10 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
                 width: 1.5,
               ),
             ),
-            child: const Icon(Icons.restaurant_outlined, color: AppColors.rosePink),
+            child: const Icon(
+              Icons.restaurant_outlined,
+              color: AppColors.rosePink,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
@@ -562,8 +610,14 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: const TextStyle(fontSize: 10, color: Colors.black38)),
-                Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(
+                  label,
+                  style: const TextStyle(fontSize: 10, color: Colors.black38),
+                ),
+                Text(
+                  value,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
               ],
             ),
             const Spacer(),
@@ -600,8 +654,9 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
       return initialId;
     }
 
-    final gramLike = units.where((unit) =>
-        unit.id.toLowerCase() == 'g' || unit.name.toLowerCase() == 'g');
+    final gramLike = units.where(
+      (unit) => unit.id.toLowerCase() == 'g' || unit.name.toLowerCase() == 'g',
+    );
     if (gramLike.isNotEmpty) return gramLike.first.id;
 
     return units.first.id;
@@ -622,10 +677,7 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          behavior: SnackBarBehavior.floating,
-        ),
+        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
       );
   }
 }
