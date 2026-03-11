@@ -1,21 +1,24 @@
+import 'package:nutricook/core/allergen_entries.dart';
+import 'package:nutricook/models/ingredient/ingredient.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
 
 // Filter recipes based on user allergens
 List<Recipe> filterRecipesByAllergens(
   List<Recipe> recipes,
-  List<String> userAllergens,
-) {
+  List<String> userAllergens, {
+  Map<String, Ingredient>? ingredientsMap,
+}) {
   if (userAllergens.isEmpty) {
     return recipes;
   }
 
-  final normalizedAllergens = userAllergens
-      .map((allergen) => allergen.toLowerCase())
-      .toSet();
-
   return recipes.where((recipe) {
     return recipe.ingredients.every((ingredient) {
-      return !normalizedAllergens.contains(ingredient.ingredientID.toLowerCase());
+      return !matchesRecipeIngredientAllergen(
+        ingredient: ingredient,
+        allergenEntries: userAllergens,
+        ingredientCategory: ingredientsMap?[ingredient.ingredientID]?.category,
+      );
     });
   }).toList();
 }
