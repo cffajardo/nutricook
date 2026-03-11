@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:nutricook/core/allergen_entries.dart';
 import 'package:nutricook/core/constants.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
 import 'package:nutricook/models/ingredient/ingredient.dart';
@@ -66,7 +67,11 @@ class RecipeService {
     return getPublicRecipes().map((recipes) {
       return recipes.where((recipe) {
         return !recipe.ingredients.any(
-          (ingredient) => userAllergenIds.contains(ingredient.ingredientID),
+          (ingredient) => matchesRecipeIngredientAllergen(
+            ingredient: ingredient,
+            allergenEntries: userAllergenIds,
+            ingredientsMap: null,
+          ),
         );
       }).toList();
     });
@@ -207,9 +212,17 @@ class RecipeService {
   bool doesRecipeContainAllergens(
     Recipe recipe,
     List<String> userAllergenIds,
+    {
+    Map<String, Ingredient>? ingredientsMap,
+}
   ) {
     return recipe.ingredients.any(
-      (ingredient) => userAllergenIds.contains(ingredient.ingredientID),
+      (ingredient) => matchesRecipeIngredientAllergen(
+        ingredient: ingredient,
+        allergenEntries: userAllergenIds,
+        ingredientCategory: ingredientsMap?[ingredient.ingredientID]?.category,
+        ingredientsMap: ingredientsMap,
+      ),
     );
   }
 
