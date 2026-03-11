@@ -5,6 +5,8 @@ import 'package:nutricook/models/nutrition_info/nutrition_info.dart';
 import 'package:nutricook/models/recipe_ingredient/recipe_ingredient.dart';
 import 'package:nutricook/models/recipe_step/recipe_step.dart';
 import 'package:nutricook/features/auth/providers/auth_provider.dart';
+import 'package:nutricook/features/library/ingredients/provider/ingredient_provider.dart';
+import 'package:nutricook/features/profile/provider/user_preferences_provider.dart';
 import 'package:nutricook/features/profile/provider/user_provider.dart';
 import 'package:nutricook/features/recipe/recipe_util/recipe_filters.dart';
 import 'package:nutricook/features/recipe/recipe_util/recipe_nutrition_total.dart';
@@ -27,17 +29,31 @@ final trendingRecipesProvider = StreamProvider<List<Recipe>>((ref) {
 final visiblePublicRecipesProvider = Provider<AsyncValue<List<Recipe>>>((ref) {
   final recipesAsync = ref.watch(publicRecipesProvider);
   final userData = ref.watch(userDataProvider).asData?.value;
+  final preferences = ref.watch(userPreferencesProvider).asData?.value;
+  final ingredientsMap = ref.watch(ingredientsMapProvider).asData?.value;
   final blocked = List<String>.from(
     userData?['blockedUsers'] ?? const <String>[],
   );
+  final allergens = preferences?.allergens ?? const <String>[];
+  final shouldShowAllergens = preferences?.showRecipesWithAllergens ?? true;
 
   return recipesAsync.whenData((recipes) {
-    return recipes
+    var result = recipes
         .where(
           (recipe) =>
               recipe.ownerId == null || !blocked.contains(recipe.ownerId),
         )
         .toList();
+
+    if (!shouldShowAllergens) {
+      result = filterRecipesByAllergens(
+        result,
+        allergens,
+        ingredientsMap: ingredientsMap,
+      );
+    }
+
+    return result;
   });
 });
 
@@ -46,17 +62,31 @@ final visibleTrendingRecipesProvider = Provider<AsyncValue<List<Recipe>>>((
 ) {
   final recipesAsync = ref.watch(trendingRecipesProvider);
   final userData = ref.watch(userDataProvider).asData?.value;
+  final preferences = ref.watch(userPreferencesProvider).asData?.value;
+  final ingredientsMap = ref.watch(ingredientsMapProvider).asData?.value;
   final blocked = List<String>.from(
     userData?['blockedUsers'] ?? const <String>[],
   );
+  final allergens = preferences?.allergens ?? const <String>[];
+  final shouldShowAllergens = preferences?.showRecipesWithAllergens ?? true;
 
   return recipesAsync.whenData((recipes) {
-    return recipes
+    var result = recipes
         .where(
           (recipe) =>
               recipe.ownerId == null || !blocked.contains(recipe.ownerId),
         )
         .toList();
+
+    if (!shouldShowAllergens) {
+      result = filterRecipesByAllergens(
+        result,
+        allergens,
+        ingredientsMap: ingredientsMap,
+      );
+    }
+
+    return result;
   });
 });
 
@@ -105,15 +135,11 @@ final recipeNutritionTotalsProvider = Provider<NutritionInfo Function(Recipe)>((
   return (recipe) => calculateRecipeNutritionTotals(recipe);
 });
 
-// Provider for calculating nutrition information per serving for a recipe
-// Serving Size Calculation: Total Nutrition / Servings
 final recipeNutritionPerServingProvider =
     Provider<NutritionInfo Function(Recipe)>((ref) {
       return (recipe) => calculateRecipeNutritionPerServing(recipe);
     });
 
-// For Recipe Filtering - Combines multiple filters (Query and Tags)
-// Allergen Filtering is handled separately in the filteredRecipesProvider to ensure it applies to all recipe lists based on user preferences
 class RecipeFilterInput {
   RecipeFilterInput({this.query = '', List<String> tags = const <String>[]})
     : tags = List.unmodifiable(tags);
@@ -132,6 +158,129 @@ class RecipeFilterInput {
   int get hashCode => Object.hash(query, Object.hashAll(tags));
 }
 
+class RecipeAdvancedFilters {
+  const RecipeAdvancedFilters({
+    this.maxCalories = 500,
+    this.maxCarbs = 50,
+    this.maxFats = 30,
+    this.maxProtein = 40,
+    this.maxSugar = 20,
+    this.maxFiber = 10,
+    this.maxSodium = 500,
+    this.useCaloriesFilter = false,
+    this.useCarbsFilter = false,
+    this.useFatsFilter = false,
+    this.useProteinFilter = false,
+    this.useSugarFilter = false,
+    this.useFiberFilter = false,
+    this.useSodiumFilter = false,
+    this.maxCookTimeMinutes = 30,
+    this.includeTags = const <String>[],
+    this.excludeTags = const <String>[],
+  });
+
+  final double maxCalories;
+  final double maxCarbs;
+  final double maxFats;
+  final double maxProtein;
+  final double maxSugar;
+  final double maxFiber;
+  final double maxSodium;
+  final bool useCaloriesFilter;
+  final bool useCarbsFilter;
+  final bool useFatsFilter;
+  final bool useProteinFilter;
+  final bool useSugarFilter;
+  final bool useFiberFilter;
+  final bool useSodiumFilter;
+  final double maxCookTimeMinutes;
+  final List<String> includeTags;
+  final List<String> excludeTags;
+
+  RecipeAdvancedFilters copyWith({
+    double? maxCalories,
+    double? maxCarbs,
+    double? maxFats,
+    double? maxProtein,
+    double? maxSugar,
+    double? maxFiber,
+    double? maxSodium,
+    bool? useCaloriesFilter,
+    bool? useCarbsFilter,
+    bool? useFatsFilter,
+    bool? useProteinFilter,
+    bool? useSugarFilter,
+    bool? useFiberFilter,
+    bool? useSodiumFilter,
+    double? maxCookTimeMinutes,
+    List<String>? includeTags,
+    List<String>? excludeTags,
+  }) {
+    return RecipeAdvancedFilters(
+      maxCalories: maxCalories ?? this.maxCalories,
+      maxCarbs: maxCarbs ?? this.maxCarbs,
+      maxFats: maxFats ?? this.maxFats,
+      maxProtein: maxProtein ?? this.maxProtein,
+      maxSugar: maxSugar ?? this.maxSugar,
+      maxFiber: maxFiber ?? this.maxFiber,
+      maxSodium: maxSodium ?? this.maxSodium,
+      useCaloriesFilter: useCaloriesFilter ?? this.useCaloriesFilter,
+      useCarbsFilter: useCarbsFilter ?? this.useCarbsFilter,
+      useFatsFilter: useFatsFilter ?? this.useFatsFilter,
+      useProteinFilter: useProteinFilter ?? this.useProteinFilter,
+      useSugarFilter: useSugarFilter ?? this.useSugarFilter,
+      useFiberFilter: useFiberFilter ?? this.useFiberFilter,
+      useSodiumFilter: useSodiumFilter ?? this.useSodiumFilter,
+      maxCookTimeMinutes: maxCookTimeMinutes ?? this.maxCookTimeMinutes,
+      includeTags: includeTags ?? this.includeTags,
+      excludeTags: excludeTags ?? this.excludeTags,
+    );
+  }
+
+  bool get hasAnyTagFilters => includeTags.isNotEmpty || excludeTags.isNotEmpty;
+
+  bool get hasAnyFilters {
+    return useCaloriesFilter ||
+        useCarbsFilter ||
+        useFatsFilter ||
+        useProteinFilter ||
+        useSugarFilter ||
+        useFiberFilter ||
+        useSodiumFilter ||
+        maxCookTimeMinutes < defaults.maxCookTimeMinutes ||
+        hasAnyTagFilters;
+  }
+
+  static const RecipeAdvancedFilters defaults = RecipeAdvancedFilters(
+    maxCalories: 2000,
+    maxCarbs: 200,
+    maxFats: 100,
+    maxProtein: 150,
+    maxSugar: 100,
+    maxFiber: 50,
+    maxSodium: 2500,
+    maxCookTimeMinutes: 180,
+  );
+}
+
+class RecipeAdvancedFiltersNotifier extends Notifier<RecipeAdvancedFilters> {
+  @override
+  RecipeAdvancedFilters build() => RecipeAdvancedFilters.defaults;
+
+  void apply(RecipeAdvancedFilters next) {
+    state = next;
+  }
+
+  void reset() {
+    state = RecipeAdvancedFilters.defaults;
+  }
+}
+
+final recipeAdvancedFiltersProvider =
+    NotifierProvider<RecipeAdvancedFiltersNotifier, RecipeAdvancedFilters>(
+      RecipeAdvancedFiltersNotifier.new,
+    );
+
 // Helper function for list equality (since List doesn't override == by default)
 bool _listEquals<T>(List<T> a, List<T> b) {
   if (identical(a, b)) return true;
@@ -142,23 +291,115 @@ bool _listEquals<T>(List<T> a, List<T> b) {
   return true;
 }
 
-// Provider that combines multiple filters (query, tags) and applies allergen filtering based on user preferences
+// Provider that combines query and tag filtering for public recipe discovery.
 final filteredRecipesProvider =
     Provider.family<AsyncValue<List<Recipe>>, RecipeFilterInput>((ref, input) {
       final recipesAsync = ref.watch(visiblePublicRecipesProvider);
-      final allergensAsync = ref.watch(userAllergenProvider);
       final query = input.query;
       final tags = input.tags;
+      final filters = ref.watch(recipeAdvancedFiltersProvider);
 
       return recipesAsync.whenData((recipes) {
-        final allergens = allergensAsync.asData?.value ?? [];
         var result = recipes;
-        result = filterRecipesByAllergens(result, allergens);
         result = filterRecipesByQuery(result, query);
-        result = filterByTag(result, tags);
+        result = applyAdvancedRecipeFilters(
+          result,
+          filters,
+          forcedIncludeTags: tags,
+        );
+
         return result;
       });
     });
+
+List<Recipe> applyAdvancedRecipeFilters(
+  List<Recipe> recipes,
+  RecipeAdvancedFilters filters, {
+  List<String> forcedIncludeTags = const <String>[],
+}) {
+  var result = recipes;
+
+  result = filterByTag(
+    result,
+    <String>{...forcedIncludeTags, ...filters.includeTags}.toList(),
+  );
+
+  if (filters.excludeTags.isNotEmpty) {
+    final excluded = filters.excludeTags
+        .map((tag) => tag.toLowerCase())
+        .toSet();
+    result = result.where((recipe) {
+      return !recipe.tags.any((tag) => excluded.contains(tag.toLowerCase()));
+    }).toList();
+  }
+
+  return result.where((recipe) {
+    final nutrition = _resolveNutritionPerServing(recipe);
+    final totalTime = recipe.prepTime + recipe.cookTime;
+    final hasNutritionFilters =
+        filters.useCaloriesFilter ||
+        filters.useCarbsFilter ||
+        filters.useFatsFilter ||
+        filters.useProteinFilter ||
+        filters.useSugarFilter ||
+        filters.useFiberFilter ||
+        filters.useSodiumFilter;
+
+    if (totalTime > filters.maxCookTimeMinutes) {
+      return false;
+    }
+
+    if (nutrition == null) {
+      return !hasNutritionFilters;
+    }
+
+    if (filters.useCaloriesFilter && nutrition.calories > filters.maxCalories) {
+      return false;
+    }
+    if (filters.useCarbsFilter && nutrition.carbohydrates > filters.maxCarbs) {
+      return false;
+    }
+    if (filters.useFatsFilter && nutrition.fat > filters.maxFats) {
+      return false;
+    }
+    if (filters.useProteinFilter && nutrition.protein > filters.maxProtein) {
+      return false;
+    }
+    if (filters.useSugarFilter && nutrition.sugar > filters.maxSugar) {
+      return false;
+    }
+    if (filters.useFiberFilter && nutrition.fiber > filters.maxFiber) {
+      return false;
+    }
+    if (filters.useSodiumFilter && nutrition.sodium > filters.maxSodium) {
+      return false;
+    }
+
+    return true;
+  }).toList();
+}
+
+NutritionInfo? _resolveNutritionPerServing(Recipe recipe) {
+  final perServing = recipe.nutritionPerServing;
+  if (perServing != null) {
+    return perServing;
+  }
+
+  final total = recipe.nutritionTotal;
+  if (total == null || recipe.servings <= 0) {
+    return null;
+  }
+
+  return NutritionInfo(
+    calories: (total.calories / recipe.servings).round(),
+    carbohydrates: total.carbohydrates / recipe.servings,
+    protein: total.protein / recipe.servings,
+    fat: total.fat / recipe.servings,
+    fiber: total.fiber / recipe.servings,
+    sugar: total.sugar / recipe.servings,
+    sodium: total.sodium / recipe.servings,
+  );
+}
 
 class RecipeCreationState {
   const RecipeCreationState({
