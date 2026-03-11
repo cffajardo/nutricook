@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
-import 'package:nutricook/features/profile/provider/user_provider.dart';
 import 'package:nutricook/features/planner/widgets/planner_item_recipe_filter.dart';
 import 'package:nutricook/features/recipe/providers/recipe_provider.dart';
 import 'package:nutricook/features/recipe/widgets/recipe_card.dart';
-import 'package:nutricook/models/recipe/recipe.dart';
 import 'package:nutricook/routing/app_routes.dart';
 
 class RecipeMainScreen extends ConsumerStatefulWidget {
@@ -189,12 +187,6 @@ class _RecipeMainScreenState extends ConsumerState<RecipeMainScreen> {
         RecipeFilterInput(query: _searchController.text),
       ),
     );
-    final allergenSet = ref
-        .watch(userAllergenProvider)
-        .asData
-        ?.value
-        .map((allergen) => allergen.toLowerCase())
-        .toSet() ?? <String>{};
 
     return recipesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -220,21 +212,10 @@ class _RecipeMainScreenState extends ConsumerState<RecipeMainScreen> {
           itemCount: recipes.length,
           itemBuilder: (context, index) {
             final recipe = recipes[index];
-            return RecipeCard(
-              recipe: recipe,
-              hasAllergen: _hasAllergen(recipe, allergenSet),
-            );
+            return RecipeCard(recipe: recipe);
           },
         );
       },
-    );
-  }
-
-  bool _hasAllergen(Recipe recipe, Set<String> allergenSet) {
-    return recipe.ingredients.any(
-      (ingredient) =>
-          allergenSet.contains(ingredient.ingredientID.toLowerCase()) ||
-          allergenSet.contains(ingredient.name.toLowerCase()),
     );
   }
 }
