@@ -32,6 +32,7 @@ class RecipeDetailsScreen extends ConsumerStatefulWidget {
 class _RecipeDetailsScreenState extends ConsumerState<RecipeDetailsScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  int _startCookingSignal = 0;
 
   final List<String> _pageTitles = ['About', 'Ingredients', 'Instructions'];
 
@@ -407,7 +408,10 @@ class _RecipeDetailsScreenState extends ConsumerState<RecipeDetailsScreen> {
                     RecipeViewIngredients(
                       ingredients: widget.recipe.ingredients,
                     ),
-                    RecipeViewInstructions(steps: widget.recipe.steps),
+                    RecipeViewInstructions(
+                      steps: widget.recipe.steps,
+                      startCookingSignal: _startCookingSignal,
+                    ),
                   ],
                 ),
               ),
@@ -429,6 +433,7 @@ class _RecipeDetailsScreenState extends ConsumerState<RecipeDetailsScreen> {
                     isOwner: isOwner,
                     onStartCooking: () {
                       Navigator.pop(context);
+                      setState(() => _startCookingSignal += 1);
                       _onTabTapped(2);
                     },
                     onAddToPlanner: () {
