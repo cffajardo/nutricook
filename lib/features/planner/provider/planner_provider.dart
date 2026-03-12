@@ -19,6 +19,19 @@ final plannerItemsForDateProvider = StreamProvider.family<List<PlannerItem>, Dat
   return ref.watch(plannerServiceProvider).getPlannerItemStream(userId, selectedDate);
 });
 
+final plannerItemsForMonthProvider =
+    StreamProvider.family<List<PlannerItem>, DateTime>((ref, selectedDate) {
+      final userId = ref.watch(currentUserIdProvider);
+      if (userId == null) return Stream.value([]);
+
+      final monthStart = DateTime(selectedDate.year, selectedDate.month, 1);
+      final nextMonthStart = DateTime(selectedDate.year, selectedDate.month + 1, 1);
+
+      return ref
+          .watch(plannerServiceProvider)
+          .getPlannerItemsInRange(userId, monthStart, nextMonthStart);
+    });
+
 // Filtered planner items by meal type (breakfast, lunch, dinner, snacks)
 final plannerItemsByMealTypeProvider =
     Provider.family<List<PlannerItem>, ({DateTime date, String mealType})>((ref, input) {
@@ -34,3 +47,11 @@ final dailyNutritionTotalProvider = Provider.family<AsyncValue<NutritionInfo>, D
     return calculatePlannerNutrition(plannerItems: plannerItems);
   });
 });
+
+final monthlyNutritionTotalProvider =
+    Provider.family<AsyncValue<NutritionInfo>, DateTime>((ref, date) {
+      final plannerItemsAsync = ref.watch(plannerItemsForMonthProvider(date));
+      return plannerItemsAsync.whenData((plannerItems) {
+        return calculatePlannerNutrition(plannerItems: plannerItems);
+      });
+    });
