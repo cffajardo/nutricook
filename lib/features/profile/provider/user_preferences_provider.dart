@@ -64,12 +64,6 @@ class UserPreferencesNotifier extends AsyncNotifier<UserPreferences> {
     );
   }
 
-  Future<void> updateShowOnlyVerifiedRecipes(bool enabled) {
-    return _update(
-      (current) => current.copyWith(showOnlyVerifiedRecipes: enabled),
-    );
-  }
-
   Future<void> updateShowNutritionPerServing(bool enabled) {
     return _update(
       (current) => current.copyWith(showNutritionPerServing: enabled),
@@ -126,14 +120,20 @@ class UserPreferencesNotifier extends AsyncNotifier<UserPreferences> {
     state = AsyncData(updated);
     await _service.savePreferences(updated, userId: uid);
 
-    final didAllergensChange =
-        !_stringListEquals(current.allergens, updated.allergens);
-    final didMealStartHoursChange =
-        !_intMapEquals(current.mealStartHours, updated.mealStartHours);
+    final didAllergensChange = !_stringListEquals(
+      current.allergens,
+      updated.allergens,
+    );
+    final didMealStartHoursChange = !_intMapEquals(
+      current.mealStartHours,
+      updated.mealStartHours,
+    );
     final didDailyCalorieGoalChange =
         current.dailyCalorieGoal != updated.dailyCalorieGoal;
 
-    if (didAllergensChange || didMealStartHoursChange || didDailyCalorieGoalChange) {
+    if (didAllergensChange ||
+        didMealStartHoursChange ||
+        didDailyCalorieGoalChange) {
       await _syncRemotePreferencesToFirestore(
         allergens: didAllergensChange ? updated.allergens : null,
         mealStartHours: didMealStartHoursChange ? updated.mealStartHours : null,
@@ -225,7 +225,9 @@ class UserPreferencesNotifier extends AsyncNotifier<UserPreferences> {
               rawMealStartHours.map(
                 (key, value) => MapEntry(
                   key.toString(),
-                  (value as num?)?.toInt() ?? defaultMealStartHours[key.toString()] ?? 0,
+                  (value as num?)?.toInt() ??
+                      defaultMealStartHours[key.toString()] ??
+                      0,
                 ),
               ),
             )
