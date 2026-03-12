@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
 import 'package:nutricook/features/auth/providers/auth_provider.dart';
 import 'package:nutricook/features/profile/provider/user_provider.dart';
+import 'package:nutricook/features/recipe/providers/recipe_provider.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
 import 'package:nutricook/routing/app_routes.dart';
 
@@ -42,11 +43,7 @@ class RecipeViewAbout extends ConsumerWidget {
                 Positioned(
                   top: 16,
                   right: 16,
-                  child: Icon(
-                    Icons.favorite_border,
-                    color: AppColors.rosePink,
-                    size: 28,
-                  ),
+                  child: _FavoriteButton(recipe: recipe),
                 ),
                 Positioned(
                   bottom: 16,
@@ -227,6 +224,45 @@ class RecipeViewAbout extends ConsumerWidget {
           const SizedBox(height: 8),
           Text(content, style: const TextStyle(color: Colors.black54)),
         ],
+      ),
+    );
+  }
+}
+
+class _FavoriteButton extends ConsumerWidget {
+  final Recipe recipe;
+  const _FavoriteButton({required this.recipe});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isFavorited = ref.watch(isRecipeFavoritedProvider(recipe.id));
+    final isLoading =
+        ref.watch(toggleFavoriteProvider).isLoading;
+
+    return GestureDetector(
+      onTap: isLoading
+          ? null
+          : () => ref.read(toggleFavoriteProvider.notifier).toggle(recipe.id),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.85),
+          shape: BoxShape.circle,
+        ),
+        child: isLoading
+            ? SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.rosePink,
+                ),
+              )
+            : Icon(
+                isFavorited ? Icons.favorite : Icons.favorite_border,
+                color: AppColors.rosePink,
+                size: 28,
+              ),
       ),
     );
   }

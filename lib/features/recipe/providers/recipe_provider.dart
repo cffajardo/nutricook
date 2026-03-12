@@ -23,7 +23,7 @@ final publicRecipesProvider = StreamProvider<List<Recipe>>((ref) {
 
 // Stream Provider for Trending Recipes (Based on favoriteCount)
 final trendingRecipesProvider = StreamProvider<List<Recipe>>((ref) {
-  return ref.watch(recipeServiceProvider).getTrendingRecipes();
+  return ref.watch(recipeServiceProvider).getTrendingRecipes(limit: 5);
 });
 
 final visiblePublicRecipesProvider = Provider<AsyncValue<List<Recipe>>>((ref) {
@@ -86,6 +86,7 @@ final visibleTrendingRecipesProvider = Provider<AsyncValue<List<Recipe>>>((
       );
     }
 
+    if (result.length > 5) result = result.sublist(0, 5);
     return result;
   });
 });
@@ -527,7 +528,68 @@ final recipeCreationProvider =
 
 //todo: add more specific providers for different recipe categories (e.g. breakfast, lunch, dinner)
 
-//todo: add provider for user's favorite recipes
+// Provider: list of recipes the current user has favorited (derived from the
+// already-streamed public + own recipes; no extra Firestore read needed).
+final userFavoriteRecipesProvider = Provider<AsyncValue<List<Recipe>>>((ref) {
+  final userId = ref.watch(currentUserIdProvider);
+  if (userId == null) return const AsyncValue.data(<Recipe>[]);
 
+  final publicAsync = ref.watch(publicRecipesProvider);
+  final ownAsync = ref.watch(userRecipesProvider);
 
+  if (publicAsync is AsyncLoading || ownAsync is AsyncLoading) {
+    return const AsyncValue.loading();
+  }
+  if (publicAsync is AsyncError) return publicAsync;
+  if (ownAsync is AsyncError) return ownAsync;
+
+  final allRecipes = <Recipe>{
+    ...publicAsync.asData?.value ?? <Recipe>[],
+    ...ownAsync.asData?.value ?? <Recipe>[],
+  };
+
+  return AsyncValue.data(
+    allRecipes.where((r) => r.favoritedBy.contains(userId)).toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt)),
+  );
+});
+
+// Provider: is a specific recipe favorited by the current user?
+final isRecipeFavoritedProvider =
+    Provider.family<bool, String>((ref, recipeId) {
+      final userId = ref.watch(currentUserIdProvider);
+      if (userId == null) return false;
+
+      // Check from the already-streamed single recipe details.
+      final recipeAsync = ref.watch(recipeDetailsProvider(recipeId));
+      return recipeAsync.asData?.value?.favoritedBy.contains(userId) ?? false;
+    });
+
+// Notifier: toggle favorite (add or remove).
+class ToggleFavoriteNotifier extends AsyncNotifier<void> {
+  @override
+  Future<void> build() async {}
+
+  Future<void> toggle(String recipeId) async {
+    final userId = ref.watch(currentUserIdProvider);
+    if (userId == null) return;
+
+    final isFavorited = ref.read(isRecipeFavoritedProvider(recipeId));
+    final service = ref.read(recipeServiceProvider);
+
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      if (isFavorited) {
+        await service.removeFavorite(recipeId, userId);
+      } else {
+        await service.addFavorite(recipeId, userId);
+      }
+    });
+  }
+}
+
+final toggleFavoriteProvider =
+    AsyncNotifierProvider<ToggleFavoriteNotifier, void>(
+      ToggleFavoriteNotifier.new,
+    );
 
