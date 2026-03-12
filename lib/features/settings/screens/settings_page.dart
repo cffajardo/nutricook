@@ -1,14 +1,17 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:nutricook/core/allergen_entries.dart';
 import 'package:nutricook/core/meal_time_preferences.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
 import 'package:nutricook/features/auth/providers/auth_provider.dart';
 import 'package:nutricook/features/library/ingredients/provider/ingredient_provider.dart';
+import 'package:nutricook/features/profile/provider/user_provider.dart';
 import 'package:nutricook/features/profile/provider/user_preferences_provider.dart';
 import 'package:nutricook/features/recipe/widgets/add_ingredient_modal.dart';
 import 'package:nutricook/models/user_preferences/user_preferences.dart';
+import 'package:nutricook/routing/app_routes.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -17,6 +20,7 @@ class SettingsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final preferencesAsync = ref.watch(userPreferencesProvider);
     final user = ref.watch(authStateProvider).asData?.value;
+    final isAdmin = ref.watch(isCurrentUserAdminProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFFFFF9FA),
@@ -97,6 +101,14 @@ class SettingsPage extends ConsumerWidget {
                       }
                     },
                   ),
+                  if (isAdmin) ...[
+                    const _Divider(),
+                    _ActionRow(
+                      icon: Icons.admin_panel_settings_outlined,
+                      label: 'Admin Panel',
+                      onTap: () => context.pushNamed(AppRoutes.adminName),
+                    ),
+                  ],
                 ],
               ),
               const SizedBox(height: 24),
@@ -181,8 +193,6 @@ class SettingsPage extends ConsumerWidget {
   }
 }
 
-// ─── Section header ──────────────────────────────────────────────────────────
-
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader({required this.label});
   final String label;
@@ -204,7 +214,6 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-// ─── Card container ──────────────────────────────────────────────────────────
 
 class _SettingsCard extends StatelessWidget {
   const _SettingsCard({required this.children});
@@ -236,7 +245,6 @@ class _SettingsCard extends StatelessWidget {
   }
 }
 
-// ─── Thin divider ─────────────────────────────────────────────────────────────
 
 class _Divider extends StatelessWidget {
   const _Divider();
@@ -251,8 +259,6 @@ class _Divider extends StatelessWidget {
     );
   }
 }
-
-// ─── Rows ─────────────────────────────────────────────────────────────────────
 
 class _InfoRow extends StatelessWidget {
   const _InfoRow({
@@ -364,7 +370,7 @@ class _SwitchRow extends StatelessWidget {
           const Spacer(),
           Switch.adaptive(
             value: value,
-            activeColor: AppColors.rosePink,
+            activeThumbColor: AppColors.rosePink,
             onChanged: onChanged,
           ),
         ],
