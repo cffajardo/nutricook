@@ -17,6 +17,7 @@ import 'package:nutricook/features/profile/screens/profile_page.dart';
 import 'package:nutricook/features/settings/screens/settings_page.dart';
 import 'package:nutricook/features/home/screens/home_user_search_results_screen.dart';
 import 'package:nutricook/features/notifications/screens/notifications_page.dart';
+import 'package:nutricook/features/library/screens/library_main.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
 import 'package:nutricook/screens/home_screen.dart';
 import 'package:nutricook/screens/splash_screen.dart';
@@ -87,7 +88,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               path == '${AppRoutes.profilePath}/${AppRoutes.settingsPath}' ||
               path == '${AppRoutes.profilePath}/${AppRoutes.editProfilePath}' ||
               path ==
-                '${AppRoutes.profilePath}/${AppRoutes.profileConnectionsPath}';
+                  '${AppRoutes.profilePath}/${AppRoutes.profileConnectionsPath}';
 
           return Scaffold(
             extendBody: true,
@@ -190,6 +191,17 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
+
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.libraryPath,
+                name: AppRoutes.libraryName,
+                builder: (context, state) => const LibraryMainScreen(),
+              ),
+            ],
+          ),
+
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -203,7 +215,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                     builder: (context, state) {
                       final userId = state.uri.queryParameters['userId'] ?? '';
                       final initialTab =
-                          int.tryParse(state.uri.queryParameters['tab'] ?? '0') ??
+                          int.tryParse(
+                            state.uri.queryParameters['tab'] ?? '0',
+                          ) ??
                           0;
                       return FollowersFollowingPage(
                         userId: userId,
