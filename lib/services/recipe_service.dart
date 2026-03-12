@@ -23,7 +23,8 @@ class RecipeService {
     }
 
     return query.snapshots().map(
-      (snapshot) => snapshot.docs.map((doc) => Recipe.fromJson(doc.data())).toList(),
+      (snapshot) =>
+          snapshot.docs.map((doc) => Recipe.fromJson(doc.data())).toList(),
     );
   }
 
@@ -33,9 +34,9 @@ class RecipeService {
         .doc(recipeId)
         .snapshots()
         .map((doc) {
-      if (!doc.exists) return null;
-      return Recipe.fromJson(doc.data()!);
-    });
+          if (!doc.exists) return null;
+          return Recipe.fromJson(doc.data()!);
+        });
   }
 
   Stream<List<Recipe>> getUserRecipes(String userId) {
@@ -44,9 +45,10 @@ class RecipeService {
         .where('ownerId', isEqualTo: userId)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => Recipe.fromJson(doc.data()))
-            .toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs.map((doc) => Recipe.fromJson(doc.data())).toList(),
+        );
   }
 
   Stream<List<Recipe>> getTrendingRecipes({int limit = 10}) {
@@ -56,9 +58,10 @@ class RecipeService {
         .orderBy('favoriteCount', descending: true)
         .limit(limit)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => Recipe.fromJson(doc.data()))
-            .toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs.map((doc) => Recipe.fromJson(doc.data())).toList(),
+        );
   }
 
   Stream<List<Recipe>> getFilteredRecipesWithUserAllergens(
@@ -76,7 +79,6 @@ class RecipeService {
       }).toList();
     });
   }
-
 
   Future<String> createRecipe({
     required Recipe recipe,
@@ -130,8 +132,9 @@ class RecipeService {
       updatedAt: DateTime.now(),
     );
 
-    final data = _sanitizeForFirestore(_recipeToFirestoreData(recipeWithId))
-        as Map<String, dynamic>;
+    final data =
+        _sanitizeForFirestore(_recipeToFirestoreData(recipeWithId))
+            as Map<String, dynamic>;
     await recipeRef.set(data);
     return recipeRef.id;
   }
@@ -178,8 +181,9 @@ class RecipeService {
       updatedAt: DateTime.now(),
     );
 
-    final data = _sanitizeForFirestore(_recipeToFirestoreData(updatedRecipe))
-        as Map<String, dynamic>;
+    final data =
+        _sanitizeForFirestore(_recipeToFirestoreData(updatedRecipe))
+            as Map<String, dynamic>;
     await _db
         .collection(FirestoreConstants.recipes)
         .doc(recipe.id)
@@ -187,10 +191,7 @@ class RecipeService {
   }
 
   Future<void> deleteRecipe(String recipeId) async {
-    await _db
-        .collection(FirestoreConstants.recipes)
-        .doc(recipeId)
-        .delete();
+    await _db.collection(FirestoreConstants.recipes).doc(recipeId).delete();
   }
 
   Future<void> addFavorite(String recipeId, String userId) async {
@@ -211,11 +212,9 @@ class RecipeService {
 
   bool doesRecipeContainAllergens(
     Recipe recipe,
-    List<String> userAllergenIds,
-    {
+    List<String> userAllergenIds, {
     Map<String, Ingredient>? ingredientsMap,
-}
-  ) {
+  }) {
     return recipe.ingredients.any(
       (ingredient) => matchesRecipeIngredientAllergen(
         ingredient: ingredient,
@@ -239,7 +238,6 @@ class RecipeService {
       'name': recipe.name,
       'description': recipe.description,
       'isPublic': recipe.isPublic,
-      'isVerified': recipe.isVerified,
       'servings': recipe.servings,
       'cookTime': recipe.cookTime,
       'prepTime': recipe.prepTime,
@@ -295,10 +293,8 @@ class RecipeService {
     }
     if (value is Map) {
       return value.map(
-        (key, entryValue) => MapEntry(
-          key.toString(),
-          _sanitizeForFirestore(entryValue),
-        ),
+        (key, entryValue) =>
+            MapEntry(key.toString(), _sanitizeForFirestore(entryValue)),
       );
     }
     if (value is Iterable) {

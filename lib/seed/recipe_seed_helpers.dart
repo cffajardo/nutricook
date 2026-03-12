@@ -26,10 +26,7 @@ class RecipeStepDraft {
   final String instruction;
   final int timerSeconds;
 
-  const RecipeStepDraft({
-    required this.instruction,
-    this.timerSeconds = 0,
-  });
+  const RecipeStepDraft({required this.instruction, this.timerSeconds = 0});
 }
 
 class RecipeSeedSpec {
@@ -45,7 +42,6 @@ class RecipeSeedSpec {
   final List<String> imageURL;
   final List<RecipeIngredientDraft> ingredients;
   final bool isPublic;
-  final bool isVerified;
 
   const RecipeSeedSpec({
     required this.id,
@@ -60,7 +56,6 @@ class RecipeSeedSpec {
     this.techniqueIDs = const <String>[],
     this.imageURL = const <String>[],
     this.isPublic = true,
-    this.isVerified = true,
   });
 }
 
@@ -161,7 +156,6 @@ class RecipeSeedHelpers {
           .toList(),
       description: spec.description,
       isPublic: spec.isPublic,
-      isVerified: spec.isVerified,
       servings: spec.servings,
       cookTime: spec.cookTime,
       prepTime: spec.prepTime,
