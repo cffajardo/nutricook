@@ -61,7 +61,9 @@ class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
     final ingredientsMap = ref.read(ingredientsMapProvider).asData?.value;
     final unitsMap = ref.read(unitsMapProvider).asData?.value;
     if (ingredientsMap == null || unitsMap == null) {
-      _showMessage('Ingredient and unit data is still loading. Please try again.');
+      _showMessage(
+        'Ingredient and unit data is still loading. Please try again.',
+      );
       return;
     }
 
@@ -72,7 +74,6 @@ class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
       ingredients: creation.ingredients,
       steps: creation.steps,
       isPublic: creation.isPublic,
-      isVerified: false,
       servings: creation.servings,
       cookTime: creation.cookTimeMinutes,
       prepTime: creation.prepTimeMinutes,
@@ -83,7 +84,9 @@ class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
 
     try {
       setState(() => _isFinishing = true);
-      await ref.read(recipeServiceProvider).createRecipe(
+      await ref
+          .read(recipeServiceProvider)
+          .createRecipe(
             recipe: baseRecipe,
             ingredientsMap: ingredientsMap,
             unitsMap: unitsMap,
@@ -120,7 +123,9 @@ class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
       barrierDismissible: true,
       builder: (dialogContext) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           contentPadding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
           content: Text(message),
           actions: [
@@ -155,11 +160,11 @@ class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
           icon: const Icon(Icons.close, color: Colors.black87),
         ),
         title: Text(
-          'Step ${_currentPage + 1} of 3', 
+          'Step ${_currentPage + 1} of 3',
           style: const TextStyle(
-            color: AppColors.rosePink, 
-            fontSize: 14, 
-            fontWeight: FontWeight.bold
+            color: AppColors.rosePink,
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
           ),
         ),
         centerTitle: true,
@@ -170,7 +175,7 @@ class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
         physics: const NeverScrollableScrollPhysics(),
         children: [
           CreateRecipeAboutPage(onNext: _goToNextPage),
-          
+
           CreateRecipeIngredientsPage(
             onBack: _goToPreviousPage,
             onNext: _goToNextPage,
