@@ -141,13 +141,6 @@ class SettingsPage extends ConsumerWidget {
                     value: preferences.notificationsEnabled,
                     onChanged: notifier.updateNotificationsEnabled,
                   ),
-                  const _Divider(),
-                  _SwitchRow(
-                    icon: Icons.verified_outlined,
-                    label: 'Only verified recipes',
-                    value: preferences.showOnlyVerifiedRecipes,
-                    onChanged: notifier.updateShowOnlyVerifiedRecipes,
-                  ),
                 ],
               ),
               const SizedBox(height: 24),
