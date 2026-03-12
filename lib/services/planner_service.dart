@@ -33,12 +33,24 @@ class PlannerService {
     final startOfDay = DateTime(date.year, date.month, date.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
 
+    return getPlannerItemsInRange(
+      userId,
+      startOfDay,
+      endOfDay,
+    );
+  }
+
+  Stream<List<PlannerItem>> getPlannerItemsInRange(
+    String userId,
+    DateTime startDate,
+    DateTime endDateExclusive,
+  ) {
+
     return _firestore
         .collection(FirestoreConstants.plannerItems)
-        // Match the `ownerId` field from PlannerItem.
         .where('ownerId', isEqualTo: userId)
-        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-        .where('date', isLessThan: Timestamp.fromDate(endOfDay))
+        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+        .where('date', isLessThan: Timestamp.fromDate(endDateExclusive))
         .snapshots()
         .map(
           (snapshot) =>
