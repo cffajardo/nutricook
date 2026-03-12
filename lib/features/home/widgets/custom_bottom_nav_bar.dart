@@ -1,6 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart'; // Add GoRouter
+import 'package:go_router/go_router.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
 import 'package:nutricook/routing/app_routes.dart';
 
@@ -21,8 +21,8 @@ class CustomBottomNavBar extends StatelessWidget {
     if (location.startsWith(AppRoutes.recipesPath)) return 0;
     if (location.startsWith(AppRoutes.plannerPath)) return 1;
     if (location == AppRoutes.homePath) return 2;
-    if (location.startsWith('/library')) return 3;
-    if (location.startsWith('/profile')) return 4;
+    if (location.startsWith(AppRoutes.libraryPath)) return 3;
+    if (location.startsWith(AppRoutes.profilePath)) return 4;
 
     return 2;
   }
@@ -39,7 +39,7 @@ class CustomBottomNavBar extends StatelessWidget {
         context.goNamed(AppRoutes.homeName);
         break;
       case 3:
-        // context.go('/library');
+        context.goNamed(AppRoutes.libraryName);
         break;
       case 4:
         context.goNamed(AppRoutes.profileName);
