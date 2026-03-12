@@ -16,7 +16,6 @@ abstract class Ingredient with _$Ingredient {
     double? densityGPerMl,   // for liquids
     double? avgWeightG,      // for whole items
     String? imageURL,
-    @Default(<String>[]) List<String> substituteIDs,
   }) = _Ingredient;
 
   factory Ingredient.fromJson(Map<String, dynamic> json) =>

@@ -20,11 +20,6 @@ _Ingredient _$IngredientFromJson(Map<String, dynamic> json) => _Ingredient(
   densityGPerMl: (json['densityGPerMl'] as num?)?.toDouble(),
   avgWeightG: (json['avgWeightG'] as num?)?.toDouble(),
   imageURL: json['imageURL'] as String?,
-  substituteIDs:
-      (json['substituteIDs'] as List<dynamic>?)
-          ?.map((e) => e as String)
-          .toList() ??
-      const <String>[],
 );
 
 Map<String, dynamic> _$IngredientToJson(_Ingredient instance) =>
@@ -38,5 +33,4 @@ Map<String, dynamic> _$IngredientToJson(_Ingredient instance) =>
       'densityGPerMl': instance.densityGPerMl,
       'avgWeightG': instance.avgWeightG,
       'imageURL': instance.imageURL,
-      'substituteIDs': instance.substituteIDs,
     };

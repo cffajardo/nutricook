@@ -17,7 +17,7 @@ mixin _$Ingredient {
 
  String get id; String? get ownerId; String get name; String get category; String? get description; NutritionInfo? get nutritionPer100g; double? get densityGPerMl;// for liquids
  double? get avgWeightG;// for whole items
- String? get imageURL; List<String> get substituteIDs;
+ String? get imageURL;
 /// Create a copy of Ingredient
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,16 +30,16 @@ $IngredientCopyWith<Ingredient> get copyWith => _$IngredientCopyWithImpl<Ingredi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Ingredient&&(identical(other.id, id) || other.id == id)&&(identical(other.ownerId, ownerId) || other.ownerId == ownerId)&&(identical(other.name, name) || other.name == name)&&(identical(other.category, category) || other.category == category)&&(identical(other.description, description) || other.description == description)&&(identical(other.nutritionPer100g, nutritionPer100g) || other.nutritionPer100g == nutritionPer100g)&&(identical(other.densityGPerMl, densityGPerMl) || other.densityGPerMl == densityGPerMl)&&(identical(other.avgWeightG, avgWeightG) || other.avgWeightG == avgWeightG)&&(identical(other.imageURL, imageURL) || other.imageURL == imageURL)&&const DeepCollectionEquality().equals(other.substituteIDs, substituteIDs));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Ingredient&&(identical(other.id, id) || other.id == id)&&(identical(other.ownerId, ownerId) || other.ownerId == ownerId)&&(identical(other.name, name) || other.name == name)&&(identical(other.category, category) || other.category == category)&&(identical(other.description, description) || other.description == description)&&(identical(other.nutritionPer100g, nutritionPer100g) || other.nutritionPer100g == nutritionPer100g)&&(identical(other.densityGPerMl, densityGPerMl) || other.densityGPerMl == densityGPerMl)&&(identical(other.avgWeightG, avgWeightG) || other.avgWeightG == avgWeightG)&&(identical(other.imageURL, imageURL) || other.imageURL == imageURL));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,ownerId,name,category,description,nutritionPer100g,densityGPerMl,avgWeightG,imageURL,const DeepCollectionEquality().hash(substituteIDs));
+int get hashCode => Object.hash(runtimeType,id,ownerId,name,category,description,nutritionPer100g,densityGPerMl,avgWeightG,imageURL);
 
 @override
 String toString() {
-  return 'Ingredient(id: $id, ownerId: $ownerId, name: $name, category: $category, description: $description, nutritionPer100g: $nutritionPer100g, densityGPerMl: $densityGPerMl, avgWeightG: $avgWeightG, imageURL: $imageURL, substituteIDs: $substituteIDs)';
+  return 'Ingredient(id: $id, ownerId: $ownerId, name: $name, category: $category, description: $description, nutritionPer100g: $nutritionPer100g, densityGPerMl: $densityGPerMl, avgWeightG: $avgWeightG, imageURL: $imageURL)';
 }
 
 
@@ -50,7 +50,7 @@ abstract mixin class $IngredientCopyWith<$Res>  {
   factory $IngredientCopyWith(Ingredient value, $Res Function(Ingredient) _then) = _$IngredientCopyWithImpl;
 @useResult
 $Res call({
- String id, String? ownerId, String name, String category, String? description, NutritionInfo? nutritionPer100g, double? densityGPerMl, double? avgWeightG, String? imageURL, List<String> substituteIDs
+ String id, String? ownerId, String name, String category, String? description, NutritionInfo? nutritionPer100g, double? densityGPerMl, double? avgWeightG, String? imageURL
 });
 
 
@@ -67,7 +67,7 @@ class _$IngredientCopyWithImpl<$Res>
 
 /// Create a copy of Ingredient
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? ownerId = freezed,Object? name = null,Object? category = null,Object? description = freezed,Object? nutritionPer100g = freezed,Object? densityGPerMl = freezed,Object? avgWeightG = freezed,Object? imageURL = freezed,Object? substituteIDs = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? ownerId = freezed,Object? name = null,Object? category = null,Object? description = freezed,Object? nutritionPer100g = freezed,Object? densityGPerMl = freezed,Object? avgWeightG = freezed,Object? imageURL = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,ownerId: freezed == ownerId ? _self.ownerId : ownerId // ignore: cast_nullable_to_non_nullable
@@ -78,8 +78,7 @@ as String?,nutritionPer100g: freezed == nutritionPer100g ? _self.nutritionPer100
 as NutritionInfo?,densityGPerMl: freezed == densityGPerMl ? _self.densityGPerMl : densityGPerMl // ignore: cast_nullable_to_non_nullable
 as double?,avgWeightG: freezed == avgWeightG ? _self.avgWeightG : avgWeightG // ignore: cast_nullable_to_non_nullable
 as double?,imageURL: freezed == imageURL ? _self.imageURL : imageURL // ignore: cast_nullable_to_non_nullable
-as String?,substituteIDs: null == substituteIDs ? _self.substituteIDs : substituteIDs // ignore: cast_nullable_to_non_nullable
-as List<String>,
+as String?,
   ));
 }
 /// Create a copy of Ingredient
@@ -176,10 +175,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? ownerId,  String name,  String category,  String? description,  NutritionInfo? nutritionPer100g,  double? densityGPerMl,  double? avgWeightG,  String? imageURL,  List<String> substituteIDs)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? ownerId,  String name,  String category,  String? description,  NutritionInfo? nutritionPer100g,  double? densityGPerMl,  double? avgWeightG,  String? imageURL)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Ingredient() when $default != null:
-return $default(_that.id,_that.ownerId,_that.name,_that.category,_that.description,_that.nutritionPer100g,_that.densityGPerMl,_that.avgWeightG,_that.imageURL,_that.substituteIDs);case _:
+return $default(_that.id,_that.ownerId,_that.name,_that.category,_that.description,_that.nutritionPer100g,_that.densityGPerMl,_that.avgWeightG,_that.imageURL);case _:
   return orElse();
 
 }
@@ -197,10 +196,10 @@ return $default(_that.id,_that.ownerId,_that.name,_that.category,_that.descripti
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? ownerId,  String name,  String category,  String? description,  NutritionInfo? nutritionPer100g,  double? densityGPerMl,  double? avgWeightG,  String? imageURL,  List<String> substituteIDs)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? ownerId,  String name,  String category,  String? description,  NutritionInfo? nutritionPer100g,  double? densityGPerMl,  double? avgWeightG,  String? imageURL)  $default,) {final _that = this;
 switch (_that) {
 case _Ingredient():
-return $default(_that.id,_that.ownerId,_that.name,_that.category,_that.description,_that.nutritionPer100g,_that.densityGPerMl,_that.avgWeightG,_that.imageURL,_that.substituteIDs);case _:
+return $default(_that.id,_that.ownerId,_that.name,_that.category,_that.description,_that.nutritionPer100g,_that.densityGPerMl,_that.avgWeightG,_that.imageURL);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -217,10 +216,10 @@ return $default(_that.id,_that.ownerId,_that.name,_that.category,_that.descripti
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? ownerId,  String name,  String category,  String? description,  NutritionInfo? nutritionPer100g,  double? densityGPerMl,  double? avgWeightG,  String? imageURL,  List<String> substituteIDs)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? ownerId,  String name,  String category,  String? description,  NutritionInfo? nutritionPer100g,  double? densityGPerMl,  double? avgWeightG,  String? imageURL)?  $default,) {final _that = this;
 switch (_that) {
 case _Ingredient() when $default != null:
-return $default(_that.id,_that.ownerId,_that.name,_that.category,_that.description,_that.nutritionPer100g,_that.densityGPerMl,_that.avgWeightG,_that.imageURL,_that.substituteIDs);case _:
+return $default(_that.id,_that.ownerId,_that.name,_that.category,_that.description,_that.nutritionPer100g,_that.densityGPerMl,_that.avgWeightG,_that.imageURL);case _:
   return null;
 
 }
@@ -232,7 +231,7 @@ return $default(_that.id,_that.ownerId,_that.name,_that.category,_that.descripti
 @JsonSerializable()
 
 class _Ingredient implements Ingredient {
-  const _Ingredient({required this.id, this.ownerId, required this.name, required this.category, this.description, this.nutritionPer100g, this.densityGPerMl, this.avgWeightG, this.imageURL, final  List<String> substituteIDs = const <String>[]}): _substituteIDs = substituteIDs;
+  const _Ingredient({required this.id, this.ownerId, required this.name, required this.category, this.description, this.nutritionPer100g, this.densityGPerMl, this.avgWeightG, this.imageURL});
   factory _Ingredient.fromJson(Map<String, dynamic> json) => _$IngredientFromJson(json);
 
 @override final  String id;
@@ -246,13 +245,6 @@ class _Ingredient implements Ingredient {
 @override final  double? avgWeightG;
 // for whole items
 @override final  String? imageURL;
- final  List<String> _substituteIDs;
-@override@JsonKey() List<String> get substituteIDs {
-  if (_substituteIDs is EqualUnmodifiableListView) return _substituteIDs;
-  // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(_substituteIDs);
-}
-
 
 /// Create a copy of Ingredient
 /// with the given fields replaced by the non-null parameter values.
@@ -267,16 +259,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Ingredient&&(identical(other.id, id) || other.id == id)&&(identical(other.ownerId, ownerId) || other.ownerId == ownerId)&&(identical(other.name, name) || other.name == name)&&(identical(other.category, category) || other.category == category)&&(identical(other.description, description) || other.description == description)&&(identical(other.nutritionPer100g, nutritionPer100g) || other.nutritionPer100g == nutritionPer100g)&&(identical(other.densityGPerMl, densityGPerMl) || other.densityGPerMl == densityGPerMl)&&(identical(other.avgWeightG, avgWeightG) || other.avgWeightG == avgWeightG)&&(identical(other.imageURL, imageURL) || other.imageURL == imageURL)&&const DeepCollectionEquality().equals(other._substituteIDs, _substituteIDs));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Ingredient&&(identical(other.id, id) || other.id == id)&&(identical(other.ownerId, ownerId) || other.ownerId == ownerId)&&(identical(other.name, name) || other.name == name)&&(identical(other.category, category) || other.category == category)&&(identical(other.description, description) || other.description == description)&&(identical(other.nutritionPer100g, nutritionPer100g) || other.nutritionPer100g == nutritionPer100g)&&(identical(other.densityGPerMl, densityGPerMl) || other.densityGPerMl == densityGPerMl)&&(identical(other.avgWeightG, avgWeightG) || other.avgWeightG == avgWeightG)&&(identical(other.imageURL, imageURL) || other.imageURL == imageURL));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,ownerId,name,category,description,nutritionPer100g,densityGPerMl,avgWeightG,imageURL,const DeepCollectionEquality().hash(_substituteIDs));
+int get hashCode => Object.hash(runtimeType,id,ownerId,name,category,description,nutritionPer100g,densityGPerMl,avgWeightG,imageURL);
 
 @override
 String toString() {
-  return 'Ingredient(id: $id, ownerId: $ownerId, name: $name, category: $category, description: $description, nutritionPer100g: $nutritionPer100g, densityGPerMl: $densityGPerMl, avgWeightG: $avgWeightG, imageURL: $imageURL, substituteIDs: $substituteIDs)';
+  return 'Ingredient(id: $id, ownerId: $ownerId, name: $name, category: $category, description: $description, nutritionPer100g: $nutritionPer100g, densityGPerMl: $densityGPerMl, avgWeightG: $avgWeightG, imageURL: $imageURL)';
 }
 
 
@@ -287,7 +279,7 @@ abstract mixin class _$IngredientCopyWith<$Res> implements $IngredientCopyWith<$
   factory _$IngredientCopyWith(_Ingredient value, $Res Function(_Ingredient) _then) = __$IngredientCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String? ownerId, String name, String category, String? description, NutritionInfo? nutritionPer100g, double? densityGPerMl, double? avgWeightG, String? imageURL, List<String> substituteIDs
+ String id, String? ownerId, String name, String category, String? description, NutritionInfo? nutritionPer100g, double? densityGPerMl, double? avgWeightG, String? imageURL
 });
 
 
@@ -304,7 +296,7 @@ class __$IngredientCopyWithImpl<$Res>
 
 /// Create a copy of Ingredient
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? ownerId = freezed,Object? name = null,Object? category = null,Object? description = freezed,Object? nutritionPer100g = freezed,Object? densityGPerMl = freezed,Object? avgWeightG = freezed,Object? imageURL = freezed,Object? substituteIDs = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? ownerId = freezed,Object? name = null,Object? category = null,Object? description = freezed,Object? nutritionPer100g = freezed,Object? densityGPerMl = freezed,Object? avgWeightG = freezed,Object? imageURL = freezed,}) {
   return _then(_Ingredient(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,ownerId: freezed == ownerId ? _self.ownerId : ownerId // ignore: cast_nullable_to_non_nullable
@@ -315,8 +307,7 @@ as String?,nutritionPer100g: freezed == nutritionPer100g ? _self.nutritionPer100
 as NutritionInfo?,densityGPerMl: freezed == densityGPerMl ? _self.densityGPerMl : densityGPerMl // ignore: cast_nullable_to_non_nullable
 as double?,avgWeightG: freezed == avgWeightG ? _self.avgWeightG : avgWeightG // ignore: cast_nullable_to_non_nullable
 as double?,imageURL: freezed == imageURL ? _self.imageURL : imageURL // ignore: cast_nullable_to_non_nullable
-as String?,substituteIDs: null == substituteIDs ? _self._substituteIDs : substituteIDs // ignore: cast_nullable_to_non_nullable
-as List<String>,
+as String?,
   ));
 }
 
