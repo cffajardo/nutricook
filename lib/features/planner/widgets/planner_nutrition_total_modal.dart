@@ -6,7 +6,7 @@ import 'package:nutricook/features/planner/util/nutrition_info_util.dart';
 import 'package:nutricook/features/profile/provider/user_preferences_provider.dart';
 import 'package:nutricook/models/nutrition_info/nutrition_info.dart';
 
-class PlannerNutritionTotalsModal extends ConsumerWidget {
+class PlannerNutritionTotalsModal extends ConsumerStatefulWidget {
   final DateTime selectedDate;
   final List<String> mealTypes;
 
@@ -17,11 +17,29 @@ class PlannerNutritionTotalsModal extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final itemsAsync = ref.watch(plannerItemsForDateProvider(selectedDate));
-    final dailyAsync = ref.watch(dailyNutritionTotalProvider(selectedDate));
+  ConsumerState<PlannerNutritionTotalsModal> createState() =>
+      _PlannerNutritionTotalsModalState();
+}
+
+class _PlannerNutritionTotalsModalState
+    extends ConsumerState<PlannerNutritionTotalsModal> {
+  bool _showMonthly = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final itemsAsync = _showMonthly
+        ? ref.watch(plannerItemsForMonthProvider(widget.selectedDate))
+        : ref.watch(plannerItemsForDateProvider(widget.selectedDate));
+    final nutritionAsync = _showMonthly
+        ? ref.watch(monthlyNutritionTotalProvider(widget.selectedDate))
+        : ref.watch(dailyNutritionTotalProvider(widget.selectedDate));
+
     final preferences = ref.watch(userPreferencesProvider).asData?.value;
     final dailyCalorieGoal = preferences?.dailyCalorieGoal ?? 2000;
+    final daysInMonth = DateUtils.getDaysInMonth(
+      widget.selectedDate.year,
+      widget.selectedDate.month,
+    );
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.75,
@@ -44,69 +62,70 @@ class PlannerNutritionTotalsModal extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 20),
-          const Text(
-            'Daily Nutrition',
-            style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900),
+          Text(
+            _showMonthly ? 'Monthly Nutrition' : 'Daily Nutrition',
+            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900),
           ),
           Text(
-            'Totals for ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+            _showMonthly
+                ? 'Totals for ${widget.selectedDate.month}/${widget.selectedDate.year}'
+                : 'Totals for ${widget.selectedDate.day}/${widget.selectedDate.month}/${widget.selectedDate.year}',
             style: const TextStyle(
               color: Colors.black38,
               fontWeight: FontWeight.bold,
             ),
           ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment<bool>(value: false, label: Text('Day')),
+                ButtonSegment<bool>(value: true, label: Text('Month')),
+              ],
+              selected: <bool>{_showMonthly},
+              onSelectionChanged: (selection) {
+                setState(() {
+                  _showMonthly = selection.first;
+                });
+              },
+            ),
+          ),
           const SizedBox(height: 24),
-
-          dailyAsync.when(
-            loading: () => _buildUnifiedHero(
-              const NutritionInfo(
-                calories: 0,
-                carbohydrates: 0,
-                protein: 0,
-                fat: 0,
-                fiber: 0,
-                sugar: 0,
-                sodium: 0,
-              ),
-            ),
-            error: (error, stackTrace) => _buildUnifiedHero(
-              const NutritionInfo(
-                calories: 0,
-                carbohydrates: 0,
-                protein: 0,
-                fat: 0,
-                fiber: 0,
-                sugar: 0,
-                sodium: 0,
-              ),
-            ),
+          nutritionAsync.when(
+            loading: () => _buildUnifiedHero(_emptyNutrition),
+            error: (_, _) => _buildUnifiedHero(_emptyNutrition),
             data: _buildUnifiedHero,
           ),
           const SizedBox(height: 14),
-          dailyAsync.when(
+          nutritionAsync.when(
             loading: () => _buildGoalStatus(
               totalCalories: 0,
               dailyCalorieGoal: dailyCalorieGoal,
+              showMonthlyContext: _showMonthly,
+              monthDayCount: daysInMonth,
               isLoading: true,
             ),
             error: (_, _) => _buildGoalStatus(
               totalCalories: 0,
               dailyCalorieGoal: dailyCalorieGoal,
+              showMonthlyContext: _showMonthly,
+              monthDayCount: daysInMonth,
               hasError: true,
             ),
             data: (nutrition) => _buildGoalStatus(
               totalCalories: nutrition.calories,
               dailyCalorieGoal: dailyCalorieGoal,
+              showMonthlyContext: _showMonthly,
+              monthDayCount: daysInMonth,
             ),
           ),
-
           const SizedBox(height: 32),
-          const Text(
-            'Meal Breakdown',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+          Text(
+            _showMonthly ? 'Monthly Meal Breakdown' : 'Meal Breakdown',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 12),
-
           Expanded(
             child: itemsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -114,9 +133,9 @@ class PlannerNutritionTotalsModal extends ConsumerWidget {
                   Center(child: Text('Failed to load data: $error')),
               data: (items) => ListView.builder(
                 physics: const BouncingScrollPhysics(),
-                itemCount: mealTypes.length,
+                itemCount: widget.mealTypes.length,
                 itemBuilder: (context, index) {
-                  final meal = mealTypes[index];
+                  final meal = widget.mealTypes[index];
                   final mealItems = items
                       .where((item) => item.mealType == meal)
                       .toList();
@@ -132,6 +151,16 @@ class PlannerNutritionTotalsModal extends ConsumerWidget {
       ),
     );
   }
+
+  NutritionInfo get _emptyNutrition => const NutritionInfo(
+        calories: 0,
+        carbohydrates: 0,
+        protein: 0,
+        fat: 0,
+        fiber: 0,
+        sugar: 0,
+        sodium: 0,
+      );
 
   Widget _buildUnifiedHero(NutritionInfo nutrition) {
     return Container(
@@ -157,11 +186,7 @@ class PlannerNutritionTotalsModal extends ConsumerWidget {
           children: [
             _buildHeroStat('Calories', '${nutrition.calories}', 'kcal'),
             _buildDivider(),
-            _buildHeroStat(
-              'Protein',
-              nutrition.protein.toStringAsFixed(1),
-              'g',
-            ),
+            _buildHeroStat('Protein', nutrition.protein.toStringAsFixed(1), 'g'),
             _buildDivider(),
             _buildHeroStat(
               'Carbs',
@@ -189,32 +214,39 @@ class PlannerNutritionTotalsModal extends ConsumerWidget {
   Widget _buildGoalStatus({
     required int totalCalories,
     required int dailyCalorieGoal,
+    required bool showMonthlyContext,
+    required int monthDayCount,
     bool isLoading = false,
     bool hasError = false,
   }) {
-    final delta = totalCalories - dailyCalorieGoal;
+    final targetCalories = showMonthlyContext
+        ? dailyCalorieGoal * monthDayCount
+        : dailyCalorieGoal;
+    final delta = totalCalories - targetCalories;
     final isOver = delta > 0;
     final isOnTarget = delta == 0;
 
     final statusColor = hasError
         ? Colors.redAccent
         : isLoading
-        ? Colors.blueGrey
-        : isOnTarget
-        ? Colors.green
-        : isOver
-        ? Colors.redAccent
-        : AppColors.rosePink;
+            ? Colors.blueGrey
+            : isOnTarget
+                ? Colors.green
+                : isOver
+                    ? Colors.redAccent
+                    : AppColors.rosePink;
 
     final statusText = hasError
         ? 'Goal status unavailable'
         : isLoading
-        ? 'Checking daily goal...'
-        : isOnTarget
-        ? 'On goal: $dailyCalorieGoal kcal'
-        : isOver
-        ? 'Over by ${delta.abs()} kcal'
-        : '${delta.abs()} kcal remaining';
+            ? (showMonthlyContext
+                ? 'Checking monthly goal...'
+                : 'Checking daily goal...')
+            : isOnTarget
+                ? 'On goal: $targetCalories kcal'
+                : isOver
+                    ? 'Over by ${delta.abs()} kcal'
+                    : '${delta.abs()} kcal remaining';
 
     return Container(
       width: double.infinity,
@@ -243,7 +275,7 @@ class PlannerNutritionTotalsModal extends ConsumerWidget {
             ),
           ),
           Text(
-            '$totalCalories / $dailyCalorieGoal kcal',
+            '$totalCalories / $targetCalories kcal',
             style: const TextStyle(
               color: Colors.black54,
               fontWeight: FontWeight.w700,
@@ -298,6 +330,8 @@ class PlannerNutritionTotalsModal extends ConsumerWidget {
       Container(width: 1, height: 35, color: Colors.white24);
 
   Widget _buildMealRow(String meal, int calories) {
+    final label = _showMonthly ? '$calories kcal total' : '$calories kcal';
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(18),
@@ -317,10 +351,10 @@ class PlannerNutritionTotalsModal extends ConsumerWidget {
           ),
           const Spacer(),
           Text(
-            '$calories kcal',
+            label,
             style: const TextStyle(
-              color: AppColors.rosePink,
               fontWeight: FontWeight.w900,
+              color: AppColors.rosePink,
             ),
           ),
           const SizedBox(width: 12),
