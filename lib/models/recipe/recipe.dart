@@ -18,7 +18,6 @@ abstract class Recipe with _$Recipe {
     required List<RecipeStep> steps,
     required String description,
     required bool isPublic,
-    required bool isVerified,
     required int servings,
     required int cookTime,
     required int prepTime,
