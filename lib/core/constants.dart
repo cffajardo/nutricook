@@ -91,16 +91,3 @@ class IngredientProcess {
   static const grated = 'Grated';
   static const blended = 'Blended';
 }
-
-class ServingTypes {
-  static const portion = 'Portion';
-  static const weight = 'Weight';
-  static const bowl = 'Bowl';
-  static const plate = 'Plate';
-  static const cup = 'Cup';
-  static const piece = 'Piece';
-  static const slice = 'Slice';
-  static const custom = 'Custom';
-  static const grams = 'Grams';
-  static const ounces = 'Ounces';
-}
