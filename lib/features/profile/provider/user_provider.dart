@@ -22,6 +22,26 @@ final userDataByIdProvider =
       return userService.getUserDataStream(userId);
     });
 
+final isCurrentUserAdminProvider = Provider<bool>((ref) {
+  final userData = ref.watch(userDataProvider).asData?.value;
+  if (userData == null) return false;
+
+  final role = (userData['role'] ?? '').toString().toLowerCase();
+  final flag = userData['isAdmin'] == true;
+  return role == 'admin' || flag;
+});
+
+final isCurrentUserBannedProvider = Provider<bool>((ref) {
+  final userData = ref.watch(userDataProvider).asData?.value;
+  if (userData == null) return false;
+  return userData['isBanned'] == true;
+});
+
+final adminUsersQueryProvider =
+    StreamProvider.family<List<Map<String, dynamic>>, String>((ref, query) {
+      return ref.watch(userServiceProvider).getAllUsersStream(query: query);
+    });
+
 // Stream Provider for current user's allergens
 final userAllergenProvider = StreamProvider<List<String>>((ref) {
   final preferences = ref.watch(userPreferencesProvider).asData?.value;

@@ -409,4 +409,62 @@ class UserService {
     });
     await batch.commit();
   }
+
+  Stream<List<Map<String, dynamic>>> getAllUsersStream({
+    String query = '',
+    int limit = 300,
+  }) {
+    final normalized = query.trim().toLowerCase();
+
+    return _users.limit(limit).snapshots().map((snapshot) {
+      final users = snapshot.docs
+          .map((doc) {
+            final data = doc.data();
+            final id = (data['id'] ?? doc.id).toString();
+            return <String, dynamic>{...data, 'id': id};
+          })
+          .where((user) {
+            if (normalized.isEmpty) return true;
+            final username =
+                (user['username'] ?? '').toString().trim().toLowerCase();
+            final email = (user['email'] ?? '').toString().trim().toLowerCase();
+            return username.contains(normalized) || email.contains(normalized);
+          })
+          .toList();
+
+      users.sort((a, b) {
+        final aName = (a['username'] ?? '').toString().toLowerCase();
+        final bName = (b['username'] ?? '').toString().toLowerCase();
+        return aName.compareTo(bName);
+      });
+
+      return users;
+    });
+  }
+
+  Future<void> setUserBanStatus({
+    required String targetUserId,
+    required bool isBanned,
+    String? reason,
+    String? actionBy,
+  }) async {
+    final now = DateTime.now();
+    await _users.doc(targetUserId).update({
+      'isBanned': isBanned,
+      'banReason': isBanned ? (reason ?? '').trim() : null,
+      'bannedAt': isBanned ? Timestamp.fromDate(now) : null,
+      'bannedBy': isBanned ? actionBy : null,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> setUserRole({
+    required String targetUserId,
+    required String role,
+  }) async {
+    await _users.doc(targetUserId).update({
+      'role': role,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
 }
