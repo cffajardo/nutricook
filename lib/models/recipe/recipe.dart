@@ -28,6 +28,7 @@ abstract class Recipe with _$Recipe {
     String? ownerId,
     @Default(0) int favoriteCount,
     @Default(0) int reportCount,
+    @Default(<String>[]) List<String> favoritedBy,
     @Default(<String>[]) List<String> tags,
     @Default(<String>[]) List<String> techniqueIDs,
     @Default(<String>[]) List<String> imageURL,
