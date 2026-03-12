@@ -74,7 +74,6 @@ class UnifiedSearchService {
           ),
         );
       } catch (_) {
-        // Skip malformed docs instead of failing the whole search.
       }
     }
     return results;

@@ -12,9 +12,6 @@ import 'package:nutricook/models/unit/unit.dart';
 class UnitService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  // ---------------------------------------------------------------------------
-  // Firestore access
-  // ---------------------------------------------------------------------------
 
   Future<List<Unit>> getAllUnits() async {
     final snapshot = await _db
