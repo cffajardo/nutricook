@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
 import 'package:nutricook/features/library/library_constants.dart';
 import 'package:nutricook/features/library/providers/library_catalog_provider.dart';
+import 'package:nutricook/features/library/screens/library_item_detail_page.dart';
 
 class LibraryItemDetailScreen extends ConsumerStatefulWidget {
   final String categoryId;
@@ -192,51 +193,64 @@ class _LibraryItemDetailScreenState
   }
 
   Widget _buildItemTile(LibraryCatalogItem item) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.rosePink.withValues(alpha: 0.1),
-          width: 1.5,
-        ),
-      ),
-      child: Row(
-        children: [
-          _buildLeadingVisual(item.imageUrl),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  item.description,
-                  style: const TextStyle(
-                    color: Colors.black54,
-                    fontSize: 13,
-                    height: 1.3,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+    return InkWell(
+      borderRadius: BorderRadius.circular(20),
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => LibrarySingleItemDetailScreen(
+              categoryId: widget.categoryId,
+              itemId: item.id,
             ),
           ),
-          const Icon(
-            Icons.arrow_forward_ios_rounded,
-            color: Colors.black12,
-            size: 16,
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: AppColors.rosePink.withValues(alpha: 0.1),
+            width: 1.5,
           ),
-        ],
+        ),
+        child: Row(
+          children: [
+            _buildLeadingVisual(item.imageUrl),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    item.description,
+                    style: const TextStyle(
+                      color: Colors.black54,
+                      fontSize: 13,
+                      height: 1.3,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: Colors.black12,
+              size: 16,
+            ),
+          ],
+        ),
       ),
     );
   }
