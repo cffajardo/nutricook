@@ -18,6 +18,8 @@ class AppRoutes {
   static const String settingsPath = 'settings';
   static const String editProfilePath = 'edit';
   static const String profileConnectionsPath = 'connections';
+  static const String adminPath = '/admin';
+  static const String bannedPath = '/banned';
 
   static const String splashName = 'splash';
   static const String homeName = 'home';
@@ -39,4 +41,6 @@ class AppRoutes {
   static const String settingsName = 'settings';
   static const String editProfileName = 'edit_profile';
   static const String profileConnectionsName = 'profile_connections';
+  static const String adminName = 'admin';
+  static const String bannedName = 'banned';
 }

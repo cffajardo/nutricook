@@ -5,6 +5,8 @@ import 'package:nutricook/features/auth/providers/auth_provider.dart';
 import 'package:nutricook/features/auth/screens/login_screen.dart';
 import 'package:nutricook/features/auth/screens/register_screen.dart';
 import 'package:nutricook/features/auth/screens/verify_email_screen.dart';
+import 'package:nutricook/features/admin/screens/admin_panel_page.dart';
+import 'package:nutricook/features/admin/screens/banned_screen.dart';
 import 'package:nutricook/features/recipe/screens/recipe_main.dart';
 import 'package:nutricook/features/recipe/screens/recipe_subcategory_list.dart';
 import 'package:nutricook/features/recipe/screens/recipe_create.dart';
@@ -23,9 +25,11 @@ import 'package:nutricook/screens/home_screen.dart';
 import 'package:nutricook/screens/splash_screen.dart';
 import 'package:nutricook/routing/app_routes.dart';
 import 'package:nutricook/features/home/widgets/custom_bottom_nav_bar.dart';
+import 'package:nutricook/features/profile/provider/user_provider.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final userAsync = ref.watch(authStateProvider);
+  final userDataAsync = ref.watch(userDataProvider);
 
   return GoRouter(
     initialLocation: AppRoutes.splashPath,
@@ -35,6 +39,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           path == AppRoutes.loginPath || path == AppRoutes.registerPath;
       final isVerifyEmailRoute = path == AppRoutes.verifyEmailPath;
       final isSplashRoute = path == AppRoutes.splashPath;
+      final isAdminRoute = path.startsWith(AppRoutes.adminPath);
+      final isBannedRoute = path == AppRoutes.bannedPath;
 
       if (isSplashRoute) return null;
 
@@ -43,6 +49,22 @@ final routerProvider = Provider<GoRouter>((ref) {
         error: (_, _) => AppRoutes.loginPath,
         data: (user) {
           if (user == null) return isAuthRoute ? null : AppRoutes.loginPath;
+
+          final userData = userDataAsync.asData?.value;
+          final isBanned = userData?['isBanned'] == true;
+          if (isBanned) {
+            return isBannedRoute ? null : AppRoutes.bannedPath;
+          }
+
+          if (!isBanned && isBannedRoute) {
+            return AppRoutes.homePath;
+          }
+
+          final role = (userData?['role'] ?? '').toString().toLowerCase();
+          final isAdmin = role == 'admin' || userData?['isAdmin'] == true;
+          if (isAdminRoute && !isAdmin) {
+            return AppRoutes.homePath;
+          }
 
           final needsVerif =
               user.email != null &&
@@ -77,6 +99,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.verifyEmailPath,
         name: AppRoutes.verifyEmailName,
         builder: (context, state) => const VerifyEmailScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.bannedPath,
+        name: AppRoutes.bannedName,
+        builder: (context, state) => const BannedScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.adminPath,
+        name: AppRoutes.adminName,
+        builder: (context, state) => const AdminPanelPage(),
       ),
 
       StatefulShellRoute.indexedStack(
