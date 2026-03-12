@@ -3,6 +3,7 @@ class AppRoutes {
   static const String homePath = '/';
   static const String recipesPath = '/recipes';
   static const String plannerPath = '/planner';
+  static const String libraryPath = '/library';
   static const String loginPath = '/login';
   static const String registerPath = '/register';
   static const String profilePath = '/profile';
@@ -22,6 +23,7 @@ class AppRoutes {
   static const String homeName = 'home';
   static const String recipesName = 'recipes';
   static const String plannerName = 'planner';
+  static const String libraryName = 'library';
   static const String loginName = 'login';
   static const String registerName = 'register';
   static const String profileName = 'profile';
