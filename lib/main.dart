@@ -7,6 +7,10 @@ import 'package:nutricook/core/theme/app_theme.dart';
 import 'package:nutricook/features/profile/provider/user_preferences_provider.dart';
 import 'firebase_options.dart';
 import 'routing/main_router.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_ai/firebase_ai.dart';
+import 'firebase_options.dart';
+
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
