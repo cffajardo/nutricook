@@ -8,7 +8,6 @@ class UserPreferences {
     this.themeMode = ThemeMode.system,
     this.unitSystem = UnitSystem.metric,
     this.notificationsEnabled = true,
-    this.showOnlyVerifiedRecipes = false,
     this.showNutritionPerServing = true,
     this.dailyCalorieGoal = 2000,
     this.allergens = const <String>[],
@@ -19,7 +18,6 @@ class UserPreferences {
   final ThemeMode themeMode;
   final UnitSystem unitSystem;
   final bool notificationsEnabled;
-  final bool showOnlyVerifiedRecipes;
   final bool showNutritionPerServing;
   final int dailyCalorieGoal;
   final List<String> allergens;
@@ -32,7 +30,6 @@ class UserPreferences {
     ThemeMode? themeMode,
     UnitSystem? unitSystem,
     bool? notificationsEnabled,
-    bool? showOnlyVerifiedRecipes,
     bool? showNutritionPerServing,
     int? dailyCalorieGoal,
     List<String>? allergens,
@@ -43,8 +40,6 @@ class UserPreferences {
       themeMode: themeMode ?? this.themeMode,
       unitSystem: unitSystem ?? this.unitSystem,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
-      showOnlyVerifiedRecipes:
-          showOnlyVerifiedRecipes ?? this.showOnlyVerifiedRecipes,
       showNutritionPerServing:
           showNutritionPerServing ?? this.showNutritionPerServing,
       dailyCalorieGoal: dailyCalorieGoal ?? this.dailyCalorieGoal,
@@ -62,7 +57,6 @@ class UserPreferences {
       'themeMode': themeMode.name,
       'unitSystem': unitSystem.name,
       'notificationsEnabled': notificationsEnabled,
-      'showOnlyVerifiedRecipes': showOnlyVerifiedRecipes,
       'showNutritionPerServing': showNutritionPerServing,
       'dailyCalorieGoal': dailyCalorieGoal,
       'allergens': allergens,
@@ -96,7 +90,9 @@ class UserPreferences {
       (json['mealStartHours'] as Map?)?.map(
         (key, value) => MapEntry(
           key.toString(),
-          (value as num?)?.toInt() ?? defaultMealStartHours[key.toString()] ?? 0,
+          (value as num?)?.toInt() ??
+              defaultMealStartHours[key.toString()] ??
+              0,
         ),
       ),
     );
@@ -107,9 +103,6 @@ class UserPreferences {
       notificationsEnabled:
           json['notificationsEnabled'] as bool? ??
           UserPreferences.defaults.notificationsEnabled,
-      showOnlyVerifiedRecipes:
-          json['showOnlyVerifiedRecipes'] as bool? ??
-          UserPreferences.defaults.showOnlyVerifiedRecipes,
       showNutritionPerServing:
           json['showNutritionPerServing'] as bool? ??
           UserPreferences.defaults.showNutritionPerServing,
