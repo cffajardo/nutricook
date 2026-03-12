@@ -51,6 +51,49 @@ class LibraryCatalogItem {
   final String? imageUrl;
 }
 
+class LibraryItemDetailQuery {
+  const LibraryItemDetailQuery({
+    required this.categoryId,
+    required this.itemId,
+  });
+
+  final String categoryId;
+  final String itemId;
+
+  @override
+  bool operator ==(Object other) {
+    return other is LibraryItemDetailQuery &&
+        other.categoryId == categoryId &&
+        other.itemId == itemId;
+  }
+
+  @override
+  int get hashCode => Object.hash(categoryId, itemId);
+}
+
+class LibraryItemDetailField {
+  const LibraryItemDetailField({required this.label, required this.value});
+
+  final String label;
+  final String value;
+}
+
+class LibraryItemDetailData {
+  const LibraryItemDetailData({
+    required this.id,
+    required this.name,
+    required this.description,
+    this.imageUrl,
+    this.fields = const <LibraryItemDetailField>[],
+  });
+
+  final String id;
+  final String name;
+  final String description;
+  final String? imageUrl;
+  final List<LibraryItemDetailField> fields;
+}
+
 List<LibraryCatalogItem> _sortedItems(
   List<LibraryCatalogItem> items,
   String sortBy,
@@ -187,4 +230,148 @@ final libraryItemsProvider =
       }
 
       return const <LibraryCatalogItem>[];
+    });
+
+final libraryItemDetailProvider =
+    FutureProvider.family<LibraryItemDetailData?, LibraryItemDetailQuery>((
+      ref,
+      query,
+    ) async {
+      if (query.categoryId == LibraryCategoryIds.ingredients) {
+        final ingredients = await ref.watch(ingredientsProvider.future);
+        for (final ingredient in ingredients) {
+          if (ingredient.id != query.itemId) continue;
+
+          final nutrition = ingredient.nutritionPer100g;
+          final fields = <LibraryItemDetailField>[
+            LibraryItemDetailField(
+              label: 'Category',
+              value: ingredient.category,
+            ),
+            if (ingredient.densityGPerMl != null)
+              LibraryItemDetailField(
+                label: 'Density',
+                value: '${ingredient.densityGPerMl!.toStringAsFixed(2)} g/ml',
+              ),
+            if (ingredient.avgWeightG != null)
+              LibraryItemDetailField(
+                label: 'Average Weight',
+                value: '${ingredient.avgWeightG!.toStringAsFixed(2)} g',
+              ),
+            if (nutrition != null)
+              LibraryItemDetailField(
+                label: 'Calories (per 100g)',
+                value: '${nutrition.calories} kcal',
+              ),
+            if (nutrition != null)
+              LibraryItemDetailField(
+                label: 'Carbohydrates (per 100g)',
+                value: '${nutrition.carbohydrates.toStringAsFixed(2)} g',
+              ),
+            if (nutrition != null)
+              LibraryItemDetailField(
+                label: 'Protein (per 100g)',
+                value: '${nutrition.protein.toStringAsFixed(2)} g',
+              ),
+            if (nutrition != null)
+              LibraryItemDetailField(
+                label: 'Fat (per 100g)',
+                value: '${nutrition.fat.toStringAsFixed(2)} g',
+              ),
+            if (nutrition != null)
+              LibraryItemDetailField(
+                label: 'Fiber (per 100g)',
+                value: '${nutrition.fiber.toStringAsFixed(2)} g',
+              ),
+            if (nutrition != null)
+              LibraryItemDetailField(
+                label: 'Sugar (per 100g)',
+                value: '${nutrition.sugar.toStringAsFixed(2)} g',
+              ),
+            if (nutrition != null)
+              LibraryItemDetailField(
+                label: 'Sodium (per 100g)',
+                value: '${nutrition.sodium.toStringAsFixed(2)} mg',
+              ),
+          ];
+
+          return LibraryItemDetailData(
+            id: ingredient.id,
+            name: ingredient.name,
+            description: ingredient.description?.trim().isNotEmpty == true
+                ? ingredient.description!.trim()
+                : 'No description available.',
+            imageUrl: ingredient.imageURL,
+            fields: fields,
+          );
+        }
+      }
+
+      if (query.categoryId == LibraryCategoryIds.techniques) {
+        final techniques = await ref.watch(techniquesProvider.future);
+        for (final technique in techniques) {
+          if (technique.id != query.itemId) continue;
+
+          return LibraryItemDetailData(
+            id: technique.id,
+            name: technique.name,
+            description: technique.description?.trim().isNotEmpty == true
+                ? technique.description!.trim()
+                : 'No description available.',
+            imageUrl: technique.imageURL.isNotEmpty
+                ? technique.imageURL.first
+                : null,
+            fields: <LibraryItemDetailField>[
+              LibraryItemDetailField(
+                label: 'Category',
+                value: technique.category,
+              ),
+            ],
+          );
+        }
+      }
+
+      if (query.categoryId == LibraryCategoryIds.nutrition) {
+        final nutritions = await ref.watch(nutritionDetailsProvider.future);
+        for (final nutrition in nutritions) {
+          if (nutrition.id != query.itemId) continue;
+
+          return LibraryItemDetailData(
+            id: nutrition.id,
+            name: nutrition.name,
+            description: nutrition.description,
+            fields: <LibraryItemDetailField>[
+              LibraryItemDetailField(
+                label: 'Recommended Daily Value',
+                value: '${nutrition.recommendedDailyValue.toStringAsFixed(2)}',
+              ),
+              LibraryItemDetailField(label: 'Unit ID', value: nutrition.unitId),
+            ],
+          );
+        }
+      }
+
+      if (query.categoryId == LibraryCategoryIds.units) {
+        final units = await ref.watch(unitsProvider.future);
+        for (final unit in units) {
+          if (unit.id != query.itemId) continue;
+
+          return LibraryItemDetailData(
+            id: unit.id,
+            name: unit.name,
+            description: unit.description?.trim().isNotEmpty == true
+                ? unit.description!.trim()
+                : 'No description available.',
+            fields: <LibraryItemDetailField>[
+              LibraryItemDetailField(label: 'Type', value: unit.type),
+              LibraryItemDetailField(
+                label: 'Multiplier',
+                value: unit.multiplier.toStringAsFixed(4),
+              ),
+            ],
+          );
+        }
+      }
+
+      return null;
     });
