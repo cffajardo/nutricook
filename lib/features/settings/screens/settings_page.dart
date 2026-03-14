@@ -10,7 +10,6 @@ import 'package:nutricook/features/library/ingredients/provider/ingredient_provi
 import 'package:nutricook/features/profile/provider/user_provider.dart';
 import 'package:nutricook/features/profile/provider/user_preferences_provider.dart';
 import 'package:nutricook/features/recipe/widgets/add_ingredient_modal.dart';
-import 'package:nutricook/models/user_preferences/user_preferences.dart';
 import 'package:nutricook/routing/app_routes.dart';
 
 class SettingsPage extends ConsumerWidget {
@@ -379,58 +378,6 @@ class _SwitchRow extends StatelessWidget {
   }
 }
 
-class _SegmentRow<T> extends StatelessWidget {
-  const _SegmentRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.options,
-    required this.onChanged,
-  });
-  final IconData icon;
-  final String label;
-  final T value;
-  final Map<T, String> options;
-  final ValueChanged<T> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: AppColors.rosePink),
-          const SizedBox(width: 12),
-          Text(
-            label,
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-          ),
-          const Spacer(),
-          SegmentedButton<T>(
-            showSelectedIcon: false,
-            selected: {value},
-            onSelectionChanged: (sel) => onChanged(sel.first),
-            style: SegmentedButton.styleFrom(
-              selectedBackgroundColor: AppColors.rosePink,
-              selectedForegroundColor: Colors.white,
-              side: const BorderSide(color: AppColors.rosePink, width: 1.2),
-              textStyle: const TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 12,
-              ),
-            ),
-            segments: options.entries
-                .map(
-                  (e) => ButtonSegment<T>(value: e.key, label: Text(e.value)),
-                )
-                .toList(),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _CalorieGoalRow extends StatefulWidget {
   const _CalorieGoalRow({required this.current, required this.onChanged});
   final int current;
@@ -555,9 +502,9 @@ class _MealTimesSectionContent extends StatelessWidget {
         for (var i = 0; i < orderedMealTypes.length; i++) ...[
           _MealHourRow(
             mealType: orderedMealTypes[i],
-            hour: sanitizedHours[orderedMealTypes[i]]!,
-            onChanged: (hour) =>
-                notifier.updateMealStartHour(orderedMealTypes[i], hour),
+            minutes: sanitizedHours[orderedMealTypes[i]]!,
+            onChanged: (minutes) =>
+                notifier.updateMealStartHour(orderedMealTypes[i], minutes),
           ),
           if (i != orderedMealTypes.length - 1) const _Divider(),
         ],
@@ -569,27 +516,35 @@ class _MealTimesSectionContent extends StatelessWidget {
 class _MealHourRow extends StatelessWidget {
   const _MealHourRow({
     required this.mealType,
-    required this.hour,
+    required this.minutes,
     required this.onChanged,
   });
 
   final String mealType;
-  final int hour;
+  final int minutes;
   final ValueChanged<int> onChanged;
 
   void _openHourPicker(BuildContext context) {
     final hourValues = List<int>.generate(12, (index) => index + 1);
+    final minuteValues = List<int>.generate(60, (index) => index);
     final periodValues = const <String>['AM', 'PM'];
 
+    final hour = minutes ~/ 60;
+    final minute = minutes % 60;
     final initial12Hour = hour % 12 == 0 ? 12 : hour % 12;
     final initialHourIndex = hourValues.indexOf(initial12Hour);
+    final initialMinuteIndex = minute;
     final initialPeriodIndex = hour >= 12 ? 1 : 0;
 
     var selectedHour12 = initial12Hour;
+    var selectedMinute = minute;
     var selectedPeriodIndex = initialPeriodIndex;
 
     final hourController = FixedExtentScrollController(
       initialItem: initialHourIndex,
+    );
+    final minuteController = FixedExtentScrollController(
+      initialItem: initialMinuteIndex,
     );
     final periodController = FixedExtentScrollController(
       initialItem: initialPeriodIndex,
@@ -632,7 +587,8 @@ class _MealHourRow extends StatelessWidget {
                               final nextHour = isPm
                                   ? (selectedHour12 % 12) + 12
                                   : (selectedHour12 % 12);
-                              onChanged(nextHour);
+                              final totalMinutes = nextHour * 60 + selectedMinute;
+                              onChanged(totalMinutes);
                               Navigator.pop(ctx);
                             },
                             child: const Text(
@@ -661,6 +617,29 @@ class _MealHourRow extends StatelessWidget {
                                   Center(
                                     child: Text(
                                       value.toString(),
+                                      style: const TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          Expanded(
+                            child: CupertinoPicker(
+                              scrollController: minuteController,
+                              itemExtent: 38,
+                              onSelectedItemChanged: (index) {
+                                setState(() {
+                                  selectedMinute = minuteValues[index];
+                                });
+                              },
+                              children: [
+                                for (final value in minuteValues)
+                                  Center(
+                                    child: Text(
+                                      value.toString().padLeft(2, '0'),
                                       style: const TextStyle(
                                         fontSize: 20,
                                         fontWeight: FontWeight.w700,
@@ -730,7 +709,7 @@ class _MealHourRow extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '${mealType} starts at ${formatMealHourLabel(hour)}',
+                  '${mealType} starts at ${formatMealHourLabel(minutes)}',
                   style: const TextStyle(fontSize: 12, color: Colors.black45),
                 ),
               ],
@@ -752,7 +731,7 @@ class _MealHourRow extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    formatMealHourLabel(hour),
+                    formatMealHourLabel(minutes),
                     style: const TextStyle(
                       color: AppColors.rosePink,
                       fontWeight: FontWeight.w700,
