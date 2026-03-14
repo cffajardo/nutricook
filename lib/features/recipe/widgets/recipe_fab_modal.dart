@@ -11,6 +11,7 @@ class RecipeActionsModal extends StatelessWidget {
   final VoidCallback onEditCopy;
   final VoidCallback onDelete;
   final VoidCallback onReport;
+  final VoidCallback onShare;
 
   const RecipeActionsModal({
     super.key,
@@ -21,6 +22,7 @@ class RecipeActionsModal extends StatelessWidget {
     required this.onEditCopy,
     required this.onDelete,
     required this.onReport,
+    required this.onShare,
     this.isOwner = false,
   });
 
@@ -69,8 +71,14 @@ class RecipeActionsModal extends StatelessWidget {
           _buildActionTile(
             context,
             icon: Icons.copy_rounded,
-            label: 'Edit Recipe (Creates Copy)',
+            label: 'Edit Recipe (Creates Copy, keeps servings)',
             onTap: onEditCopy,
+          ),
+          _buildActionTile(
+            context,
+            icon: Icons.share_rounded,
+            label: 'Share Recipe',
+            onTap: onShare,
           ),
 
           if (isOwner)
