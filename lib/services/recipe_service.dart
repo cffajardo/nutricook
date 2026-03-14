@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:nutricook/core/allergen_entries.dart';
 import 'package:nutricook/core/constants.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
@@ -7,6 +8,7 @@ import 'package:nutricook/models/ingredient/ingredient.dart';
 import 'package:nutricook/models/nutrition_info/nutrition_info.dart';
 import 'package:nutricook/models/unit/unit.dart';
 import 'package:nutricook/features/utils/nutrition_calculator.dart';
+import 'package:nutricook/features/recipe/notifiers/recipe_like_helper.dart';
 
 class RecipeService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -200,6 +202,49 @@ class RecipeService {
       'favoriteCount': FieldValue.increment(1),
       'favoritedBy': FieldValue.arrayUnion([userId]),
     });
+
+    // Send notification to recipe owner
+    try {
+      // Fetch recipe details
+      final recipeDoc = await recipeRef.get();
+      if (!recipeDoc.exists) return;
+
+      final recipe = Recipe.fromJson(recipeDoc.data()!);
+      final recipeOwnerId = recipe.ownerId;
+
+      // Skip notification if recipe has no owner or user is liking their own recipe
+      if (recipeOwnerId == null || userId == recipeOwnerId) return;
+
+      // Fetch the owner's FCM token
+      final ownerDoc = await _db
+          .collection(FirestoreConstants.users)
+          .doc(recipeOwnerId)
+          .get();
+      if (!ownerDoc.exists) return;
+
+      final ownerFcmToken = ownerDoc.get('fcmToken') as String?;
+      if (ownerFcmToken == null || ownerFcmToken.isEmpty) return;
+
+      // Fetch the current user's profile for their name
+      final userDoc = await _db
+          .collection(FirestoreConstants.users)
+          .doc(userId)
+          .get();
+      final likerName = userDoc.get('username') as String? ?? 'Someone';
+
+      // Send the notification
+      await RecipeLikeHelper.onRecipeLiked(
+        recipeId: recipeId,
+        recipeName: recipe.name,
+        likerId: userId,
+        likerName: likerName,
+        recipeOwnerId: recipeOwnerId,
+        ownerFcmToken: ownerFcmToken, // already checked for non-null and non-empty
+      );
+    } catch (e) {
+      // Log error but don't fail the like operation
+      debugPrint('Error sending recipe like notification: $e');
+    }
   }
 
   Future<void> removeFavorite(String recipeId, String userId) async {
