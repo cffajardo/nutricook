@@ -4,8 +4,12 @@ import 'package:flutter/services.dart'
     show SystemChrome, SystemUiOverlayStyle, SystemUiMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
 import 'package:nutricook/features/profile/provider/user_preferences_provider.dart';
+import 'package:nutricook/services/firebase_messaging_service.dart';
+import 'package:nutricook/features/notifications/notification_handler.dart';
+import 'package:nutricook/models/notification_payload.dart';
 import 'firebase_options.dart';
 import 'routing/main_router.dart';
 
@@ -26,8 +30,43 @@ Future<void> main() async {
 
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  
+  // Initialize Firebase Messaging (FCM)
+  await _initializeFirebaseMessaging();
+  
   runApp(const ProviderScope(child: NutriCookApp()));
 }
+
+/// Initialize Firebase Messaging for push notifications
+Future<void> _initializeFirebaseMessaging() async {
+  try {
+    final messagingService = FirebaseMessagingService();
+    
+    // Check for initial message (when app is opened from notification while closed)
+    final initialMessage = await messagingService.getInitialMessage();
+    if (initialMessage != null) {
+      debugPrint('Initial message received: ${initialMessage.messageId}');
+    }
+    
+    // Initialize FCM with handlers
+    await messagingService.initialize(
+      onForegroundMessage: (RemoteMessage message) async {
+        debugPrint('Foreground message: ${message.messageId}');
+        debugPrint('Title: ${message.notification?.title}');
+        debugPrint('Body: ${message.notification?.body}');
+      },
+      onNotificationTap: (String notificationId) {
+        debugPrint('Notification tapped: $notificationId');
+        // Note: Actual navigation will be handled by the global navigation observer
+      },
+    );
+    
+    debugPrint('Firebase Messaging initialized successfully');
+  } catch (e) {
+    debugPrint('Error initializing Firebase Messaging: $e');
+  }
+}
+
 
 class NutriCookApp extends ConsumerWidget {
   const NutriCookApp({super.key});
@@ -35,6 +74,9 @@ class NutriCookApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(appThemeModeProvider);
+
+    // Set up notification tap listener
+    _setupNotificationTapListener(context);
 
     return MaterialApp.router(
       title: 'NutriCook',
@@ -56,5 +98,34 @@ class NutriCookApp extends ConsumerWidget {
         );
       },
     );
+  }
+
+  /// Set up listener for when user taps a notification
+  void _setupNotificationTapListener(BuildContext context) {
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      debugPrint('Notification opened from app: ${message.messageId}');
+      
+      try {
+        // Parse notification payload
+        final payload = NotificationPayload.fromFCMData(
+          notificationId: message.messageId ?? 'unknown',
+          data: message.data,
+          title: message.notification?.title,
+          body: message.notification?.body,
+        );
+        
+        debugPrint('Parsed payload: $payload');
+        
+        // Handle notification tap navigation
+        if (context.mounted) {
+          NotificationHandler.handleNotificationTap(
+            context: context,
+            payload: payload,
+          );
+        }
+      } catch (e) {
+        debugPrint('Error handling notification tap: $e');
+      }
+    });
   }
 }
