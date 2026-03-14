@@ -6,19 +6,20 @@ const List<String> orderedMealTypes = <String>[
   'Other',
 ];
 
+// Store as minutes (0-1439) to support both hours and minutes
 const Map<String, int> defaultMealStartHours = <String, int>{
-  'Breakfast': 5,
-  'Lunch': 11,
-  'Snack': 15,
-  'Dinner': 18,
-  'Other': 22,
+  'Breakfast': 5 * 60, // 5:00 AM
+  'Lunch': 11 * 60, // 11:00 AM
+  'Snack': 15 * 60, // 3:00 PM
+  'Dinner': 18 * 60, // 6:00 PM
+  'Other': 22 * 60, // 10:00 PM
 };
 
 Map<String, int> sanitizeMealStartHours(Map<String, int>? hours) {
   return <String, int>{
     for (final mealType in orderedMealTypes)
       mealType: (hours?[mealType] ?? defaultMealStartHours[mealType]!)
-          .clamp(0, 23)
+          .clamp(0, 1439) // 0-1439 minutes in a day
           .toInt(),
   };
 }
@@ -53,11 +54,13 @@ String resolveMealTypeForTime(DateTime time, Map<String, int>? hours) {
   return active.mealType;
 }
 
-String formatMealHourLabel(int hour) {
-  final normalized = hour.clamp(0, 23);
-  final displayHour = normalized % 12 == 0 ? 12 : normalized % 12;
-  final suffix = normalized < 12 ? 'AM' : 'PM';
-  return '$displayHour:00 $suffix';
+String formatMealHourLabel(int minutes) {
+  final normalized = minutes.clamp(0, 1439);
+  final hour = normalized ~/ 60;
+  final min = normalized % 60;
+  final displayHour = hour % 12 == 0 ? 12 : hour % 12;
+  final suffix = hour < 12 ? 'AM' : 'PM';
+  return '$displayHour:${min.toString().padLeft(2, '0')} $suffix';
 }
 
 bool isSameCalendarDay(DateTime a, DateTime b) {
