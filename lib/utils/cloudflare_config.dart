@@ -2,32 +2,18 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Configuration class for Cloudflare R2 settings
 /// 
-/// This class loads credentials and configuration from .env file.
-/// Never commit .env to version control - use .env.example instead.
+/// This class loads public configuration from .env file.
+/// Sensitive credentials (Access Key, Secret Key) are NOT stored in the app.
+/// They remain secure on your backend server only.
+/// 
+/// The app communicates with the backend to request pre-signed URLs for uploads.
 class CloudflareConfig {
   /// R2 Account ID - found in Cloudflare dashboard
+  /// This is not secret and can be public
   static String get accountId {
     final value = dotenv.env['R2_ACCOUNT_ID'];
     if (value == null || value.isEmpty) {
       throw ConfigurationException('R2_ACCOUNT_ID not configured in .env');
-    }
-    return value;
-  }
-
-  /// R2 API Access Key
-  static String get accessKey {
-    final value = dotenv.env['R2_ACCESS_KEY'];
-    if (value == null || value.isEmpty) {
-      throw ConfigurationException('R2_ACCESS_KEY not configured in .env');
-    }
-    return value;
-  }
-
-  /// R2 API Secret Key
-  static String get secretKey {
-    final value = dotenv.env['R2_SECRET_KEY'];
-    if (value == null || value.isEmpty) {
-      throw ConfigurationException('R2_SECRET_KEY not configured in .env');
     }
     return value;
   }
@@ -50,6 +36,16 @@ class CloudflareConfig {
     return value.endsWith('/') ? value.substring(0, value.length - 1) : value;
   }
 
+  /// Backend API endpoint for requesting pre-signed URLs
+  /// Example: https://api.yourdomain.com or http://localhost:3000
+  static String get backendApiUrl {
+    final value = dotenv.env['BACKEND_API_URL'];
+    if (value == null || value.isEmpty) {
+      throw ConfigurationException('BACKEND_API_URL not configured in .env');
+    }
+    return value.endsWith('/') ? value.substring(0, value.length - 1) : value;
+  }
+
   /// Debug mode flag
   static bool get debugMode {
     final value = dotenv.env['DEBUG_MODE']?.toLowerCase();
@@ -59,11 +55,11 @@ class CloudflareConfig {
   /// Constructs the S3-compatible endpoint URL for R2
   /// Format: https://{accountId}.r2.cloudflairstorage.com
   static String get s3Endpoint {
-    return 'https://${accountId}.r2.cloudflairstorage.com';
+    return 'https://$accountId.r2.cloudflairstorage.com';
   }
 
   /// Constructs the upload URL for a specific object in R2
-  /// Used for PUT requests
+  /// Used for PUT requests (now with pre-signed URLs)
   static String getUploadUrl(String objectKey) {
     return '$s3Endpoint/$bucketName/$objectKey';
   }
