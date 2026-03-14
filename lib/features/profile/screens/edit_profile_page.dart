@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -8,6 +6,7 @@ import 'package:nutricook/core/validators.dart';
 import 'package:nutricook/features/auth/providers/auth_provider.dart';
 import 'package:nutricook/features/profile/provider/user_provider.dart';
 import 'package:nutricook/routing/app_routes.dart';
+import 'package:nutricook/services/r2_upload_service.dart';
 import 'package:go_router/go_router.dart';
 
 class EditProfilePage extends ConsumerStatefulWidget {
@@ -20,7 +19,6 @@ class EditProfilePage extends ConsumerStatefulWidget {
 class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _imagePicker = ImagePicker();
 
   bool _initialized = false;
   bool _savingUsername = false;
@@ -40,6 +38,8 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   Widget build(BuildContext context) {
     final user = ref.watch(authStateProvider).asData?.value;
     final uid = ref.watch(currentUserIdProvider);
+    final isGoogleSignInUser =
+        user?.providerData.any((p) => p.providerId == 'google.com') == true;
 
     if (uid == null || user == null) {
       return Scaffold(
@@ -88,7 +88,12 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
             children: [
               _buildPhotoCard(photoUrl: photoUrl),
               const SizedBox(height: 16),
-              _buildAccountCard(uid: uid, currentUsername: username, currentEmail: email),
+              _buildAccountCard(
+                uid: uid,
+                currentUsername: username,
+                currentEmail: email,
+                isGoogleSignInUser: isGoogleSignInUser,
+              ),
               const SizedBox(height: 16),
               _buildDangerZone(uid: uid),
             ],
@@ -154,6 +159,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     required String uid,
     required String currentUsername,
     required String currentEmail,
+    required bool isGoogleSignInUser,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -191,38 +197,40 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
               child: Text(_savingUsername ? 'Saving...' : 'Save Username'),
             ),
           ),
-          const SizedBox(height: 18),
-          TextField(
-            controller: _emailController,
-            keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(
-              labelText: 'Email',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Changing email sends a verification link to the new address.',
-            style: TextStyle(
-              color: Colors.black.withValues(alpha: 0.6),
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _savingEmail
-                  ? null
-                  : () => _updateEmail(uid: uid, currentEmail: currentEmail),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.rosePink,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          if (!isGoogleSignInUser) ...[
+            const SizedBox(height: 18),
+            TextField(
+              controller: _emailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                border: OutlineInputBorder(),
               ),
-              child: Text(_savingEmail ? 'Updating...' : 'Change Email'),
             ),
-          ),
+            const SizedBox(height: 8),
+            Text(
+              'Changing email sends a verification link to the new address.',
+              style: TextStyle(
+                color: Colors.black.withValues(alpha: 0.6),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _savingEmail
+                    ? null
+                    : () => _updateEmail(uid: uid, currentEmail: currentEmail),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.rosePink,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: Text(_savingEmail ? 'Updating...' : 'Change Email'),
+              ),
+            ),
+          ],
           const SizedBox(height: 18),
           SizedBox(
             width: double.infinity,
@@ -287,11 +295,21 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     );
   }
 
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+  }
+
   Future<void> _changeProfilePicture() async {
     final uid = ref.read(currentUserIdProvider);
     if (uid == null) return;
 
-    final picked = await _imagePicker.pickImage(
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
       source: ImageSource.gallery,
       maxWidth: 1200,
       maxHeight: 1200,
@@ -302,17 +320,14 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
     setState(() => _updatingPhoto = true);
     try {
-      final Uint8List bytes = await picked.readAsBytes();
-      final refPath = 'profile_pictures/$uid/${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final storageRef = FirebaseStorage.instance.ref(refPath);
-      await storageRef.putData(
-        bytes,
-        SettableMetadata(contentType: 'image/jpeg'),
+      final r2Service = R2UploadService();
+      final imageUrl = await r2Service.uploadImage(
+        imageXFile: picked,
+        folder: 'users',
       );
-      final downloadUrl = await storageRef.getDownloadURL();
 
-      await ref.read(userServiceProvider).updateProfilePictureUrl(uid, downloadUrl);
-      await ref.read(authProvider).updatePhotoUrl(downloadUrl);
+      await ref.read(userServiceProvider).updateProfilePictureUrl(uid, imageUrl);
+      await ref.read(authProvider).updatePhotoUrl(imageUrl);
 
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -466,12 +481,5 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     } finally {
       if (mounted) setState(() => _deletingAccount = false);
     }
-  }
-
-  void _showMessage(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
   }
 }

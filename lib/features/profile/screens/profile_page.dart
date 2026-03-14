@@ -8,8 +8,11 @@ import 'package:nutricook/features/collection/provider/collection_provider.dart'
 import 'package:nutricook/features/profile/provider/user_provider.dart';
 import 'package:nutricook/features/recipe/providers/recipe_provider.dart';
 import 'package:nutricook/features/recipe/widgets/recipe_card.dart';
+import 'package:nutricook/features/recipe/widgets/create_collection_modal.dart';
+import 'package:nutricook/features/recipe/widgets/collection_detail_modal.dart';
 import 'package:nutricook/models/collection/collection.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
+import 'package:nutricook/services/collection_service.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key, this.userId});
@@ -48,10 +51,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
   void _openConnections({required String userId, required int initialTab}) {
     context.pushNamed(
       AppRoutes.profileConnectionsName,
-      queryParameters: {
-        'userId': userId,
-        'tab': '$initialTab',
-      },
+      queryParameters: {'userId': userId, 'tab': '$initialTab'},
     );
   }
 
@@ -194,10 +194,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
           final recipeCount = userRecipesAsync.asData?.value.length ?? 0;
           final collectionCount =
               userCollectionsAsync.asData?.value.length ?? 0;
-            final followersCount =
-              followersUsersAsync.asData?.value.length ?? 0;
-            final followingCount =
-              followingUsersAsync.asData?.value.length ?? 0;
+          final followersCount = followersUsersAsync.asData?.value.length ?? 0;
+          final followingCount = followingUsersAsync.asData?.value.length ?? 0;
 
           return Column(
             children: [
@@ -285,8 +283,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                 child: CircleAvatar(
                   radius: 34,
                   backgroundColor: AppColors.cardRose,
-                  backgroundImage: profileImageUrl != null &&
-                          profileImageUrl.isNotEmpty
+                  backgroundImage:
+                      profileImageUrl != null && profileImageUrl.isNotEmpty
                       ? NetworkImage(profileImageUrl)
                       : null,
                   child: profileImageUrl == null || profileImageUrl.isEmpty
@@ -432,7 +430,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
             children: [
               Text(
                 value,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
               Text(
                 label,
@@ -498,6 +499,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
   Widget _buildCollectionsTab(
     AsyncValue<List<Collection>> userCollectionsAsync,
   ) {
+    final isOwnProfile = widget.userId == null;
     return userCollectionsAsync.when(
       data: (collections) {
         if (collections.isEmpty) {
@@ -520,61 +522,61 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+                if (isOwnProfile) ...[
+                  const SizedBox(height: 24),
+                  FilledButton.icon(
+                    onPressed: () => _showCreateCollectionDialog(),
+                    icon: const Icon(Icons.add_rounded),
+                    label: const Text('Create Collection'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.rosePink,
+                    ),
+                  ),
+                ],
               ],
             ),
           );
         }
 
-        return ListView.separated(
+        return ListView(
           padding: const EdgeInsets.all(16),
-          itemCount: collections.length,
-          separatorBuilder: (context, index) => const SizedBox(height: 10),
-          itemBuilder: (context, index) {
-            final collection = collections[index];
-            return Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: AppColors.rosePink.withValues(alpha: 0.18),
+          children: [
+            if (isOwnProfile)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () => _showCreateCollectionDialog(),
+                    icon: const Icon(Icons.add_rounded),
+                    label: const Text('New Collection'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.rosePink,
+                    ),
+                  ),
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    collection.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 16,
-                    ),
-                  ),
-                  if (collection.description.trim().isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      collection.description,
-                      style: TextStyle(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.75),
+            SizedBox(
+              height: 160,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: collections.length,
+                itemBuilder: (context, index) {
+                  final collection = collections[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: GestureDetector(
+                      onTap: () => _showCollectionDetail(collection, isOwnProfile),
+                      child: _buildCollectionCard(
+                        collection,
+                        isOwnProfile: isOwnProfile,
                       ),
                     ),
-                  ],
-                  const SizedBox(height: 8),
-                  Text(
-                    '${collection.recipeCount} recipes',
-                    style: TextStyle(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.65),
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
+                  );
+                },
               ),
-            );
-          },
+            ),
+          ],
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -590,5 +592,238 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
       ),
     );
   }
-}
 
+  Widget _buildCollectionCard(
+    Collection collection, {
+    required bool isOwnProfile,
+  }) {
+    final isFavoritesCollection = collection.isDefault;
+
+    return Container(
+      width: 140,
+      decoration: BoxDecoration(
+        color: isFavoritesCollection
+            ? AppColors.rosePink.withValues(alpha: 0.15)
+            : AppColors.cardRose.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isFavoritesCollection
+              ? AppColors.rosePink.withValues(alpha: 0.5)
+              : AppColors.rosePink.withValues(alpha: 0.2),
+          width: isFavoritesCollection ? 2 : 1,
+        ),
+      ),
+      child: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              collection.name,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ),
+                          if (isFavoritesCollection) const SizedBox(width: 4),
+                          if (isFavoritesCollection)
+                            const Icon(
+                              Icons.favorite_rounded,
+                              size: 16,
+                              color: AppColors.rosePink,
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        collection.description,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.black.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isFavoritesCollection
+                        ? AppColors.rosePink.withValues(alpha: 0.2)
+                        : AppColors.rosePink.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${collection.recipeCount} recipes',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.rosePink,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (isOwnProfile && !isFavoritesCollection)
+            Positioned(
+              top: 4,
+              right: 4,
+              child: PopupMenuButton<String>(
+                onSelected: (action) {
+                  if (action == 'edit') {
+                    _showEditCollectionModal(collection);
+                  } else if (action == 'delete') {
+                    _showDeleteCollectionDialog(collection);
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit_outlined, size: 18),
+                        SizedBox(width: 8),
+                        Text('Edit'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                        SizedBox(width: 8),
+                        Text('Delete', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
+                  ),
+                ],
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.rosePink.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.more_vert_rounded,
+                    size: 16,
+                    color: AppColors.rosePink,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showCreateCollectionDialog() async {
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => CreateCollectionModal(
+        onCollectionCreated: () {
+          // Modal will close automatically, Riverpod will refresh the data
+        },
+      ),
+    );
+  }
+
+  void _showCollectionDetail(Collection collection, bool isOwnProfile) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => CollectionDetailModal(
+        collection: collection,
+        isOwner: isOwnProfile,
+        onEdit: () => _showEditCollectionModal(collection),
+        onDelete: () => _showDeleteCollectionDialog(collection),
+      ),
+    );
+  }
+
+  Future<void> _showEditCollectionModal(Collection collection) async {
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => CreateCollectionModal(
+        isEditMode: true,
+        collectionId: collection.id,
+        initialName: collection.name,
+        initialDescription: collection.description,
+        initialIsPublic: collection.isPublic,
+        onCollectionCreated: () {
+          // Modal will close automatically
+        },
+      ),
+    );
+  }
+
+
+
+  Future<void> _showDeleteCollectionDialog(Collection collection) async {
+    return showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Collection?'),
+        content: Text(
+          'Are you sure you want to delete "${collection.name}"? This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              try {
+                await CollectionService().deleteCollection(collection.id);
+                if (!mounted) return;
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Collection deleted.')),
+                );
+              } catch (e) {
+                if (!mounted) return;
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text('Failed to delete: $e')));
+              }
+            },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+}
