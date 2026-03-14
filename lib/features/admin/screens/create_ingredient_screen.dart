@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
 import 'package:nutricook/features/admin/providers/create_ingredient_provider.dart';
 import 'package:nutricook/widgets/image_upload_field.dart';
@@ -8,13 +9,13 @@ class CreateIngredientScreen extends ConsumerStatefulWidget {
   const CreateIngredientScreen({super.key});
 
   @override
-  ConsumerState<CreateIngredientScreen> createState() =>
-      _CreateIngredientScreenState();
+  ConsumerState<CreateIngredientScreen> createState() => _CreateIngredientScreenState();
 }
 
-class _CreateIngredientScreenState
-    extends ConsumerState<CreateIngredientScreen> {
+class _CreateIngredientScreenState extends ConsumerState<CreateIngredientScreen> {
+  // Controllers remain the same
   late TextEditingController _nameController;
+  late TextEditingController _descriptionController;
   late TextEditingController _caloriesController;
   late TextEditingController _carbsController;
   late TextEditingController _proteinController;
@@ -23,25 +24,19 @@ class _CreateIngredientScreenState
   late TextEditingController _sugarController;
   late TextEditingController _sodiumController;
 
+  // Key to access ImageUploadField for delayed upload
+  final _imageUploadKey = GlobalKey();
+
   final List<String> categories = [
-    'proteins',
-    'vegetables',
-    'fruits',
-    'dairy',
-    'grains',
-    'spices',
-    'herbs',
-    'sauces',
-    'seafood',
-    'nuts-and-seeds',
-    'fats-and-oils',
-    'beverages',
+    'proteins', 'vegetables', 'fruits', 'dairy', 'grains', 'spices',
+    'herbs', 'sauces', 'seafood', 'nuts-and-seeds', 'fats-and-oils', 'beverages',
   ];
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController();
+    _descriptionController = TextEditingController();
     _caloriesController = TextEditingController();
     _carbsController = TextEditingController();
     _proteinController = TextEditingController();
@@ -54,6 +49,7 @@ class _CreateIngredientScreenState
   @override
   void dispose() {
     _nameController.dispose();
+    _descriptionController.dispose();
     _caloriesController.dispose();
     _carbsController.dispose();
     _proteinController.dispose();
@@ -64,8 +60,8 @@ class _CreateIngredientScreenState
     super.dispose();
   }
 
+  // State update logic remains the same...
   void _updateNutritionFromControllers() {
-    final state = ref.read(createIngredientProvider);
     ref.read(createIngredientProvider.notifier).setNutritionValue(
       calories: int.tryParse(_caloriesController.text) ?? 0,
       carbohydrates: double.tryParse(_carbsController.text) ?? 0.0,
@@ -77,504 +73,348 @@ class _CreateIngredientScreenState
     );
   }
 
-  void _showSuccessDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Success'),
-        content: const Text('Ingredient created successfully!'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).pop();
-            },
-            child: const Text('Done'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(createIngredientProvider);
 
     return Scaffold(
+      backgroundColor: const Color(0xFFFFF9FA),
       appBar: AppBar(
-        title: const Text('Create Ingredient'),
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
+        backgroundColor: const Color(0xFFFFF9FA),
         elevation: 0,
+        centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.pop(),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black, size: 20),
+        ),
+        title: const Text(
+          'New Ingredient',
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900, fontSize: 20),
         ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
+        physics: const BouncingScrollPhysics(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Name field
             _buildSectionHeader('Ingredient Name'),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _nameController,
-              onChanged: (value) {
-                ref.read(createIngredientProvider.notifier).setName(value);
-              },
-              decoration: InputDecoration(
-                hintText: 'e.g., Tomato, Chicken Breast, Olive Oil',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Ingredient Image Upload
-            _buildSectionHeader('Ingredient Image'),
-            const SizedBox(height: 12),
-            ImageUploadField(
-              folder: 'ingredients',
-              label: 'Upload Image',
-              height: 180,
-              onSuccess: (imageUrl) {
-                ref
-                    .read(createIngredientProvider.notifier)
-                    .setImageUrl(imageUrl);
-              },
-              onError: (error) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Image upload failed: $error'),
-                    backgroundColor: Colors.red,
-                    duration: const Duration(seconds: 3),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 24),
-
-            // Category selection
-            _buildSectionHeader('Category'),
-            const SizedBox(height: 12),
-            DropdownButton<String>(
-              value: state.category,
-              isExpanded: true,
-              items: categories.map((category) {
-                return DropdownMenuItem(
-                  value: category,
-                  child: Text(_formatCategory(category)),
-                );
-              }).toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  ref
-                      .read(createIngredientProvider.notifier)
-                      .setCategory(value);
-                }
-              },
-            ),
-            const SizedBox(height: 24),
-
-            // Ingredient type
-            _buildSectionHeader('Ingredient Type'),
-            const SizedBox(height: 12),
-            _buildSegmentedButton(),
-            const SizedBox(height: 24),
-
-            // Physical property auto-generation
-            _buildPhysicalPropertySection(),
-            const SizedBox(height: 24),
-
-            // Nutrition input method
-            _buildSectionHeader('Nutrition Information'),
-            const SizedBox(height: 12),
-            _buildNutritionMethodToggle(),
             const SizedBox(height: 16),
+            _buildThemedTextField(
+              controller: _nameController,
+              hint: 'e.g., Atlantic Salmon, Avocado',
+              onChanged: (val) => ref.read(createIngredientProvider.notifier).setName(val),
+            ),
+            const SizedBox(height: 20),
+            
+            _buildSectionHeader('Description'),
+            const SizedBox(height: 16),
+            _buildThemedTextField(
+              controller: _descriptionController,
+              hint: 'e.g., Fresh Atlantic salmon, rich in omega-3',
+              maxLines: 3,
+              onChanged: (val) => ref.read(createIngredientProvider.notifier).setDescription(val),
+            ),
+            const SizedBox(height: 20),
+            
+            // Image Upload styled to match library cards
+            _buildSectionHeader('Image'),
+            const SizedBox(height: 12),
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: AppColors.rosePink.withValues(alpha: 0.1), width: 1.5),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: ImageUploadField(
+                key: _imageUploadKey,
+                folder: 'ingredients',
+                height: 160,
+                showLabel: false,
+                autoUpload: false,
+              ),
+            ),
+            const SizedBox(height: 24),
 
-            // Nutrition fields
+            _buildSectionHeader('Categorization'),
+            const SizedBox(height: 12),
+            _buildThemedDropdown(state),
+            const SizedBox(height: 24),
+
+            _buildSectionHeader('Nutrition (per 100g)'),
+            const SizedBox(height: 12),
+            _buildNutritionToggle(state),
+            const SizedBox(height: 20),
+
             if (state.nutritionMethod == 'manual')
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildNutritionField(
-                    label: 'Calories (per 100g)',
-                    controller: _caloriesController,
-                    hintText: '0',
-                    isInteger: true,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildNutritionField(
-                    label: 'Protein (g)',
-                    controller: _proteinController,
-                    hintText: '0.0',
-                  ),
-                  const SizedBox(height: 12),
-                  _buildNutritionField(
-                    label: 'Carbohydrates (g)',
-                    controller: _carbsController,
-                    hintText: '0.0',
-                  ),
-                  const SizedBox(height: 12),
-                  _buildNutritionField(
-                    label: 'Fat (g)',
-                    controller: _fatController,
-                    hintText: '0.0',
-                  ),
-                  const SizedBox(height: 12),
-                  _buildNutritionField(
-                    label: 'Fiber (g)',
-                    controller: _fiberController,
-                    hintText: '0.0',
-                  ),
-                  const SizedBox(height: 12),
-                  _buildNutritionField(
-                    label: 'Sugar (g)',
-                    controller: _sugarController,
-                    hintText: '0.0',
-                  ),
-                  const SizedBox(height: 12),
-                  _buildNutritionField(
-                    label: 'Sodium (mg)',
-                    controller: _sodiumController,
-                    hintText: '0.0',
-                  ),
-                ],
-              )
+              _buildManualNutritionGrid()
             else
-              Column(
-                children: [
-                  if (state.isLoadingNutrition)
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.rosePink.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                AppColors.rosePink,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          const Text('Generating nutrition data...'),
-                        ],
-                      ),
-                    )
-                  else if (state.calories > 0 ||
-                      state.protein > 0 ||
-                      state.carbohydrates > 0 ||
-                      state.fat > 0 ||
-                      state.fiber > 0 ||
-                      state.sugar > 0 ||
-                      state.sodium > 0)
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Generated Nutrition Values (per 100g)',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('Calories: ${state.calories} kcal'),
-                              Text(
-                                'Protein: ${state.protein.toStringAsFixed(1)}g',
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Carbs: ${state.carbohydrates.toStringAsFixed(1)}g',
-                              ),
-                              Text(
-                                'Fat: ${state.fat.toStringAsFixed(1)}g',
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.rosePink,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      onPressed: state.isLoadingNutrition
-                          ? null
-                          : () {
-                              _updateNutritionFromControllers();
-                              ref
-                                  .read(createIngredientProvider.notifier)
-                                  .generateNutritionFromAI(
-                                    _nameController.text,
-                                  );
-                            },
-                      child: const Text(
-                        'Generate Nutrition',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              _buildAIStatusCard(state),
 
-            const SizedBox(height: 24),
-
-            // Error message
-            if (state.error.isNotEmpty)
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.red.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Text(
-                  state.error,
-                  style: const TextStyle(color: Colors.red, fontSize: 12),
-                ),
-              ),
-
-            const SizedBox(height: 24),
-
-            // Create button
+            const SizedBox(height: 40),
+            
+            // Main Action Button
             SizedBox(
               width: double.infinity,
+              height: 56,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.rosePink,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 0,
                 ),
                 onPressed: () async {
                   _updateNutritionFromControllers();
-                  final result = await ref
-                      .read(createIngredientProvider.notifier)
-                      .createIngredient();
-
-                  if (result != null && mounted) {
-                    _showSuccessDialog();
+                  
+                  // Upload image to R2 if one is selected
+                  final imageUrl = await (_imageUploadKey.currentState as dynamic)?.uploadImage();
+                  if (imageUrl != null) {
+                    ref.read(createIngredientProvider.notifier).setImageUrl(imageUrl);
                   }
+                  
+                  // Automatically generate physical properties (density/avgWeight) with AI
+                  await ref.read(createIngredientProvider.notifier).generatePhysicalProperty(_nameController.text);
+                  final res = await ref.read(createIngredientProvider.notifier).createIngredient();
+                  if (res != null && mounted) context.pop();
                 },
-                child: const Text(
-                  'Create Ingredient',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
+                child: const Text('Save Ingredient', 
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16)),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 40),
           ],
         ),
       ),
     );
   }
 
+  // --- THEMED UI COMPONENTS ---
+
   Widget _buildSectionHeader(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.bold,
+    return Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.black87));
+  }
+
+  Widget _buildThemedTextField({required TextEditingController controller, required String hint, Function(String)? onChanged, int? maxLines}) {
+    return TextField(
+      controller: controller,
+      onChanged: onChanged,
+      maxLines: maxLines ?? 1,
+      style: const TextStyle(fontWeight: FontWeight.bold),
+      decoration: InputDecoration(
+        hintText: hint,
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: AppColors.rosePink.withValues(alpha: 0.1), width: 1.5),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.rosePink, width: 1.5),
+        ),
       ),
     );
   }
 
-  Widget _buildSegmentedButton() {
-    final state = ref.watch(createIngredientProvider);
-
-    return SegmentedButton<bool>(
-      segments: const [
-        ButtonSegment(label: Text('Solid'), value: false),
-        ButtonSegment(label: Text('Liquid'), value: true),
-      ],
-      selected: {state.isLiquid},
-      onSelectionChanged: (selected) {
-        ref
-            .read(createIngredientProvider.notifier)
-            .setIngredientType(selected.first);
-      },
+  Widget _buildThemedDropdown(dynamic state) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.rosePink.withValues(alpha: 0.1), width: 1.5),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: state.category,
+          isExpanded: true,
+          style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+          items: categories.map((c) => DropdownMenuItem(value: c, child: Text(c.toUpperCase()))).toList(),
+          onChanged: (val) {
+            if (val != null) ref.read(createIngredientProvider.notifier).setCategory(val);
+          },
+        ),
+      ),
     );
   }
 
-  Widget _buildPhysicalPropertySection() {
-    final state = ref.watch(createIngredientProvider);
-
-    if (_nameController.text.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    final label = state.isLiquid
-        ? 'Density: ${state.density?.toStringAsFixed(2)} g/ml'
-        : 'Avg. Weight: ${state.avgWeight?.toStringAsFixed(1)}g';
-
+  Widget _buildSegmentedToggle<T>({required String label, required T value, required List<ButtonSegment<T>> segments, required Function(T) onChanged}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader(
-          state.isLiquid ? 'Liquid Density' : 'Average Piece Weight',
-        ),
-        const SizedBox(height: 12),
-        if (state.isLoadingPhysicalProperty)
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.rosePink.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      AppColors.rosePink,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Generating ${state.isLiquid ? 'density' : 'weight'} data...',
-                ),
-              ],
-            ),
-          )
-        else if (state.isLiquid && state.density != null ||
-            !state.isLiquid && state.avgWeight != null)
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.green.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(label),
-                Icon(
-                  Icons.check_circle,
-                  color: Colors.green[700],
-                ),
-              ],
-            ),
-          ),
-        const SizedBox(height: 12),
+        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black38)),
+        const SizedBox(height: 8),
         SizedBox(
           width: double.infinity,
-          child: OutlinedButton(
-            onPressed: state.isLoadingPhysicalProperty
-                ? null
-                : () {
-                    ref
-                        .read(createIngredientProvider.notifier)
-                        .generatePhysicalProperty(
-                          _nameController.text,
-                        );
-                  },
-            child: Text(
-              'Generate ${state.isLiquid ? 'Density' : 'Average Weight'}',
+          child: SegmentedButton<T>(
+            segments: segments,
+            selected: {value},
+            showSelectedIcon: false,
+            style: SegmentedButton.styleFrom(
+              backgroundColor: Colors.white,
+              selectedBackgroundColor: AppColors.rosePink,
+              selectedForegroundColor: Colors.white,
+              side: BorderSide(color: AppColors.rosePink.withValues(alpha: 0.1), width: 1.5),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
+            onSelectionChanged: (set) => onChanged(set.first),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildNutritionMethodToggle() {
-    final state = ref.watch(createIngredientProvider);
-
-    return SegmentedButton<String>(
-      segments: const [
-        ButtonSegment(label: Text('Manual Input'), value: 'manual'),
-        ButtonSegment(label: Text('Generate with AI'), value: 'ai'),
+  Widget _buildManualNutritionGrid() {
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 2.2,
+      children: [
+        _buildSmallNutritionField('Calories', _caloriesController, 'kcal'),
+        _buildSmallNutritionField('Protein', _proteinController, 'g'),
+        _buildSmallNutritionField('Carbs', _carbsController, 'g'),
+        _buildSmallNutritionField('Fat', _fatController, 'g'),
+        _buildSmallNutritionField('Fiber', _fiberController, 'g'),
+        _buildSmallNutritionField('Sugar', _sugarController, 'g'),
+        _buildSmallNutritionField('Sodium', _sodiumController, 'g'),
       ],
-      selected: {state.nutritionMethod},
-      onSelectionChanged: (selected) {
-        ref
-            .read(createIngredientProvider.notifier)
-            .setNutritionMethod(selected.first);
-      },
     );
   }
 
-  Widget _buildNutritionField({
-    required String label,
-    required TextEditingController controller,
-    required String hintText,
-    bool isInteger = false,
-  }) {
+  Widget _buildSmallNutritionField(String label, TextEditingController controller, String unit) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 6),
-        TextField(
-          controller: controller,
-          keyboardType: isInteger
-              ? TextInputType.number
-              : const TextInputType.numberWithOptions(
-                  decimal: true,
-                  signed: false,
-                ),
-          decoration: InputDecoration(
-            hintText: hintText,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+        Text('$label ($unit)', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black45)),
+        const SizedBox(height: 4),
+        Expanded(
+          child: TextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
+            decoration: InputDecoration(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+              filled: true,
+              fillColor: Colors.white,
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Colors.black12, width: 1),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: AppColors.rosePink, width: 1),
+              ),
             ),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           ),
         ),
       ],
     );
   }
 
-  String _formatCategory(String category) {
-    return category
-        .split('-')
-        .map((word) => word[0].toUpperCase() + word.substring(1))
-        .join(' ');
+  Widget _buildAIStatusCard(dynamic state) {
+    // Check if nutrition values have been generated
+    final hasGeneratedValues = state.calories > 0 || 
+        state.carbohydrates > 0 || 
+        state.protein > 0 || 
+        state.fat > 0;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.cardRose.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.rosePink.withValues(alpha: 0.1), width: 1.5),
+      ),
+      child: Column(
+        children: [
+          if (state.isLoadingNutrition) ...[
+            const CircularProgressIndicator(color: AppColors.rosePink),
+            const SizedBox(height: 12),
+            const Text('Generating nutrition data...', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.rosePink)),
+          ] else if (hasGeneratedValues) ...[
+            const Icon(Icons.check_circle, color: Colors.green, size: 32),
+            const SizedBox(height: 12),
+            const Text('AI Generated Values', style: TextStyle(fontWeight: FontWeight.w900)),
+            const SizedBox(height: 16),
+            _buildGeneratedValueDisplay(state),
+            const SizedBox(height: 16),
+            OutlinedButton(
+              onPressed: () {
+                _updateNutritionFromControllers();
+                ref.read(createIngredientProvider.notifier).generateNutritionFromAI(_nameController.text);
+              },
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: AppColors.rosePink),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Regenerate', style: TextStyle(color: AppColors.rosePink, fontWeight: FontWeight.bold)),
+            ),
+          ] else ...[
+            const Icon(Icons.auto_awesome, color: AppColors.rosePink, size: 32),
+            const SizedBox(height: 12),
+            const Text('AI Prediction Ready', style: TextStyle(fontWeight: FontWeight.w900)),
+            const SizedBox(height: 16),
+            OutlinedButton(
+              onPressed: () {
+                _updateNutritionFromControllers();
+                ref.read(createIngredientProvider.notifier).generateNutritionFromAI(_nameController.text);
+              },
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: AppColors.rosePink),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Generate with AI', style: TextStyle(color: AppColors.rosePink, fontWeight: FontWeight.bold)),
+            ),
+          ]
+        ],
+      ),
+    );
+  }
+
+  /// Displays the generated nutrition values
+  Widget _buildGeneratedValueDisplay(dynamic state) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildValueRow('Calories', '${state.calories} kcal'),
+        _buildValueRow('Protein', '${state.protein.toStringAsFixed(1)} g'),
+        _buildValueRow('Carbs', '${state.carbohydrates.toStringAsFixed(1)} g'),
+        _buildValueRow('Fat', '${state.fat.toStringAsFixed(1)} g'),
+        _buildValueRow('Fiber', '${state.fiber.toStringAsFixed(1)} g'),
+        _buildValueRow('Sugar', '${state.sugar.toStringAsFixed(1)} g'),
+        _buildValueRow('Sodium', '${state.sodium.toStringAsFixed(2)} g'),
+      ],
+    );
+  }
+
+  /// Helper to display a single nutrition value row
+  Widget _buildValueRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 13, color: Colors.black54)),
+          Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNutritionToggle(dynamic state) {
+    return _buildSegmentedToggle<String>(
+      label: 'Input Method',
+      value: state.nutritionMethod,
+      segments: const [
+        ButtonSegment(value: 'manual', label: Text('Manual')),
+        ButtonSegment(value: 'ai', label: Text('AI SmartFill')),
+      ],
+      onChanged: (val) => ref.read(createIngredientProvider.notifier).setNutritionMethod(val),
+    );
   }
 }
