@@ -16,7 +16,16 @@ final userCollectionsProvider = StreamProvider<List<Collection>>((ref) {
     return Stream.value([]);
   }
 
-  return collectionService.getUserCollections();
+  return collectionService.getUserCollections().map((collections) {
+    // Sort so that default (favorites) collection comes first
+    final sorted = [...collections];
+    sorted.sort((a, b) {
+      if (a.isDefault && !b.isDefault) return -1;
+      if (!a.isDefault && b.isDefault) return 1;
+      return 0;
+    });
+    return sorted;
+  });
 });
 
 final userCollectionsByOwnerProvider =
