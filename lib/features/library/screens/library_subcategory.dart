@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
 import 'package:nutricook/features/library/library_constants.dart';
 import 'package:nutricook/features/library/providers/library_catalog_provider.dart';
-import 'package:nutricook/features/library/screens/library_main_item.dart';
+import 'package:nutricook/features/library/screens/custom_ingredients_screen.dart';
 
 class LibrarySubCategoryScreen extends ConsumerWidget {
   final String categoryId;
@@ -23,7 +24,7 @@ class LibrarySubCategoryScreen extends ConsumerWidget {
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => context.pop(),
           icon: const Icon(
             Icons.arrow_back_ios_new_rounded,
             color: Colors.black,
@@ -64,14 +65,18 @@ class LibrarySubCategoryScreen extends ConsumerWidget {
   }) {
     return GestureDetector(
       onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => LibraryItemDetailScreen(
-              categoryId: categoryId,
-              subCategoryId: item.id,
+        // Navigate to CustomIngredientsScreen for custom category
+        if (item.id == LibrarySubCategoryIds.custom) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const CustomIngredientsScreen(),
             ),
-          ),
-        );
+          );
+        } else {
+          // Navigate to regular library item screen for other categories
+          context.push('/library/$categoryId/${item.id}');
+        }
       },
       child: Column(
         children: [
