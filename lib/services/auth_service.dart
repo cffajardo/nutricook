@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nutricook/core/validators.dart';
 import '../core/constants.dart';
 import 'collection_service.dart';
+import 'firebase_messaging_service.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -27,6 +28,11 @@ class AuthService {
         email: email.trim(),
         password: password,
       );
+      // Save FCM token to Firestore after successful sign-in
+      final userId = _auth.currentUser?.uid;
+      if (userId != null) {
+        await FirebaseMessagingService().saveFCMTokenToFirestore(userId);
+      }
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
     }
@@ -69,6 +75,11 @@ class AuthService {
   Future<void> signInAnonymously() async {
     try {
       await _auth.signInAnonymously();
+      // Save FCM token to Firestore after successful sign-in
+      final userId = _auth.currentUser?.uid;
+      if (userId != null) {
+        await FirebaseMessagingService().saveFCMTokenToFirestore(userId);
+      }
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
     }
@@ -132,6 +143,9 @@ class AuthService {
       await userCredential.user!.updateDisplayName(username.trim());
 
       await userCredential.user!.sendEmailVerification();
+
+      // Save FCM token to Firestore after successful registration
+      await FirebaseMessagingService().saveFCMTokenToFirestore(uid);
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
     } catch (e) {
@@ -158,7 +172,7 @@ class AuthService {
       }
 
       final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
+          googleUser.authentication;
 
       final credential = GoogleAuthProvider.credential(
         idToken: googleAuth.idToken,
@@ -175,6 +189,9 @@ class AuthService {
           profilePictureUrl: userCredential.user!.photoURL,
         );
       }
+
+      // Save FCM token to Firestore after successful sign-in
+      await FirebaseMessagingService().saveFCMTokenToFirestore(userCredential.user!.uid);
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
     } catch (e) {
