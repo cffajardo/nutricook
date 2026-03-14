@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart'; 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:nutricook/core/allergen_entries.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
 import 'package:nutricook/core/widgets/allergen_warning_badge.dart';
@@ -65,9 +66,38 @@ class RecipeCard extends ConsumerWidget {
                       color: AppColors.cardRose,
                       borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
                     ),
-                    child: const Center(
-                      child: Icon(Icons.restaurant, color: AppColors.rosePink, size: 40)
-                    ),
+                    child: recipe.imageURL.isNotEmpty
+                        ? ClipRRect(
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(22),
+                            ),
+                            child: CachedNetworkImage(
+                              imageUrl: recipe.imageURL.first,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => const Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppColors.rosePink,
+                                  ),
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => Center(
+                                child: Icon(
+                                  Icons.image_not_supported_outlined,
+                                  color: AppColors.rosePink.withValues(alpha: 0.5),
+                                  size: 30,
+                                ),
+                              ),
+                            ),
+                          )
+                        : const Center(
+                            child: Icon(
+                              Icons.restaurant,
+                              color: AppColors.rosePink,
+                              size: 40,
+                            ),
+                          ),
                   ),
                   Positioned(
                     top: 10,

@@ -8,6 +8,7 @@ class RecipeActionsModal extends StatelessWidget {
   final VoidCallback onStartCooking;
   final VoidCallback onAddToPlanner;
   final VoidCallback onAddToCollection;
+  final VoidCallback onEdit;
   final VoidCallback onEditCopy;
   final VoidCallback onDelete;
   final VoidCallback onReport;
@@ -19,6 +20,7 @@ class RecipeActionsModal extends StatelessWidget {
     required this.onStartCooking,
     required this.onAddToPlanner,
     required this.onAddToCollection,
+    required this.onEdit,
     required this.onEditCopy,
     required this.onDelete,
     required this.onReport,
@@ -68,12 +70,13 @@ class RecipeActionsModal extends StatelessWidget {
             label: 'Add to Collection',
             onTap: onAddToCollection,
           ),
-          _buildActionTile(
-            context,
-            icon: Icons.copy_rounded,
-            label: 'Edit Recipe (Creates Copy, keeps servings)',
-            onTap: onEditCopy,
-          ),
+          if (!isOwner)
+            _buildActionTile(
+              context,
+              icon: Icons.copy_rounded,
+              label: 'Edit Recipe (Create Copy)',
+              onTap: onEditCopy,
+            ),
           _buildActionTile(
             context,
             icon: Icons.share_rounded,
@@ -81,7 +84,13 @@ class RecipeActionsModal extends StatelessWidget {
             onTap: onShare,
           ),
 
-          if (isOwner)
+          if (isOwner) ...[
+            _buildActionTile(
+              context,
+              icon: Icons.edit_rounded,
+              label: 'Edit Recipe',
+              onTap: onEdit,
+            ),
             _buildActionTile(
               context,
               icon: Icons.delete_outline_rounded,
@@ -89,6 +98,7 @@ class RecipeActionsModal extends StatelessWidget {
               color: Colors.redAccent,
               onTap: onDelete,
             ),
+          ],
 
           _buildActionTile(
             context,
