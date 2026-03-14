@@ -1,8 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:nutricook/core/constants.dart';
+import 'package:go_router/go_router.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
 import 'package:nutricook/features/admin/providers/admin_provider.dart';
 import 'package:nutricook/features/admin/screens/edit_recipe_modal.dart';
@@ -10,6 +9,7 @@ import 'package:nutricook/features/auth/providers/auth_provider.dart';
 import 'package:nutricook/features/profile/provider/user_provider.dart';
 import 'package:nutricook/features/recipe/providers/recipe_report_provider.dart';
 import 'package:nutricook/models/recipe_report/recipe_report.dart';
+import 'package:nutricook/routing/app_routes.dart';
 
 class AdminPanelPage extends ConsumerStatefulWidget {
   const AdminPanelPage({super.key});
@@ -395,12 +395,14 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
                               Align(
                                 alignment: Alignment.centerRight,
                                 child: FilledButton.tonalIcon(
-                                  onPressed: () => _showEditIngredientDialog(
-                                    ingredientId: ingredientId,
-                                    initialName: name,
-                                    initialCategory: category,
-                                    initialDescription: description,
-                                  ),
+                                  onPressed: () {
+                                    context.pushNamed(
+                                      AppRoutes.adminEditIngredientName,
+                                      pathParameters: {
+                                        'ingredientId': ingredientId,
+                                      },
+                                    );
+                                  },
                                   icon: const Icon(Icons.edit_rounded),
                                   label: const Text('Edit Ingredient'),
                                 ),
@@ -618,92 +620,6 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
     }
   }
 
-  Future<void> _showEditIngredientDialog({
-    required String ingredientId,
-    required String initialName,
-    required String initialCategory,
-    required String initialDescription,
-  }) async {
-    final nameController = TextEditingController(text: initialName);
-    final categoryController = TextEditingController(text: initialCategory);
-    final descriptionController = TextEditingController(text: initialDescription);
-
-    final shouldSave = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Edit Ingredient'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: 'Name'),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: categoryController,
-                decoration: const InputDecoration(labelText: 'Category'),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: descriptionController,
-                minLines: 2,
-                maxLines: 4,
-                decoration: const InputDecoration(labelText: 'Description'),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-
-    if (shouldSave != true) return;
-
-    final name = nameController.text.trim();
-    final category = categoryController.text.trim();
-    final description = descriptionController.text.trim();
-
-    if (name.isEmpty || category.isEmpty) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Name and category are required.')),
-      );
-      return;
-    }
-
-    try {
-      await FirebaseFirestore.instance
-          .collection(FirestoreConstants.ingredients)
-          .doc(ingredientId)
-          .update(<String, dynamic>{
-            'name': name,
-            'category': category,
-            'description': description,
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ingredient updated.')),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update ingredient: $error')),
-      );
-    }
-  }
 
   Future<void> _showEditRecipeDialog({
     required String recipeId,
