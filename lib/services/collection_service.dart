@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'auth_service.dart';
 import '../models/collection/collection.dart';
 import '../models/collection_item/collection_item.dart';
@@ -104,6 +105,11 @@ class CollectionService {
       throw Exception('Unauthorized');
     }
 
+    // Prevent deletion of default Favorites collection
+    if (data['isDefault'] == true) {
+      throw Exception('The Favorites collection cannot be deleted');
+    }
+
     // Delete all items in the collection
     final itemsSnapshot = await collectionRef.collection('items').get();
     for (final doc in itemsSnapshot.docs) {
@@ -126,9 +132,20 @@ class CollectionService {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map(
-          (snapshot) => snapshot.docs
-              .map((doc) => Collection.fromJson(doc.data()))
-              .toList(),
+          (snapshot) {
+            final collections = snapshot.docs
+                .map((doc) => Collection.fromJson(doc.data()))
+                .toList();
+            
+            // Sort to put Favorites (default) collection first
+            collections.sort((a, b) {
+              if (a.isDefault && !b.isDefault) return -1;
+              if (!a.isDefault && b.isDefault) return 1;
+              return b.createdAt.compareTo(a.createdAt);
+            });
+            
+            return collections;
+          },
         );
   }
 
@@ -139,9 +156,20 @@ class CollectionService {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map(
-          (snapshot) => snapshot.docs
-              .map((doc) => Collection.fromJson(doc.data()))
-              .toList(),
+          (snapshot) {
+            final collections = snapshot.docs
+                .map((doc) => Collection.fromJson(doc.data()))
+                .toList();
+            
+            // Sort to put Favorites (default) collection first
+            collections.sort((a, b) {
+              if (a.isDefault && !b.isDefault) return -1;
+              if (!a.isDefault && b.isDefault) return 1;
+              return b.createdAt.compareTo(a.createdAt);
+            });
+            
+            return collections;
+          },
         );
   }
 
@@ -273,7 +301,7 @@ class CollectionService {
         'updatedAt': DateTime.now(),
       });
     } catch (e) {
-      print('Error adding recipe to favorites: $e');
+      debugPrint('Error adding recipe to favorites: $e');
       rethrow;
     }
   }
@@ -306,7 +334,7 @@ class CollectionService {
         });
       }
     } catch (e) {
-      print('Error removing recipe from favorites: $e');
+      debugPrint('Error removing recipe from favorites: $e');
       rethrow;
     }
   }
