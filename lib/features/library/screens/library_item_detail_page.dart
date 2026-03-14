@@ -99,35 +99,35 @@ class LibrarySingleItemDetailScreen extends ConsumerWidget {
                       children: [
                         for (final field in detail.fields)
                           Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  flex: 4,
-                                  child: Text(
-                                    field.label,
-                                    style: const TextStyle(
-                                      color: Colors.black54,
-                                      fontWeight: FontWeight.w700,
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    flex: 4,
+                                    child: Text(
+                                      field.label,
+                                      style: const TextStyle(
+                                        color: Colors.black54,
+                                        fontWeight: FontWeight.w700,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  flex: 6,
-                                  child: Text(
-                                    field.value,
-                                    textAlign: TextAlign.right,
-                                    style: const TextStyle(
-                                      color: Colors.black87,
-                                      fontWeight: FontWeight.w800,
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    flex: 6,
+                                    child: Text(
+                                      field.value,
+                                      textAlign: TextAlign.right,
+                                      style: const TextStyle(
+                                        color: Colors.black87,
+                                        fontWeight: FontWeight.w800,
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
                       ],
                     ),
                   ),
