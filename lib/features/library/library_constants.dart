@@ -14,6 +14,7 @@ class LibrarySubCategoryIds {
   static const volume = 'volume';
   static const count = 'count';
   static const energy = 'energy';
+  static const custom = 'custom';
 }
 
 @immutable
@@ -127,6 +128,11 @@ const Map<String, List<LibrarySubCategoryDef>> kLibrarySubCategoriesByCategory =
           id: IngredientCategory.beverages,
           label: IngredientCategory.beverages,
           icon: Icons.local_cafe_outlined,
+        ),
+        LibrarySubCategoryDef(
+          id: LibrarySubCategoryIds.custom,
+          label: 'Custom',
+          icon: Icons.add_circle_outline_rounded,
         ),
       ],
       LibraryCategoryIds.techniques: <LibrarySubCategoryDef>[
