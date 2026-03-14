@@ -3,12 +3,6 @@ import 'package:nutricook/core/constants.dart';
 import 'package:nutricook/models/ingredient/ingredient.dart';
 import 'package:nutricook/models/unit/unit.dart';
 
-/// Service for unit reference data + all gram conversion logic.
-///
-/// This is the single source of truth for:
-/// - Storing / fetching units from Firestore.
-/// - Converting arbitrary quantities to grams using unit metadata
-///   and ingredient density / average weight.
 class UnitService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
@@ -34,16 +28,6 @@ class UnitService {
     return Unit.fromJson(doc.data()!);
   }
 
-  // ---------------------------------------------------------------------------
-  // Gram conversion logic
-  // ---------------------------------------------------------------------------
-
-  /// Core conversion: quantity + unit (+ ingredient metadata) → grams.
-  ///
-  /// Handles three kinds of units:
-  /// - `weight`: direct multiplier to grams (e.g. kg, oz).
-  /// - `volume`: requires `ingredient.densityGPerMl` (e.g. cup, ml).
-  /// - `count`: requires `ingredient.avgWeightG` (e.g. piece, egg).
   double convertToGrams({
     required double quantity,
     required Unit unit,
@@ -73,7 +57,6 @@ class UnitService {
     }
   }
 
-  /// Weight units (g, kg, oz, lb, etc.) → grams.
   double _weightToGrams({
     required double quantity,
     required Unit unit,
@@ -81,7 +64,6 @@ class UnitService {
     return quantity * unit.multiplier;
   }
 
-  /// Volume units (ml, L, cup, tbsp, etc.) → grams, using ingredient density.
   double _volumeToGrams({
     required double quantity,
     required Unit unit,
@@ -98,7 +80,6 @@ class UnitService {
     return volumeInMl * ingredient.densityGPerMl!;
   }
 
-  /// Count units (piece, clove, slice, etc.) → grams, using avgWeightG.
   double _countToGrams({
     required double quantity,
     required Ingredient ingredient,
