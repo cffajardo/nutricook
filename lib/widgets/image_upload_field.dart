@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -10,7 +11,7 @@ typedef OnImageUploadError = void Function(String error);
 
 class ImageUploadField extends StatefulWidget {
   final String folder;
-  final OnImageUploadSuccess onSuccess;
+  final OnImageUploadSuccess? onSuccess;
   final OnImageUploadError? onError;
   final String? initialImageUrl;
   final String label;
@@ -22,11 +23,15 @@ class ImageUploadField extends StatefulWidget {
   final double? maxWidth;
   final double? maxHeight;
   final Duration errorDuration;
+  
+  /// If true, uploads immediately on image selection (legacy behavior)
+  /// If false, only shows local thumbnail and requires calling uploadImage() manually
+  final bool autoUpload;
 
   const ImageUploadField({
     Key? key,
     required this.folder,
-    required this.onSuccess,
+    this.onSuccess,
     this.onError,
     this.initialImageUrl,
     this.label = 'Upload Image',
@@ -38,6 +43,7 @@ class ImageUploadField extends StatefulWidget {
     this.maxWidth,
     this.maxHeight,
     this.errorDuration = const Duration(seconds: 5),
+    this.autoUpload = false,
   }) : super(key: key);
 
   @override
@@ -49,6 +55,7 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
   late final R2UploadService _uploadService;
 
   String? _selectedImagePath;
+  XFile? _selectedImageFile;
   String? _uploadedImageUrl;
   bool _isUploading = false;
   String? _errorMessage;
@@ -59,6 +66,44 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
     _imagePickerService = ImagePickerService();
     _uploadService = R2UploadService();
     _uploadedImageUrl = widget.initialImageUrl;
+  }
+
+  /// Public method to upload the selected image
+  /// Call this when the save button is clicked
+  Future<String?> uploadImage() async {
+    if (_selectedImageFile == null && _uploadedImageUrl == null) {
+      _showError('No image selected');
+      return null;
+    }
+
+    // If already uploaded or no local file, return existing URL
+    if (_selectedImageFile == null) {
+      return _uploadedImageUrl;
+    }
+
+    setState(() => _isUploading = true);
+
+    try {
+      final imageUrl = await _uploadService.uploadImage(
+        imageXFile: _selectedImageFile!,
+        folder: widget.folder,
+      );
+
+      setState(() {
+        _uploadedImageUrl = imageUrl;
+        _isUploading = false;
+        _selectedImageFile = null; // Clear after upload
+      });
+
+      widget.onSuccess?.call(imageUrl);
+      return imageUrl;
+    } catch (e) {
+      setState(() => _isUploading = false);
+      final errorMsg = 'Upload failed: ${_extractErrorMessage(e)}';
+      _showError(errorMsg);
+      widget.onError?.call(errorMsg);
+      return null;
+    }
   }
 
   void _showImageSourceSheet() {
@@ -102,8 +147,14 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
       );
 
       if (pickedFile != null) {
-        setState(() => _selectedImagePath = pickedFile.path);
-        await _uploadImage(pickedFile);
+        setState(() {
+          _selectedImagePath = pickedFile.path;
+          _selectedImageFile = pickedFile;
+        });
+        // Only auto-upload if autoUpload is true
+        if (widget.autoUpload) {
+          await _uploadImageFile(pickedFile);
+        }
       }
     } catch (e) {
       _showError('Failed to pick image from camera: $e');
@@ -120,15 +171,22 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
       );
 
       if (pickedFile != null) {
-        setState(() => _selectedImagePath = pickedFile.path);
-        await _uploadImage(pickedFile);
+        setState(() {
+          _selectedImagePath = pickedFile.path;
+          _selectedImageFile = pickedFile;
+        });
+        // Only auto-upload if autoUpload is true
+        if (widget.autoUpload) {
+          await _uploadImageFile(pickedFile);
+        }
       }
     } catch (e) {
       _showError('Failed to pick image from gallery: $e');
     }
   }
 
-  Future<void> _uploadImage(XFile imageFile) async {
+  /// Internal method to upload an XFile (used when autoUpload is true)
+  Future<void> _uploadImageFile(XFile imageFile) async {
     setState(() => _isUploading = true);
 
     try {
@@ -140,9 +198,10 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
       setState(() {
         _uploadedImageUrl = imageUrl;
         _isUploading = false;
+        _selectedImageFile = null;
       });
 
-      widget.onSuccess(imageUrl);
+      widget.onSuccess?.call(imageUrl);
     } catch (e) {
       setState(() => _isUploading = false);
       final errorMsg = 'Upload failed: ${_extractErrorMessage(e)}';
@@ -171,7 +230,8 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
 
   @override
   Widget build(BuildContext context) {
-    final displayUrl = _uploadedImageUrl;
+    final hasUploadedImage = _uploadedImageUrl != null;
+    final hasLocalImage = _selectedImagePath != null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -209,12 +269,12 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // Display uploaded image or placeholder
-                if (displayUrl != null && !_isUploading)
+                // Show uploaded network image
+                if (hasUploadedImage && !_isUploading)
                   ClipRRect(
                     borderRadius: BorderRadius.circular(widget.borderRadius),
                     child: CachedNetworkImage(
-                      imageUrl: displayUrl,
+                      imageUrl: _uploadedImageUrl!,
                       fit: BoxFit.cover,
                       width: widget.width,
                       height: widget.height,
@@ -234,7 +294,29 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
                       ),
                     ),
                   )
-                else if (!_isUploading)
+                // Show local file image (preview before upload)
+                else if (hasLocalImage && !hasUploadedImage && !_isUploading)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(widget.borderRadius),
+                    child: Image.file(
+                      File(_selectedImagePath!),
+                      fit: BoxFit.cover,
+                      width: widget.width,
+                      height: widget.height,
+                    ),
+                  )
+                // Show upload icon while uploading
+                else if (_isUploading)
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(height: 12),
+                      Text('Uploading...'),
+                    ],
+                  )
+                // Show upload prompt when nothing selected
+                else
                   Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
