@@ -28,21 +28,22 @@ class CustomBottomNavBar extends StatelessWidget {
   }
 
   void _onItemTapped(int index, BuildContext context) {
+    // Always navigate to the root of each branch to reset nested navigation state
     switch (index) {
       case 0:
-        context.goNamed(AppRoutes.recipesName);
+        context.go(AppRoutes.recipesPath);
         break;
       case 1:
-        context.goNamed(AppRoutes.plannerName);
+        context.go(AppRoutes.plannerPath);
         break;
       case 2:
-        context.goNamed(AppRoutes.homeName);
+        context.go(AppRoutes.homePath);
         break;
       case 3:
-        context.goNamed(AppRoutes.libraryName);
+        context.go(AppRoutes.libraryPath);
         break;
       case 4:
-        context.goNamed(AppRoutes.profileName);
+        context.go(AppRoutes.profilePath);
         break;
     }
   }
