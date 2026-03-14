@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
 import 'package:nutricook/features/recipe/providers/recipe_provider.dart';
 import 'package:nutricook/features/recipe/widgets/recipe_tags_filter.dart';
+import 'package:nutricook/widgets/image_upload_field.dart';
 
 class CreateRecipeAboutPage extends ConsumerStatefulWidget {
   final VoidCallback onNext;
@@ -98,12 +99,22 @@ class _CreateRecipeAboutPageState extends ConsumerState<CreateRecipeAboutPage> {
               const SizedBox(width: 12),
               Expanded(
                 child: _buildStatInput(
-                  'Servings',
-                  'pax',
+                  'Recipe Servings',
+                  'serv',
                   controller: _servingsController,
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Set how many portions this recipe yields. Nutrition is shown per 1 recipe serving.',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.black.withValues(alpha: 0.55),
+              height: 1.35,
+            ),
           ),
           const SizedBox(height: 32),
 
@@ -122,22 +133,33 @@ class _CreateRecipeAboutPageState extends ConsumerState<CreateRecipeAboutPage> {
   }
 
   Widget _buildImageUploader() {
-    return Container(
+    return ImageUploadField(
+      folder: 'recipes',
+      label: 'Upload Cover Photo',
       height: 200,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: AppColors.cardRose.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.rosePink.withValues(alpha: 0.2), width: 1.5),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.add_a_photo_rounded, size: 48, color: AppColors.rosePink.withValues(alpha: 0.5)),
-          const SizedBox(height: 8),
-          const Text('Add Cover Photo', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.rosePink)),
-        ],
-      ),
+      onSuccess: (imageUrl) {
+        ref.read(recipeCreationProvider.notifier).setImageUrl(imageUrl);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Cover photo uploaded successfully'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      },
+      onError: (error) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Image upload failed: $error'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      },
     );
   }
 

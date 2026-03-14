@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nutricook/services/recipe_service.dart';
+import 'package:nutricook/services/collection_service.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
 import 'package:nutricook/models/nutrition_info/nutrition_info.dart';
 import 'package:nutricook/models/recipe_ingredient/recipe_ingredient.dart';
@@ -14,6 +15,11 @@ import 'package:nutricook/features/recipe/recipe_util/recipe_nutrition_total.dar
 // Recipe Service Provider
 final recipeServiceProvider = Provider<RecipeService>((ref) {
   return RecipeService();
+});
+
+// Collection Service Provider
+final collectionServiceProvider = Provider<CollectionService>((ref) {
+  return CollectionService();
 });
 
 // Stream Provider for Public Recipes (Streams updates in real-time)
@@ -175,6 +181,13 @@ class RecipeAdvancedFilters {
     this.useSugarFilter = false,
     this.useFiberFilter = false,
     this.useSodiumFilter = false,
+    this.caloriesComparisonMode = false,
+    this.carbsComparisonMode = false,
+    this.fatsComparisonMode = false,
+    this.proteinComparisonMode = false,
+    this.sugarComparisonMode = false,
+    this.fiberComparisonMode = false,
+    this.sodiumComparisonMode = false,
     this.maxCookTimeMinutes = 30,
     this.includeTags = const <String>[],
     this.excludeTags = const <String>[],
@@ -194,6 +207,13 @@ class RecipeAdvancedFilters {
   final bool useSugarFilter;
   final bool useFiberFilter;
   final bool useSodiumFilter;
+  final bool caloriesComparisonMode;
+  final bool carbsComparisonMode;
+  final bool fatsComparisonMode;
+  final bool proteinComparisonMode;
+  final bool sugarComparisonMode;
+  final bool fiberComparisonMode;
+  final bool sodiumComparisonMode;
   final double maxCookTimeMinutes;
   final List<String> includeTags;
   final List<String> excludeTags;
@@ -213,6 +233,13 @@ class RecipeAdvancedFilters {
     bool? useSugarFilter,
     bool? useFiberFilter,
     bool? useSodiumFilter,
+    bool? caloriesComparisonMode,
+    bool? carbsComparisonMode,
+    bool? fatsComparisonMode,
+    bool? proteinComparisonMode,
+    bool? sugarComparisonMode,
+    bool? fiberComparisonMode,
+    bool? sodiumComparisonMode,
     double? maxCookTimeMinutes,
     List<String>? includeTags,
     List<String>? excludeTags,
@@ -232,6 +259,13 @@ class RecipeAdvancedFilters {
       useSugarFilter: useSugarFilter ?? this.useSugarFilter,
       useFiberFilter: useFiberFilter ?? this.useFiberFilter,
       useSodiumFilter: useSodiumFilter ?? this.useSodiumFilter,
+      caloriesComparisonMode: caloriesComparisonMode ?? this.caloriesComparisonMode,
+      carbsComparisonMode: carbsComparisonMode ?? this.carbsComparisonMode,
+      fatsComparisonMode: fatsComparisonMode ?? this.fatsComparisonMode,
+      proteinComparisonMode: proteinComparisonMode ?? this.proteinComparisonMode,
+      sugarComparisonMode: sugarComparisonMode ?? this.sugarComparisonMode,
+      fiberComparisonMode: fiberComparisonMode ?? this.fiberComparisonMode,
+      sodiumComparisonMode: sodiumComparisonMode ?? this.sodiumComparisonMode,
       maxCookTimeMinutes: maxCookTimeMinutes ?? this.maxCookTimeMinutes,
       includeTags: includeTags ?? this.includeTags,
       excludeTags: excludeTags ?? this.excludeTags,
@@ -354,26 +388,47 @@ List<Recipe> applyAdvancedRecipeFilters(
       return !hasNutritionFilters;
     }
 
-    if (filters.useCaloriesFilter && nutrition.calories > filters.maxCalories) {
-      return false;
+    if (filters.useCaloriesFilter) {
+      final meetsFilter = filters.caloriesComparisonMode
+          ? nutrition.calories < filters.maxCalories
+          : nutrition.calories > filters.maxCalories;
+      if (meetsFilter) return false;
     }
-    if (filters.useCarbsFilter && nutrition.carbohydrates > filters.maxCarbs) {
-      return false;
+    if (filters.useCarbsFilter) {
+      final meetsFilter = filters.carbsComparisonMode
+          ? nutrition.carbohydrates < filters.maxCarbs
+          : nutrition.carbohydrates > filters.maxCarbs;
+      if (meetsFilter) return false;
     }
-    if (filters.useFatsFilter && nutrition.fat > filters.maxFats) {
-      return false;
+    if (filters.useFatsFilter) {
+      final meetsFilter = filters.fatsComparisonMode
+          ? nutrition.fat < filters.maxFats
+          : nutrition.fat > filters.maxFats;
+      if (meetsFilter) return false;
     }
-    if (filters.useProteinFilter && nutrition.protein > filters.maxProtein) {
-      return false;
+    if (filters.useProteinFilter) {
+      final meetsFilter = filters.proteinComparisonMode
+          ? nutrition.protein < filters.maxProtein
+          : nutrition.protein > filters.maxProtein;
+      if (meetsFilter) return false;
     }
-    if (filters.useSugarFilter && nutrition.sugar > filters.maxSugar) {
-      return false;
+    if (filters.useSugarFilter) {
+      final meetsFilter = filters.sugarComparisonMode
+          ? nutrition.sugar < filters.maxSugar
+          : nutrition.sugar > filters.maxSugar;
+      if (meetsFilter) return false;
     }
-    if (filters.useFiberFilter && nutrition.fiber > filters.maxFiber) {
-      return false;
+    if (filters.useFiberFilter) {
+      final meetsFilter = filters.fiberComparisonMode
+          ? nutrition.fiber < filters.maxFiber
+          : nutrition.fiber > filters.maxFiber;
+      if (meetsFilter) return false;
     }
-    if (filters.useSodiumFilter && nutrition.sodium > filters.maxSodium) {
-      return false;
+    if (filters.useSodiumFilter) {
+      final meetsFilter = filters.sodiumComparisonMode
+          ? nutrition.sodium < filters.maxSodium
+          : nutrition.sodium > filters.maxSodium;
+      if (meetsFilter) return false;
     }
 
     return true;
@@ -413,6 +468,7 @@ class RecipeCreationState {
     this.tags = const <String>[],
     this.ingredients = const <RecipeIngredient>[],
     this.steps = const <RecipeStep>[],
+    this.imageUrl = '',
   });
 
   final String name;
@@ -424,6 +480,7 @@ class RecipeCreationState {
   final List<String> tags;
   final List<RecipeIngredient> ingredients;
   final List<RecipeStep> steps;
+  final String imageUrl;
 
   RecipeCreationState copyWith({
     String? name,
@@ -435,6 +492,7 @@ class RecipeCreationState {
     List<String>? tags,
     List<RecipeIngredient>? ingredients,
     List<RecipeStep>? steps,
+    String? imageUrl,
   }) {
     return RecipeCreationState(
       name: name ?? this.name,
@@ -446,6 +504,7 @@ class RecipeCreationState {
       tags: tags ?? this.tags,
       ingredients: ingredients ?? this.ingredients,
       steps: steps ?? this.steps,
+      imageUrl: imageUrl ?? this.imageUrl,
     );
   }
 
@@ -515,6 +574,10 @@ class RecipeCreationNotifier extends Notifier<RecipeCreationState> {
     state = state.copyWith(steps: next);
   }
 
+  void setImageUrl(String imageUrl) {
+    state = state.copyWith(imageUrl: imageUrl);
+  }
+
   void clear() {
     state = const RecipeCreationState();
   }
@@ -575,14 +638,27 @@ class ToggleFavoriteNotifier extends AsyncNotifier<void> {
     if (userId == null) return;
 
     final isFavorited = ref.read(isRecipeFavoritedProvider(recipeId));
-    final service = ref.read(recipeServiceProvider);
+    final recipeService = ref.read(recipeServiceProvider);
+    final collectionService = ref.read(collectionServiceProvider);
+    
+    // Get recipe details for the collection
+    final recipeAsync = ref.read(recipeDetailsProvider(recipeId));
+    final recipe = recipeAsync.asData?.value;
 
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       if (isFavorited) {
-        await service.removeFavorite(recipeId, userId);
+        await recipeService.removeFavorite(recipeId, userId);
+        // Remove from favorites collection
+        await collectionService.removeRecipeFromFavorites(recipeId);
       } else {
-        await service.addFavorite(recipeId, userId);
+        await recipeService.addFavorite(recipeId, userId);
+        // Add to favorites collection
+        await collectionService.addRecipeToFavorites(
+          recipeId: recipeId,
+          recipeName: recipe?.name ?? 'Recipe',
+          thumbnailUrl: recipe?.imageURL?.isNotEmpty == true ? recipe!.imageURL!.first : null,
+        );
       }
     });
   }

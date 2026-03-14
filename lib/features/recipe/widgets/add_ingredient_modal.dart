@@ -6,6 +6,7 @@ import 'package:nutricook/features/library/ingredients/provider/ingredient_provi
 import 'package:nutricook/features/library/units/unit_provider.dart';
 import 'package:nutricook/models/recipe_ingredient/recipe_ingredient.dart';
 import 'package:nutricook/models/unit/unit.dart';
+import 'package:nutricook/models/ingredient/ingredient.dart';
 
 class AddIngredientModal extends ConsumerStatefulWidget {
   final ValueChanged<RecipeIngredient>? onIngredientAdded;
@@ -261,6 +262,7 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
   Widget _buildDetailForm() {
     final isEditing = widget.initialIngredient != null;
     final unitsAsync = ref.watch(unitsProvider);
+    final ingredientsAsync = ref.watch(ingredientsProvider);
 
     return unitsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -270,9 +272,25 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
           return const Center(child: Text('No units found.'));
         }
 
-        _selectedUnitId ??= _resolveInitialUnitId(units);
-        final selectedUnit =
-            _findUnitById(units, _selectedUnitId) ?? units.first;
+        return ingredientsAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, _) => Center(child: Text('Failed to load ingredients: $error')),
+          data: (ingredients) {
+            // Find the selected ingredient to check its properties
+            final selectedIngredient = _selectedIngredientId != null
+                ? ingredients.firstWhere(
+                    (ing) => ing.id == _selectedIngredientId,
+                    orElse: () => ingredients.first,
+                  )
+                : null;
+
+            // Filter units based on ingredient properties
+            final compatibleUnits =
+                _filterCompatibleUnits(units, selectedIngredient);
+
+            _selectedUnitId ??= _resolveInitialUnitId(compatibleUnits);
+            final selectedUnit = _findUnitById(compatibleUnits, _selectedUnitId) ??
+                compatibleUnits.first;
 
         return Padding(
           key: const ValueKey(2),
@@ -325,12 +343,15 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
                   Expanded(
                     flex: 3,
                     child: _buildUnitDropdown(
-                      units: units,
+                      units: compatibleUnits,
                       selectedUnitId: selectedUnit.id,
+                      ingredient: selectedIngredient,
                     ),
                   ),
                 ],
               ),
+              const SizedBox(height: 12),
+              _buildUnitCompatibilityInfo(selectedIngredient),
               const Spacer(),
               Row(
                 children: [
@@ -384,6 +405,8 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
               ),
             ],
           ),
+        );
+          },
         );
       },
     );
@@ -459,6 +482,7 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
   Widget _buildUnitDropdown({
     required List<Unit> units,
     required String selectedUnitId,
+    Ingredient? ingredient,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -483,6 +507,92 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
               )
               .toList(),
           onChanged: (value) => setState(() => _selectedUnitId = value),
+        ),
+      ),
+    );
+  }
+
+  /// Filter units based on ingredient properties
+  List<Unit> _filterCompatibleUnits(List<Unit> units, Ingredient? ingredient) {
+    if (ingredient == null) return units;
+
+    return units.where((unit) {
+      switch (unit.type) {
+        case 'weight':
+          // Weight units always work
+          return true;
+        case 'volume':
+          // Volume units only work if ingredient has density
+          return ingredient.densityGPerMl != null &&
+              ingredient.densityGPerMl! > 0;
+        case 'count':
+          // Count units only work if ingredient has average weight
+          return ingredient.avgWeightG != null && ingredient.avgWeightG! > 0;
+        default:
+          return true;
+      }
+    }).toList();
+  }
+
+  /// Build a helpful message about unit compatibility
+  Widget _buildUnitCompatibilityInfo(Ingredient? ingredient) {
+    if (ingredient == null) {
+      return const SizedBox.shrink();
+    }
+
+    final List<String> compatibleTypes = ['weight'];
+    final List<String> missingFor = [];
+
+    if (ingredient.densityGPerMl == null || ingredient.densityGPerMl! <= 0) {
+      missingFor.add('volume units (cups, ml, liters)');
+    } else {
+      compatibleTypes.add('volume');
+    }
+
+    if (ingredient.avgWeightG == null || ingredient.avgWeightG! <= 0) {
+      missingFor.add('pieces/count units');
+    } else {
+      compatibleTypes.add('count');
+    }
+
+    if (missingFor.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.green.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Colors.green.withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
+        child: const Text(
+          '✓ All unit types available for this ingredient',
+          style: TextStyle(
+            color: Colors.green,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.orange.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Text(
+        '⚠ ${missingFor.join(', ')} not available.\nOnly grams/kg and compatible units shown.',
+        style: const TextStyle(
+          color: Colors.orange,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );

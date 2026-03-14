@@ -29,6 +29,7 @@ class _RecipeViewInstructionsState extends State<RecipeViewInstructions> {
   bool _isUsingAutoAdvanceTimer = false;
   int _activeStepIndex = 0;
   int _remainingSeconds = 0;
+  int _originalStepDuration = 0;
   bool _isTimerRunning = false;
 
   @override
@@ -108,6 +109,7 @@ class _RecipeViewInstructionsState extends State<RecipeViewInstructions> {
     _timer?.cancel();
     setState(() {
       _activeStepIndex = index;
+      _originalStepDuration = 0;
       _remainingSeconds = 0;
       _isTimerRunning = false;
       _isUsingAutoAdvanceTimer = false;
@@ -134,6 +136,7 @@ class _RecipeViewInstructionsState extends State<RecipeViewInstructions> {
         : currentStep.timerSeconds;
 
     setState(() {
+      _originalStepDuration = stepDurationSeconds;
       _remainingSeconds = stepDurationSeconds;
       _isTimerRunning = true;
       _isUsingAutoAdvanceTimer = usesAutoAdvance;
@@ -183,6 +186,15 @@ class _RecipeViewInstructionsState extends State<RecipeViewInstructions> {
         _isUsingAutoAdvanceTimer = false;
       });
       _goToNextStep(fromTimerCompletion: true);
+    });
+  }
+
+  void _resetTimer() {
+    if (!_isCookingSessionActive || _originalStepDuration <= 0) return;
+    _timer?.cancel();
+    setState(() {
+      _remainingSeconds = _originalStepDuration;
+      _isTimerRunning = false;
     });
   }
 
@@ -406,6 +418,25 @@ class _RecipeViewInstructionsState extends State<RecipeViewInstructions> {
                                           _isTimerRunning
                                               ? Icons.pause_rounded
                                               : Icons.play_arrow_rounded,
+                                          size: 16,
+                                          color: AppColors.rosePink,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    InkWell(
+                                      onTap: _resetTimer,
+                                      borderRadius: BorderRadius.circular(30),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(6),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.rosePink.withValues(
+                                            alpha: 0.1,
+                                          ),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.refresh_rounded,
                                           size: 16,
                                           color: AppColors.rosePink,
                                         ),

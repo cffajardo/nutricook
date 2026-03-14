@@ -56,12 +56,17 @@ class RecipeViewAbout extends ConsumerWidget {
                     ],
                   ),
                 ),
+                Positioned(
+                  bottom: 16,
+                  right: 16,
+                  child: _buildMiniStat('Servings', '${recipe.servings}'),
+                ),
               ],
             ),
           ),
           const SizedBox(height: 20),
 
-          _buildInfoBox('Nutritional Info', _nutritionText(recipe)),
+          _buildNutritionSection(context, recipe),
 
           const SizedBox(height: 20),
 
@@ -107,7 +112,7 @@ class RecipeViewAbout extends ConsumerWidget {
               children: [
                 Center(
                   child: Text(
-                    recipe.name,
+                    'Description',
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w900,
@@ -126,7 +131,6 @@ class RecipeViewAbout extends ConsumerWidget {
 
           const SizedBox(height: 20),
 
-          // 4. TAGS ROW
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
@@ -168,19 +172,12 @@ class RecipeViewAbout extends ConsumerWidget {
                 ),
               ),
             ),
-          const SizedBox(height: 80), // Space for FAB
+          const SizedBox(height: 80), 
         ],
       ),
     );
   }
 
-  String _nutritionText(Recipe recipe) {
-    final nutrition = recipe.nutritionPerServing ?? recipe.nutritionTotal;
-    if (nutrition == null) {
-      return 'Nutrition info unavailable';
-    }
-    return '${nutrition.calories} kcal • ${nutrition.protein.toStringAsFixed(1)}g Protein • ${nutrition.fat.toStringAsFixed(1)}g Fat';
-  }
 
   Widget _buildMiniStat(String label, String value) {
     return Column(
@@ -227,6 +224,175 @@ class RecipeViewAbout extends ConsumerWidget {
       ),
     );
   }
+
+  Widget _buildNutritionSection(BuildContext context, Recipe recipe) {
+    final nutrition = recipe.nutritionPerServing ?? recipe.nutritionTotal;
+    if (nutrition == null) {
+      return _buildInfoBox('Nutritional Info', 'Nutrition info unavailable');
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.black, width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text(
+                'Nutritional Info',
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+              ),
+              const Spacer(),
+              _buildServingInfoButton(context, recipe.servings),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.02),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.black.withValues(alpha: 0.08),
+                width: 1,
+              ),
+            ),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  _buildNutritionStat('Calories', '${nutrition.calories}', 'kcal'),
+                  _buildNutritionDivider(),
+                  _buildNutritionStat('Protein', nutrition.protein.toStringAsFixed(1), 'g'),
+                  _buildNutritionDivider(),
+                  _buildNutritionStat('Carbs', nutrition.carbohydrates.toStringAsFixed(1), 'g'),
+                  _buildNutritionDivider(),
+                  _buildNutritionStat('Fat', nutrition.fat.toStringAsFixed(1), 'g'),
+                  _buildNutritionDivider(),
+                  _buildNutritionStat('Fiber', nutrition.fiber.toStringAsFixed(1), 'g'),
+                  _buildNutritionDivider(),
+                  _buildNutritionStat('Sugars', nutrition.sugar.toStringAsFixed(1), 'g'),
+                  _buildNutritionDivider(),
+                  _buildNutritionStat('Sodium', (nutrition.sodium / 1000).toStringAsFixed(2), 'g'),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildServingInfoButton(
+    BuildContext context,
+    int servings,
+  ) {
+    return GestureDetector(
+      onTap: () {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Serving Information'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'This recipe makes $servings ${servings == 1 ? 'serving' : 'servings'}.',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    height: 1.5,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'The nutritional information above is calculated per serving.',
+                  style: TextStyle(
+                    fontSize: 13,
+                    height: 1.5,
+                    color: Colors.black.withValues(alpha: 0.6),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Close'),
+              ),
+            ],
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          color: Colors.black.withValues(alpha: 0.04),
+        ),
+        child: Icon(
+          Icons.info_outline_rounded,
+          size: 20,
+          color: Colors.black.withValues(alpha: 0.6),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNutritionStat(String label, String value, String unit) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.black.withValues(alpha: 0.6),
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                value,
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(width: 2),
+              Text(
+                unit,
+                style: TextStyle(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  fontSize: 9,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNutritionDivider() =>
+      Container(width: 1, height: 30, color: Colors.black.withValues(alpha: 0.12));
 }
 
 class _FavoriteButton extends ConsumerWidget {

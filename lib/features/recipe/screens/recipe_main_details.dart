@@ -18,6 +18,7 @@ import 'package:nutricook/features/recipe/widgets/recipe_fab_modal.dart';
 import 'package:nutricook/features/utils/nutrition_calculator.dart';
 import 'package:nutricook/routing/app_routes.dart';
 import 'package:nutricook/services/collection_item_service.dart';
+import 'package:share_plus/share_plus.dart';
 
 class RecipeDetailsScreen extends ConsumerStatefulWidget {
   final Recipe recipe;
@@ -34,7 +35,7 @@ class _RecipeDetailsScreenState extends ConsumerState<RecipeDetailsScreen> {
   int _currentPage = 0;
   int _startCookingSignal = 0;
 
-  final List<String> _pageTitles = ['About', 'Ingredients', 'Instructions'];
+  List<String> get _pageTitles => [widget.recipe.name, 'Ingredients', 'Instructions'];
 
   @override
   void dispose() {
@@ -77,6 +78,7 @@ class _RecipeDetailsScreenState extends ConsumerState<RecipeDetailsScreen> {
         initialRecipeData: <String, dynamic>{
           'id': widget.recipe.id,
           'name': widget.recipe.name,
+          'servings': widget.recipe.servings,
           'thumbnailUrl': widget.recipe.imageURL.isNotEmpty
               ? widget.recipe.imageURL.first
               : null,
@@ -365,6 +367,22 @@ class _RecipeDetailsScreenState extends ConsumerState<RecipeDetailsScreen> {
     }
   }
 
+  void _shareRecipe() {
+    try {
+      final caloriesText = widget.recipe.nutritionTotal != null
+          ? '\nCalories: ${widget.recipe.nutritionTotal!.calories} kcal'
+          : '';
+      final shareText =
+          'Check out this recipe: ${widget.recipe.name}\nServings: ${widget.recipe.servings}$caloriesText';
+
+      Share.share(shareText, subject: widget.recipe.name);
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to share recipe: $error')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentUserId = ref.watch(currentUserIdProvider);
@@ -456,6 +474,10 @@ class _RecipeDetailsScreenState extends ConsumerState<RecipeDetailsScreen> {
                       Navigator.pop(context);
                       _reportRecipe();
                     },
+                    onShare: () {
+                      Navigator.pop(context);
+                      _shareRecipe();
+                    },
                   ),
                 );
               },
@@ -480,7 +502,7 @@ class _RecipeDetailsScreenState extends ConsumerState<RecipeDetailsScreen> {
         bottom: MediaQuery.of(context).padding.bottom + 10,
       ),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.transparent,
         border: Border(
           top: BorderSide(
             color: Colors.black.withValues(alpha: 0.05),
