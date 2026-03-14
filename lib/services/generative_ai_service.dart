@@ -3,7 +3,7 @@ import 'package:firebase_ai/firebase_ai.dart';
 class GenerativeAiService {
   GenerativeAiService({
     FirebaseAI? firebaseAI,
-    String model = 'gemini-2.0-flash',
+    String model = 'gemini-2.5-flash-lite',
     Content? systemInstruction,
     GenerationConfig? generationConfig,
     List<SafetySetting>? safetySettings,
@@ -93,12 +93,14 @@ Return ONLY a valid JSON object with these exact keys (no markdown, no code bloc
   "sodium": <decimal>
 }
 
+IMPORTANT: ALL values must be in GRAMS per 100g, including sodium.
+
 Most common values for reference:
 - Calories: typically 0-900 per 100g
-- Carbohydrates, Protein, Fat: decimal numbers in grams
-- Fiber: decimal number in grams
-- Sugar: decimal number in grams
-- Sodium: decimal number in mg
+- Carbohydrates, Protein, Fat, Fiber, Sugar, Sodium: all in GRAMS per 100g
+- Example: Chicken has approximately 0.06g sodium per 100g
+- Example: Salt has approximately 40g sodium per 100g
+- NEVER return sodium in milligrams - always convert to grams
 ''';
 
     try {
@@ -111,44 +113,47 @@ Most common values for reference:
     }
   }
 
-  /// Generates density (g/ml) for a liquid ingredient.
+  /// Generates density (g/ml) for a liquid ingredient or avgWeight (g) for solid.
+  /// AI infers whether the ingredient is solid or liquid automatically.
+  /// For liquids: returns density in g/ml
+  /// For solids: returns average piece weight in grams
   Future<double> generateDensityFromAI(String ingredientName) async {
     final prompt = '''
-For a liquid ingredient called "$ingredientName", estimate the density in g/ml at room temperature (20°C).
-Return ONLY a single decimal number with no other text or formatting. For example: 1.03
+For the ingredient called "$ingredientName", first determine if it is naturally a LIQUID or a SOLID.
 
-Common density values for reference:
-- Water: 1.0
-- Oil: ~0.92
-- Vinegar: ~1.01
-- Milk: ~1.03
-- Honey: ~1.42
-- Alcohol: ~0.79
+IF LIQUID: estimate the density in g/ml at room temperature (20°C).
+Return ONLY a single decimal number. Examples: 1.03 (milk), 0.92 (oil), 1.42 (honey), 0.79 (alcohol)
+Common density values: Water=1.0, Oil=0.92, Vinegar=1.01, Milk=1.03, Honey=1.42, Alcohol=0.79
+
+IF SOLID: estimate the average weight in grams of ONE typical piece/unit/serving portion.
+Return ONLY a single decimal number. Examples: 3.5 (garlic clove), 50 (egg), 12 (strawberry), 182 (medium apple)
+
+In both cases, return ONLY the decimal number with no other text.
 ''';
 
     try {
-      final densityString = await generateText(prompt: prompt);
-      final density = double.tryParse(densityString.trim());
-      if (density == null || density <= 0) {
+      final valueString = await generateText(prompt: prompt);
+      final value = double.tryParse(valueString.trim());
+      if (value == null || value <= 0) {
         throw GenerativeAiException(
-          'Invalid density value returned: $densityString',
+          'Invalid value returned: $valueString',
         );
       }
-      return density;
+      return value;
     } catch (e) {
       throw GenerativeAiException(
-        'Failed to generate density data: $e',
+        'Failed to generate physical property data: $e',
       );
     }
   }
 
-  /// Generates average piece weight (g) for a solid ingredient.
+  /// Generates density (g/ml) for a liquid ingredient.
   /// Returns weight in grams for a typical piece/unit (e.g., 1 clove, 1 slice, 1 berry).
   Future<double> generateAveragePieceWeightFromAI(
     String ingredientName,
   ) async {
     final prompt = '''
-For a solid ingredient called "$ingredientName", estimate the average weight in grams of ONE typical piece, unit, or serving portion.
+For the ingredient called "$ingredientName", if it is a SOLID, estimate the average weight in grams of ONE typical piece, unit, or serving portion.
 
 Examples:
 - "garlic clove" → ~3-4g per clove
@@ -160,7 +165,9 @@ Examples:
 - "onion (small)" → ~70g per onion
 - "carrot (medium)" → ~61g per carrot
 
-Return ONLY a single decimal number with no other text. For example: 12.5
+If the ingredient is a LIQUID, estimate its density in g/ml instead (e.g., 1.03 for milk, 0.92 for oil).
+
+Return ONLY a single decimal number with no other text. For example: 12.5 or 1.03
 
 Consider what a "typical" piece would be for this ingredient.
 ''';
