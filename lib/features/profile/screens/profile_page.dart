@@ -8,8 +8,9 @@ import 'package:nutricook/features/collection/provider/collection_provider.dart'
 import 'package:nutricook/features/profile/provider/user_provider.dart';
 import 'package:nutricook/features/recipe/providers/recipe_provider.dart';
 import 'package:nutricook/features/recipe/widgets/recipe_card.dart';
-import 'package:nutricook/features/recipe/widgets/create_collection_modal.dart';
-import 'package:nutricook/features/recipe/widgets/collection_detail_modal.dart';
+import 'package:nutricook/features/collection/screens/create_collection_modal.dart';
+import 'package:nutricook/features/collection/screens/collection_detail_modal.dart';
+import 'package:nutricook/features/collection/screens/collection_recipes_screen.dart';
 import 'package:nutricook/models/collection/collection.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
 import 'package:nutricook/services/collection_service.dart';
@@ -35,9 +36,36 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
   }
 
   @override
+  void deactivate() {
+    // Close any open modals when page loses focus (navigation away)
+    _closeOpenModals();
+    super.deactivate();
+  }
+
+  @override
   void dispose() {
+    // Close any open modals before disposing
+    _closeOpenModals();
     tabController.dispose();
     super.dispose();
+  }
+
+  void _closeOpenModals() {
+    // Close all open modals (Collection Detail, Edit Collection, etc.)
+    // by repeatedly popping until modals are closed
+    try {
+      final navigator = Navigator.of(context, rootNavigator: true);
+      // Keep popping modals - modal bottom sheets are MaterialPageRoute with ModalRoute
+      // We'll pop them off the stack
+      int popCount = 0;
+      while (navigator.canPop() && popCount < 10) {
+        // Safety limit to avoid infinite loops
+        navigator.maybePop();
+        popCount++;
+      }
+    } catch (e) {
+      // Silently ignore if navigator is not available
+    }
   }
 
   void _openSettings() {
@@ -467,32 +495,58 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
           );
         }
 
-        return GridView.builder(
-          padding: const EdgeInsets.all(20),
-          itemCount: recipes.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: 0.8,
+        return Container(
+          color: const Color(0xFFFFF9FA),
+          child: GridView.builder(
+            padding: const EdgeInsets.all(20),
+            itemCount: recipes.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 0.8,
+            ),
+            itemBuilder: (context, index) {
+              final recipe = recipes[index];
+              return RecipeCard(recipe: recipe);
+            },
           ),
-          itemBuilder: (context, index) {
-            final recipe = recipes[index];
-            return RecipeCard(recipe: recipe);
-          },
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => Center(
-        child: Text(
-          'Failed to load recipes: $error',
-          style: TextStyle(
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurface.withValues(alpha: 0.75),
+      error: (error, stackTrace) {
+        debugPrint('Recipe Grid Error: $error');
+        debugPrint('Stack trace: $stackTrace');
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                const SizedBox(height: 16),
+                Text(
+                  'Failed to load recipes',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  error.toString(),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -764,6 +818,15 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
         isOwner: isOwnProfile,
         onEdit: () => _showEditCollectionModal(collection),
         onDelete: () => _showDeleteCollectionDialog(collection),
+        onViewRecipes: () {
+          Navigator.pop(context);
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => CollectionRecipesScreen(collection: collection),
+            ),
+          );
+        },
       ),
     );
   }
