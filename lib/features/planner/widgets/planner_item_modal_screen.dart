@@ -17,6 +17,7 @@ class PlannerItemModal extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final trimmedNotes = item.notes?.trim() ?? '';
+    final perServingCalories = item.nutritionPerServing?.calories ?? 0;
     final calories =
         ((item.nutritionPerServing?.calories ?? 0) * item.servingMultiplier)
             .round();
@@ -165,7 +166,15 @@ class PlannerItemModal extends ConsumerWidget {
                   DateFormat('MMMM d, yyyy').format(item.date),
                 ),
                 const Divider(height: 24),
-                _buildDetailRow('Serving', '${_formatServingMultiplier(item.servingMultiplier)}x'),
+                _buildDetailRow(
+                  'Recipe servings',
+                  '${_formatServingMultiplier(item.servingMultiplier)} x recipe serving',
+                ),
+                const Divider(height: 24),
+                _buildDetailRow(
+                  'Nutrition basis',
+                  '$perServingCalories kcal x ${_formatServingMultiplier(item.servingMultiplier)} = $calories kcal',
+                ),
                 const Divider(height: 24),
                 _buildDetailRow('Meal Time', item.mealType),
               ],

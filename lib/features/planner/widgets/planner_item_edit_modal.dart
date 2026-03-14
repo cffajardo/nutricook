@@ -36,6 +36,7 @@ class _PlannerItemEditModalState extends ConsumerState<PlannerItemEditModal> {
   String? _selectedThumbnailUrl;
   int _selectedPrepTime = 0;
   int _selectedCookTime = 0;
+  int? _selectedRecipeServings;
   NutritionInfo? _selectedNutritionPerServing;
   List<String> _selectedAllergenWarnings = const <String>[];
   bool _allergenOverrideAccepted = false;
@@ -73,6 +74,8 @@ class _PlannerItemEditModalState extends ConsumerState<PlannerItemEditModal> {
         item?.prepTime ?? widget.initialRecipeData?['prepTime'] as int? ?? 0;
     _selectedCookTime =
         item?.cookTime ?? widget.initialRecipeData?['cookTime'] as int? ?? 0;
+    _selectedRecipeServings =
+      (widget.initialRecipeData?['servings'] as num?)?.toInt();
     _selectedNutritionPerServing =
         item?.nutritionPerServing ??
         widget.initialRecipeData?['nutritionPerServing'] as NutritionInfo?;
@@ -112,7 +115,7 @@ class _PlannerItemEditModalState extends ConsumerState<PlannerItemEditModal> {
 
     final servings = double.tryParse(_servingsController.text.trim());
     if (servings == null || servings <= 0) {
-      _showMessage('Please enter a valid servings value.');
+      _showMessage('Please enter a valid recipe servings value.');
       return;
     }
 
@@ -492,6 +495,8 @@ class _PlannerItemEditModalState extends ConsumerState<PlannerItemEditModal> {
                       selectedRecipe['thumbnailUrl'] as String?;
                   _selectedPrepTime = selectedRecipe['prepTime'] as int? ?? 0;
                   _selectedCookTime = selectedRecipe['cookTime'] as int? ?? 0;
+                    _selectedRecipeServings =
+                      (selectedRecipe['servings'] as num?)?.toInt();
                   _selectedNutritionPerServing =
                       selectedRecipe['nutritionPerServing'] as NutritionInfo?;
                   _selectedAllergenWarnings = selectedWarnings;
@@ -501,9 +506,30 @@ class _PlannerItemEditModalState extends ConsumerState<PlannerItemEditModal> {
             },
           ),
           const Divider(height: 1, indent: 20, endIndent: 20),
-          _buildInputRow('Servings', _servingsController, isNumber: true),
+          _buildInputRow('Recipe servings', _servingsController, isNumber: true),
+          _buildRecipeServingsHelper(),
         ]),
       ],
+    );
+  }
+
+  Widget _buildRecipeServingsHelper() {
+    final baseServings = _selectedRecipeServings;
+    final baseText = baseServings != null
+        ? 'This recipe makes $baseServings servings.'
+        : 'This value is based on the recipe serving amount.';
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+      child: Text(
+        '$baseText 1.0 = one recipe serving, 0.5 = half, 2.0 = double.',
+        style: TextStyle(
+          fontSize: 12,
+          height: 1.35,
+          fontWeight: FontWeight.w600,
+          color: Colors.black.withValues(alpha: 0.55),
+        ),
+      ),
     );
   }
 

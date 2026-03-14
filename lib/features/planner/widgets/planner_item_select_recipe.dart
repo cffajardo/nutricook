@@ -338,6 +338,14 @@ class _PlannerRecipeSelectModalState
                         color: Colors.black45,
                       ),
                     ),
+                    Text(
+                      'Makes ${recipe.servings} servings',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.black54,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
                 ),
               ),

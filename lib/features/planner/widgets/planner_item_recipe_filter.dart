@@ -39,6 +39,13 @@ class _PlannerRecipeFilterModalState
       _useSugar = false,
       _useFiber = false,
       _useSodium = false;
+  bool _caloriesComparisonMode = false,
+      _carbsComparisonMode = false,
+      _fatsComparisonMode = false,
+      _proteinComparisonMode = false,
+      _sugarComparisonMode = false,
+      _fiberComparisonMode = false,
+      _sodiumComparisonMode = false;
   Set<String> _includeTags = <String>{};
   Set<String> _excludeTags = <String>{};
 
@@ -60,6 +67,13 @@ class _PlannerRecipeFilterModalState
     _useSugar = filters.useSugarFilter;
     _useFiber = filters.useFiberFilter;
     _useSodium = filters.useSodiumFilter;
+    _caloriesComparisonMode = filters.caloriesComparisonMode;
+    _carbsComparisonMode = filters.carbsComparisonMode;
+    _fatsComparisonMode = filters.fatsComparisonMode;
+    _proteinComparisonMode = filters.proteinComparisonMode;
+    _sugarComparisonMode = filters.sugarComparisonMode;
+    _fiberComparisonMode = filters.fiberComparisonMode;
+    _sodiumComparisonMode = filters.sodiumComparisonMode;
     _cookTime = filters.maxCookTimeMinutes;
     _includeTags = filters.includeTags.toSet();
     _excludeTags = filters.excludeTags.toSet();
@@ -162,6 +176,9 @@ class _PlannerRecipeFilterModalState
                           enabled: _useCalories,
                           onToggle: (enabled) =>
                               setState(() => _useCalories = enabled),
+                          comparisonMode: _caloriesComparisonMode,
+                          onComparisonModeChanged: (mode) =>
+                              setState(() => _caloriesComparisonMode = mode),
                         ),
                         _buildInputSliderRow(
                           'Protein',
@@ -171,6 +188,9 @@ class _PlannerRecipeFilterModalState
                           enabled: _useProtein,
                           onToggle: (enabled) =>
                               setState(() => _useProtein = enabled),
+                          comparisonMode: _proteinComparisonMode,
+                          onComparisonModeChanged: (mode) =>
+                              setState(() => _proteinComparisonMode = mode),
                         ),
                         _buildInputSliderRow(
                           'Carbs',
@@ -180,6 +200,9 @@ class _PlannerRecipeFilterModalState
                           enabled: _useCarbs,
                           onToggle: (enabled) =>
                               setState(() => _useCarbs = enabled),
+                          comparisonMode: _carbsComparisonMode,
+                          onComparisonModeChanged: (mode) =>
+                              setState(() => _carbsComparisonMode = mode),
                         ),
                         _buildInputSliderRow(
                           'Fats',
@@ -189,6 +212,9 @@ class _PlannerRecipeFilterModalState
                           enabled: _useFats,
                           onToggle: (enabled) =>
                               setState(() => _useFats = enabled),
+                          comparisonMode: _fatsComparisonMode,
+                          onComparisonModeChanged: (mode) =>
+                              setState(() => _fatsComparisonMode = mode),
                         ),
                         _buildInputSliderRow(
                           'Sugar',
@@ -198,6 +224,9 @@ class _PlannerRecipeFilterModalState
                           enabled: _useSugar,
                           onToggle: (enabled) =>
                               setState(() => _useSugar = enabled),
+                          comparisonMode: _sugarComparisonMode,
+                          onComparisonModeChanged: (mode) =>
+                              setState(() => _sugarComparisonMode = mode),
                         ),
                         _buildInputSliderRow(
                           'Fiber',
@@ -207,6 +236,9 @@ class _PlannerRecipeFilterModalState
                           enabled: _useFiber,
                           onToggle: (enabled) =>
                               setState(() => _useFiber = enabled),
+                          comparisonMode: _fiberComparisonMode,
+                          onComparisonModeChanged: (mode) =>
+                              setState(() => _fiberComparisonMode = mode),
                         ),
                         _buildInputSliderRow(
                           'Sodium',
@@ -217,6 +249,9 @@ class _PlannerRecipeFilterModalState
                           enabled: _useSodium,
                           onToggle: (enabled) =>
                               setState(() => _useSodium = enabled),
+                          comparisonMode: _sodiumComparisonMode,
+                          onComparisonModeChanged: (mode) =>
+                              setState(() => _sodiumComparisonMode = mode),
                         ),
                       ],
                     ),
@@ -298,6 +333,8 @@ class _PlannerRecipeFilterModalState
     String unit = 'g',
     bool? enabled,
     ValueChanged<bool>? onToggle,
+    bool comparisonMode = false,
+    ValueChanged<bool>? onComparisonModeChanged,
   }) {
     final isToggleable = enabled != null && onToggle != null;
     final isEnabled = enabled ?? true;
@@ -325,55 +362,124 @@ class _PlannerRecipeFilterModalState
                 ),
               ],
             ),
-            Opacity(
-              opacity: isEnabled ? 1 : 0.6,
-              child: SizedBox(
-                width: 85,
-                height: 35,
-                child: TextField(
-                  controller: controller,
-                  enabled: isEnabled,
-                  keyboardType: TextInputType.number,
-                  textAlign: TextAlign.center,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.rosePink,
-                    fontSize: 13,
-                  ),
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: AppColors.cardRose.withValues(alpha: 0.3),
-                    contentPadding: EdgeInsets.zero,
-                    suffixText: '$unit ',
-                    suffixStyle: const TextStyle(
-                      fontSize: 10,
-                      color: Colors.black26,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(
-                        color: AppColors.rosePink.withValues(alpha: 0.2),
-                        width: 1.5,
+            Row(
+              children: [
+                if (isEnabled && onComparisonModeChanged != null)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: AppColors.rosePink.withValues(alpha: 0.3),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () => onComparisonModeChanged(false),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: !comparisonMode
+                                    ? AppColors.rosePink.withValues(alpha: 0.15)
+                                    : Colors.transparent,
+                                borderRadius: const BorderRadius.horizontal(
+                                  left: Radius.circular(6),
+                                ),
+                              ),
+                              child: Text(
+                                '<',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w900,
+                                  color: !comparisonMode
+                                      ? AppColors.rosePink
+                                      : Colors.black26,
+                                ),
+                              ),
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () => onComparisonModeChanged(true),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: comparisonMode
+                                    ? AppColors.rosePink.withValues(alpha: 0.15)
+                                    : Colors.transparent,
+                                borderRadius: const BorderRadius.horizontal(
+                                  right: Radius.circular(6),
+                                ),
+                              ),
+                              child: Text(
+                                '>',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w900,
+                                  color: comparisonMode
+                                      ? AppColors.rosePink
+                                      : Colors.black26,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(
+                  ),
+                Opacity(
+                  opacity: isEnabled ? 1 : 0.6,
+                  child: SizedBox(
+                    width: 85,
+                    height: 35,
+                    child: TextField(
+                      controller: controller,
+                      enabled: isEnabled,
+                      keyboardType: TextInputType.number,
+                      textAlign: TextAlign.center,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
                         color: AppColors.rosePink,
-                        width: 1.5,
+                        fontSize: 13,
                       ),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: AppColors.cardRose.withValues(alpha: 0.3),
+                        contentPadding: EdgeInsets.zero,
+                        suffixText: '$unit ',
+                        suffixStyle: const TextStyle(
+                          fontSize: 10,
+                          color: Colors.black26,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(
+                            color: AppColors.rosePink.withValues(alpha: 0.2),
+                            width: 1.5,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(
+                            color: AppColors.rosePink,
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                      onChanged: isEnabled
+                          ? (text) {
+                              final val = double.tryParse(text) ?? 0;
+                              if (val <= max)
+                                setState(() => _updateMetric(label, val));
+                            }
+                          : null,
                     ),
                   ),
-                  onChanged: isEnabled
-                      ? (text) {
-                          final val = double.tryParse(text) ?? 0;
-                          if (val <= max)
-                            setState(() => _updateMetric(label, val));
-                        }
-                      : null,
                 ),
-              ),
+              ],
             ),
           ],
         ),
@@ -520,6 +626,13 @@ class _PlannerRecipeFilterModalState
                         useSugarFilter: _useSugar,
                         useFiberFilter: _useFiber,
                         useSodiumFilter: _useSodium,
+                        caloriesComparisonMode: _caloriesComparisonMode,
+                        carbsComparisonMode: _carbsComparisonMode,
+                        fatsComparisonMode: _fatsComparisonMode,
+                        proteinComparisonMode: _proteinComparisonMode,
+                        sugarComparisonMode: _sugarComparisonMode,
+                        fiberComparisonMode: _fiberComparisonMode,
+                        sodiumComparisonMode: _sodiumComparisonMode,
                         maxCookTimeMinutes: _cookTime,
                         includeTags: _includeTags.toList(),
                         excludeTags: _excludeTags.toList(),
