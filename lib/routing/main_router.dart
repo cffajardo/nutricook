@@ -7,6 +7,7 @@ import 'package:nutricook/features/auth/screens/register_screen.dart';
 import 'package:nutricook/features/auth/screens/verify_email_screen.dart';
 import 'package:nutricook/features/admin/screens/admin_panel_page.dart';
 import 'package:nutricook/features/admin/screens/banned_screen.dart';
+import 'package:nutricook/features/admin/screens/edit_ingredient_screen.dart';
 import 'package:nutricook/features/recipe/screens/recipe_main.dart';
 import 'package:nutricook/features/recipe/screens/recipe_subcategory_list.dart';
 import 'package:nutricook/features/recipe/screens/recipe_create.dart';
@@ -19,6 +20,7 @@ import 'package:nutricook/features/profile/screens/profile_page.dart';
 import 'package:nutricook/features/settings/screens/settings_page.dart';
 import 'package:nutricook/features/home/screens/home_user_search_results_screen.dart';
 import 'package:nutricook/features/notifications/screens/notifications_page.dart';
+import 'package:nutricook/features/notifications/screens/notification_test_page.dart';
 import 'package:nutricook/features/library/screens/library_main.dart';
 import 'package:nutricook/features/library/screens/library_subcategory.dart';
 import 'package:nutricook/features/library/screens/library_main_item.dart';
@@ -28,6 +30,7 @@ import 'package:nutricook/screens/splash_screen.dart';
 import 'package:nutricook/routing/app_routes.dart';
 import 'package:nutricook/features/home/widgets/custom_bottom_nav_bar.dart';
 import 'package:nutricook/features/profile/provider/user_provider.dart';
+import 'package:nutricook/services/recipe_service.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final userAsync = ref.watch(authStateProvider);
@@ -43,6 +46,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isSplashRoute = path == AppRoutes.splashPath;
       final isAdminRoute = path.startsWith(AppRoutes.adminPath);
       final isBannedRoute = path == AppRoutes.bannedPath;
+      
+      // Check if this is a deep link route (starts with /recipe/)
+      final isDeepLinkRoute = path.startsWith('/recipe/');
 
       if (isSplashRoute) return null;
 
@@ -50,7 +56,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         loading: () => null,
         error: (_, _) => AppRoutes.loginPath,
         data: (user) {
-          if (user == null) return isAuthRoute ? null : AppRoutes.loginPath;
+          if (user == null) {
+            // Allow deep link routes for unauthenticated users
+            if (isDeepLinkRoute) return null;
+            return isAuthRoute ? null : AppRoutes.loginPath;
+          }
 
           final userData = userDataAsync.asData?.value;
           final isBanned = userData?['isBanned'] == true;
@@ -77,6 +87,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           }
 
           if (isAuthRoute || isVerifyEmailRoute) return AppRoutes.homePath;
+          
+          // Allow deep link routes for authenticated users
+          if (isDeepLinkRoute) return null;
           return null;
         },
       );
@@ -87,6 +100,59 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: AppRoutes.splashName,
         builder: (context, state) => const SplashScreen(),
       ),
+
+      // Deep link route for shared recipes
+      GoRoute(
+        path: '/recipe/:recipeId',
+        name: 'recipe_deeplink',
+        builder: (context, state) {
+          final recipeId = state.pathParameters['recipeId'] ?? '';
+          final recipeService = RecipeService();
+
+          return StreamBuilder<Recipe?>(
+            stream: recipeService.getRecipeById(recipeId),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Scaffold(
+                  body: Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                );
+              }
+
+              if (snapshot.hasError || snapshot.data == null) {
+                return Scaffold(
+                  appBar: AppBar(
+                    leading: IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ),
+                  body: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, size: 48, color: Colors.grey),
+                        const SizedBox(height: 16),
+                        const Text('Recipe not found'),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('Go Back'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              final recipe = snapshot.data!;
+              return RecipeDetailsScreen(recipe: recipe);
+            },
+          );
+        },
+      ),
+
       GoRoute(
         path: AppRoutes.loginPath,
         name: AppRoutes.loginName,
@@ -111,7 +177,25 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.adminPath,
         name: AppRoutes.adminName,
         builder: (context, state) => const AdminPanelPage(),
+        routes: [
+          GoRoute(
+            path: 'ingredient/:ingredientId',
+            name: AppRoutes.adminEditIngredientName,
+            builder: (context, state) {
+              final ingredientId = state.pathParameters['ingredientId'] ?? '';
+              return EditIngredientScreen(ingredientId: ingredientId);
+            },
+          ),
+        ],
       ),
+
+      // Development only: Notification testing
+      if (const bool.fromEnvironment('dart.vm.product') == false)
+        GoRoute(
+          path: AppRoutes.notificationTestPath,
+          name: AppRoutes.notificationTestName,
+          builder: (context, state) => const NotificationTestPage(),
+        ),
 
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {

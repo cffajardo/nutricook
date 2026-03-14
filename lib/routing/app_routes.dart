@@ -15,10 +15,12 @@ class AppRoutes {
   static const String userCustomRecipesPath = '/recipes/custom';
   static const String homeUserSearchPath = '/search-users';
   static const String notificationsPath = '/notifications';
+  static const String notificationTestPath = '/notification-test'; // Dev only
   static const String settingsPath = 'settings';
   static const String editProfilePath = 'edit';
   static const String profileConnectionsPath = 'connections';
   static const String adminPath = '/admin';
+  static const String adminEditIngredientPath = '/admin/ingredient/:ingredientId';
   static const String bannedPath = '/banned';
 
   static const String splashName = 'splash';
@@ -38,9 +40,11 @@ class AppRoutes {
   static const String userCustomRecipesName = 'userCustomRecipes';
   static const String homeUserSearchName = 'home_user_search';
   static const String notificationsName = 'notifications';
+  static const String notificationTestName = 'notification_test'; // Dev only
   static const String settingsName = 'settings';
   static const String editProfileName = 'edit_profile';
   static const String profileConnectionsName = 'profile_connections';
   static const String adminName = 'admin';
+  static const String adminEditIngredientName = 'admin_edit_ingredient';
   static const String bannedName = 'banned';
 }
