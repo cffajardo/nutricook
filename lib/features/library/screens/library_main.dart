@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
 import 'package:nutricook/features/library/library_constants.dart';
-import 'package:nutricook/features/library/screens/library_subcategory.dart';
 
 class LibraryMainScreen extends StatelessWidget {
   const LibraryMainScreen({super.key});
@@ -15,7 +15,7 @@ class LibraryMainScreen extends StatelessWidget {
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => context.pop(),
           icon: const Icon(
             Icons.arrow_back_ios_new_rounded,
             color: Colors.black,
@@ -54,11 +54,7 @@ class LibraryMainScreen extends StatelessWidget {
   }) {
     return GestureDetector(
       onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => LibrarySubCategoryScreen(categoryId: category.id),
-          ),
-        );
+        context.push('/library/${category.id}');
       },
       child: Column(
         children: [
