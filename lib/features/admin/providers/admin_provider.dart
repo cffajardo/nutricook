@@ -78,3 +78,16 @@ final adminIngredientsCountProvider = Provider<int>((ref) {
 final adminRecipesCountProvider = Provider<int>((ref) {
   return ref.watch(adminRecipesProvider('')).asData?.value.length ?? 0;
 });
+
+final adminRecipeNameProvider =
+    FutureProvider.family<String?, String>((ref, recipeId) async {
+  try {
+    final doc = await FirebaseFirestore.instance
+        .collection(FirestoreConstants.recipes)
+        .doc(recipeId)
+        .get();
+    return doc.data()?['name'] as String?;
+  } catch (_) {
+    return null;
+  }
+});
