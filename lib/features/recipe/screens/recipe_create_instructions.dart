@@ -24,6 +24,17 @@ class CreateRecipeInstructionsPage extends ConsumerWidget {
     int? index,
     required int stepNumber,
   }) {
+    final recipeState = ref.watch(recipeCreationProvider);
+    final maxTimeSeconds = (recipeState.prepTimeMinutes + recipeState.cookTimeMinutes) * 60;
+    
+    // Calculate sum of all other steps' times (exclude the step being edited)
+    int otherStepsSum = 0;
+    for (int i = 0; i < recipeState.steps.length; i++) {
+      if (i != index) {
+        otherStepsSum += recipeState.steps[i].timerSeconds;
+      }
+    }
+    
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -31,6 +42,8 @@ class CreateRecipeInstructionsPage extends ConsumerWidget {
       builder: (context) => AddStepModal(
         initialStep: initialStep,
         stepNumber: stepNumber,
+        maxAllowedTimeSeconds: maxTimeSeconds,
+        otherStepsTimeSeconds: otherStepsSum,
         onStepAdded: (result) {
           if (index != null) {
             ref.read(recipeCreationProvider.notifier).updateStep(index, result);

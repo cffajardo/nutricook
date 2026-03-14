@@ -408,7 +408,28 @@ class _FavoriteButton extends ConsumerWidget {
     return GestureDetector(
       onTap: isLoading
           ? null
-          : () => ref.read(toggleFavoriteProvider.notifier).toggle(recipe.id),
+          : () async {
+              final wasLiked = isFavorited;
+              await ref.read(toggleFavoriteProvider.notifier).toggle(recipe.id);
+              
+              if (!context.mounted) return;
+              
+              // Show feedback message
+              final message = !wasLiked
+                  ? '❤️ Added "${recipe.name}" to Favorites!'
+                  : '💔 Removed from Favorites';
+              
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(message),
+                  duration: const Duration(seconds: 2),
+                  backgroundColor: !wasLiked 
+                      ? AppColors.rosePink 
+                      : Colors.black54,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(

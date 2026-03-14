@@ -7,6 +7,8 @@ class AddStepModal extends StatefulWidget {
   final int stepNumber;
   final ValueChanged<RecipeStep> onStepAdded;
   final VoidCallback? onStepDeleted;
+  final int maxAllowedTimeSeconds;
+  final int otherStepsTimeSeconds;
 
   const AddStepModal({
     super.key,
@@ -14,6 +16,8 @@ class AddStepModal extends StatefulWidget {
     required this.stepNumber,
     required this.onStepAdded,
     this.onStepDeleted,
+    this.maxAllowedTimeSeconds = 0,
+    this.otherStepsTimeSeconds = 0,
   });
 
   @override
@@ -117,6 +121,47 @@ class _AddStepModalState extends State<AddStepModal> {
                           (int.tryParse(_hController.text) ?? 0) * 3600 +
                           (int.tryParse(_mController.text) ?? 0) * 60 +
                           (int.tryParse(_sController.text) ?? 0);
+                      
+                      if (widget.maxAllowedTimeSeconds > 0 && totalSec > widget.maxAllowedTimeSeconds) {
+                        final maxHours = widget.maxAllowedTimeSeconds ~/ 3600;
+                        final maxMinutes = (widget.maxAllowedTimeSeconds % 3600) ~/ 60;
+                        final maxSeconds = widget.maxAllowedTimeSeconds % 60;
+                        final maxTimeStr = maxHours > 0 
+                          ? '$maxHours:${maxMinutes.toString().padLeft(2, '0')}:${maxSeconds.toString().padLeft(2, '0')}'
+                          : '${maxMinutes}m ${maxSeconds}s';
+                        
+                        ScaffoldMessenger.of(context)
+                          ..hideCurrentSnackBar()
+                          ..showSnackBar(
+                            SnackBar(
+                              content: Text('Single step time cannot exceed total cooking time ($maxTimeStr).'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        return;
+                      }
+                      
+                      final totalWithOtherSteps = widget.otherStepsTimeSeconds + totalSec;
+                      if (widget.maxAllowedTimeSeconds > 0 && totalWithOtherSteps > widget.maxAllowedTimeSeconds) {
+                        final remainingTime = widget.maxAllowedTimeSeconds - widget.otherStepsTimeSeconds;
+                        final hours = remainingTime ~/ 3600;
+                        final minutes = (remainingTime % 3600) ~/ 60;
+                        final seconds = remainingTime % 60;
+                        final remainingStr = hours > 0 
+                          ? '$hours:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}'
+                          : '${minutes}m ${seconds}s';
+                        
+                        ScaffoldMessenger.of(context)
+                          ..hideCurrentSnackBar()
+                          ..showSnackBar(
+                            SnackBar(
+                              content: Text('Total step times exceed cooking time. Remaining time: $remainingStr.'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        return;
+                      }
+                      
                       widget.onStepAdded(
                         RecipeStep(
                           instruction: instruction,

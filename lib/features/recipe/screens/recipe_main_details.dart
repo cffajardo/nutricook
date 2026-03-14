@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:nutricook/core/allergen_entries.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
 import 'package:nutricook/features/auth/providers/auth_provider.dart';
-import 'package:nutricook/features/collection/provider/collection_provider.dart';
 import 'package:nutricook/features/library/ingredients/provider/ingredient_provider.dart';
 import 'package:nutricook/features/planner/widgets/planner_item_edit_modal.dart';
 import 'package:nutricook/features/profile/provider/user_provider.dart';
@@ -15,10 +14,11 @@ import 'package:nutricook/features/recipe/screens/recipe_instruction_detail.dart
 import 'package:nutricook/features/recipe/providers/recipe_provider.dart';
 import 'package:nutricook/features/recipe/providers/recipe_report_provider.dart';
 import 'package:nutricook/features/recipe/widgets/recipe_fab_modal.dart';
+import 'package:nutricook/features/collection/screens/add_to_collections_modal.dart';
 import 'package:nutricook/features/utils/nutrition_calculator.dart';
 import 'package:nutricook/routing/app_routes.dart';
-import 'package:nutricook/services/collection_item_service.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:nutricook/services/recipe_share_service.dart';
 
 class RecipeDetailsScreen extends ConsumerStatefulWidget {
   final Recipe recipe;
@@ -36,6 +36,8 @@ class _RecipeDetailsScreenState extends ConsumerState<RecipeDetailsScreen> {
   int _startCookingSignal = 0;
 
   List<String> get _pageTitles => [widget.recipe.name, 'Ingredients', 'Instructions'];
+
+  List<String> get _bottomNavTitles => ['About', 'Ingredients', 'Instructions'];
 
   @override
   void dispose() {
@@ -92,101 +94,19 @@ class _RecipeDetailsScreenState extends ConsumerState<RecipeDetailsScreen> {
   }
 
   Future<void> _addToCollection() async {
-    final rootMessenger = ScaffoldMessenger.of(
-      Navigator.of(context, rootNavigator: true).context,
-    );
+    if (!mounted) return;
+    
+    // Check if recipe is liked by current user
+    final currentUserId = ref.read(currentUserIdProvider);
+    final isRecipeLiked =
+        currentUserId != null && widget.recipe.favoritedBy.contains(currentUserId);
 
-    final selectedCollectionId = await showModalBottomSheet<String>(
+    await showModalBottomSheet<void>(
       context: context,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (context) {
-        final collectionsAsync = ref.watch(userCollectionsProvider);
-
-        return Container(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: collectionsAsync.when(
-            loading: () => const SizedBox(
-              height: 180,
-              child: Center(child: CircularProgressIndicator()),
-            ),
-            error: (error, _) => SizedBox(
-              height: 180,
-              child: Center(child: Text('Failed to load collections: $error')),
-            ),
-            data: (collections) {
-              if (collections.isEmpty) {
-                return const SizedBox(
-                  height: 180,
-                  child: Center(
-                    child: Text('Create a collection first from Collections.'),
-                  ),
-                );
-              }
-
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.black12,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  const Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'Add to collection',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Flexible(
-                    child: ListView.separated(
-                      shrinkWrap: true,
-                      itemCount: collections.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemBuilder: (context, index) {
-                        final collection = collections[index];
-                        return ListTile(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(
-                              color: AppColors.rosePink.withValues(alpha: 0.2),
-                            ),
-                          ),
-                          title: Text(collection.name),
-                          subtitle: Text('${collection.recipeCount} recipes'),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: () => Navigator.pop(context, collection.id),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        );
-      },
-    );
-
-    if (selectedCollectionId == null) return;
-
-    try {
-      final service = CollectionItemService();
-      await service.addItemToCollection(
-        collectionId: selectedCollectionId,
+      isScrollControlled: true,
+      builder: (context) => AddToCollectionsModal(
         recipeId: widget.recipe.id,
         recipeName: widget.recipe.name,
         thumbnailUrl: widget.recipe.imageURL.isNotEmpty
@@ -195,26 +115,9 @@ class _RecipeDetailsScreenState extends ConsumerState<RecipeDetailsScreen> {
         tags: widget.recipe.tags,
         prepTime: widget.recipe.prepTime,
         cookTime: widget.recipe.cookTime,
-      );
-
-      rootMessenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(
-            content: Text('Added to collection.'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-    } catch (error) {
-      rootMessenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            content: Text('Failed to add to collection: $error'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-    }
+        isRecipeLiked: isRecipeLiked,
+      ),
+    );
   }
 
   Future<void> _editAsCopy() async {
@@ -222,6 +125,30 @@ class _RecipeDetailsScreenState extends ConsumerState<RecipeDetailsScreen> {
     notifier.clear();
     notifier.updateAbout(
       name: '${widget.recipe.name} (Copy)',
+      description: widget.recipe.description,
+      prepTimeMinutes: widget.recipe.prepTime,
+      cookTimeMinutes: widget.recipe.cookTime,
+      servings: widget.recipe.servings,
+      isPublic: widget.recipe.isPublic,
+      tags: widget.recipe.tags,
+    );
+
+    for (final ingredient in widget.recipe.ingredients) {
+      notifier.addIngredient(ingredient);
+    }
+    for (final step in widget.recipe.steps) {
+      notifier.addStep(step);
+    }
+
+    if (!mounted) return;
+    context.pushNamed(AppRoutes.recipeCreateName);
+  }
+
+  Future<void> _editRecipe() async {
+    final notifier = ref.read(recipeCreationProvider.notifier);
+    notifier.clear();
+    notifier.updateAbout(
+      name: widget.recipe.name,
       description: widget.recipe.description,
       prepTimeMinutes: widget.recipe.prepTime,
       cookTimeMinutes: widget.recipe.cookTime,
@@ -369,11 +296,12 @@ class _RecipeDetailsScreenState extends ConsumerState<RecipeDetailsScreen> {
 
   void _shareRecipe() {
     try {
+      final deepLink = RecipeShareService.generateDeepLink(widget.recipe.id);
       final caloriesText = widget.recipe.nutritionTotal != null
           ? '\nCalories: ${widget.recipe.nutritionTotal!.calories} kcal'
           : '';
       final shareText =
-          'Check out this recipe: ${widget.recipe.name}\nServings: ${widget.recipe.servings}$caloriesText';
+          'Check out this recipe: ${widget.recipe.name}\nServings: ${widget.recipe.servings}$caloriesText\n\n$deepLink';
 
       Share.share(shareText, subject: widget.recipe.name);
     } catch (error) {
@@ -462,6 +390,10 @@ class _RecipeDetailsScreenState extends ConsumerState<RecipeDetailsScreen> {
                       Navigator.pop(context);
                       _addToCollection();
                     },
+                    onEdit: () {
+                      Navigator.pop(context);
+                      _editRecipe();
+                    },
                     onEditCopy: () {
                       Navigator.pop(context);
                       _editAsCopy();
@@ -549,7 +481,7 @@ class _RecipeDetailsScreenState extends ConsumerState<RecipeDetailsScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  _pageTitles[index],
+                  _bottomNavTitles[index],
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: isSelected ? FontWeight.w900 : FontWeight.bold,
