@@ -11,6 +11,8 @@ class CollectionService {
     required String name,
     required String description,
     String? thumbnailUrl,
+    bool isPublic = false,
+    bool isDefault = false,
   }) async {
     final user = _authService.currentUser;
     if (user == null) {
@@ -24,6 +26,8 @@ class CollectionService {
       name: name,
       description: description,
       thumbnailUrl: thumbnailUrl,
+      isPublic: isPublic,
+      isDefault: isDefault,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
@@ -32,11 +36,29 @@ class CollectionService {
     return collection.id;
   }
 
+  /// Create the default Favorites collection for a user (called during user creation)
+  Future<void> createDefaultFavoritesCollection(String userId) async {
+    final collectionRef = _db.collection('collections').doc();
+    final collection = Collection(
+      id: collectionRef.id,
+      ownerId: userId,
+      name: 'Favorites',
+      description: 'Your favorite recipes',
+      isPublic: false,
+      isDefault: true,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+
+    await collectionRef.set(collection.toJson());
+  }
+
   Future<void> updateCollection({
     required String collectionId,
     String? name,
     String? description,
     String? thumbnailUrl,
+    bool? isPublic,
   }) async {
     final user = _authService.currentUser;
     if (user == null) {
@@ -59,6 +81,7 @@ class CollectionService {
     if (name != null) updates['name'] = name;
     if (description != null) updates['description'] = description;
     if (thumbnailUrl != null) updates['thumbnailUrl'] = thumbnailUrl;
+    if (isPublic != null) updates['isPublic'] = isPublic;
 
     await collectionRef.update(updates);
   }
@@ -159,5 +182,132 @@ class CollectionService {
               .map((doc) => CollectionItem.fromJson(doc.data()))
               .toList(),
         );
+  }
+
+  /// Get or create the default favorites collection for the current user
+  Future<Collection> getOrCreateFavoritesCollection() async {
+    final user = _authService.currentUser;
+    if (user == null) {
+      throw Exception('User not authenticated');
+    }
+
+    // Try to find existing favorites collection
+    final query = await _db
+        .collection('collections')
+        .where('ownerId', isEqualTo: user.uid)
+        .where('isDefault', isEqualTo: true)
+        .limit(1)
+        .get();
+
+    if (query.docs.isNotEmpty) {
+      return Collection.fromJson(query.docs.first.data());
+    }
+
+    // Create new favorites collection
+    final collectionRef = _db.collection('collections').doc();
+    final favoritesCollection = Collection(
+      id: collectionRef.id,
+      ownerId: user.uid,
+      name: 'Favorites',
+      description: 'Your favorite recipes',
+      isDefault: true,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+
+    await collectionRef.set(favoritesCollection.toJson());
+    return favoritesCollection;
+  }
+
+  /// Add a recipe to the favorites collection
+  Future<void> addRecipeToFavorites({
+    required String recipeId,
+    required String recipeName,
+    String? thumbnailUrl,
+  }) async {
+    try {
+      final favoritesCollection = await getOrCreateFavoritesCollection();
+
+      // Check if recipe already in favorites
+      final existingItem = await _db
+          .collection('collections')
+          .doc(favoritesCollection.id)
+          .collection('items')
+          .where('recipeId', isEqualTo: recipeId)
+          .limit(1)
+          .get();
+
+      if (existingItem.docs.isNotEmpty) {
+        return; // Already in favorites
+      }
+
+      // Add recipe to favorites collection
+      final itemRef = _db
+          .collection('collections')
+          .doc(favoritesCollection.id)
+          .collection('items')
+          .doc();
+
+      final collectionItem = CollectionItem(
+        id: itemRef.id,
+        collectionId: favoritesCollection.id,
+        recipeId: recipeId,
+        recipeName: recipeName,
+        thumbnailUrl: thumbnailUrl,
+        tags: const [],
+        prepTime: 0,
+        cookTime: 0,
+        addedAt: DateTime.now(),
+        notes: null,
+        order: 0,
+      );
+
+      await itemRef.set(collectionItem.toJson());
+
+      // Update recipe count
+      await _db
+          .collection('collections')
+          .doc(favoritesCollection.id)
+          .update({
+        'recipeCount': FieldValue.increment(1),
+        'updatedAt': DateTime.now(),
+      });
+    } catch (e) {
+      print('Error adding recipe to favorites: $e');
+      rethrow;
+    }
+  }
+
+  /// Remove a recipe from the favorites collection
+  Future<void> removeRecipeFromFavorites(String recipeId) async {
+    try {
+      final favoritesCollection = await getOrCreateFavoritesCollection();
+
+      // Find the item to remove
+      final query = await _db
+          .collection('collections')
+          .doc(favoritesCollection.id)
+          .collection('items')
+          .where('recipeId', isEqualTo: recipeId)
+          .get();
+
+      for (final doc in query.docs) {
+        await doc.reference.delete();
+      }
+
+      // Update recipe count
+      if (query.docs.isNotEmpty) {
+        await _db
+            .collection('collections')
+            .doc(favoritesCollection.id)
+            .update({
+          'recipeCount': FieldValue.increment(-query.docs.length),
+          'updatedAt': DateTime.now(),
+        });
+      }
+    } catch (e) {
+      print('Error removing recipe from favorites: $e');
+      rethrow;
+    }
   }
 }
