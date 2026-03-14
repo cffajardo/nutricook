@@ -17,6 +17,7 @@ final ingredientServiceProvider = Provider<IngredientService>((ref) {
 class CreateIngredientState {
   const CreateIngredientState({
     this.name = '',
+    this.description = '',
     this.category = 'proteins',
     this.isLiquid = false,
     this.nutritionMethod = 'manual', // 'manual' or 'ai'
@@ -37,6 +38,7 @@ class CreateIngredientState {
   });
 
   final String name;
+  final String description;
   final String category;
   final bool isLiquid;
   final String nutritionMethod;
@@ -57,6 +59,7 @@ class CreateIngredientState {
 
   CreateIngredientState copyWith({
     String? name,
+    String? description,
     String? category,
     bool? isLiquid,
     String? nutritionMethod,
@@ -77,6 +80,7 @@ class CreateIngredientState {
   }) {
     return CreateIngredientState(
       name: name ?? this.name,
+      description: description ?? this.description,
       category: category ?? this.category,
       isLiquid: isLiquid ?? this.isLiquid,
       nutritionMethod: nutritionMethod ?? this.nutritionMethod,
@@ -108,6 +112,10 @@ class CreateIngredientNotifier extends Notifier<CreateIngredientState> {
 
   void setName(String name) {
     state = state.copyWith(name: name, error: '');
+  }
+
+  void setDescription(String description) {
+    state = state.copyWith(description: description, error: '');
   }
 
   void setCategory(String category) {
@@ -236,6 +244,15 @@ class CreateIngredientNotifier extends Notifier<CreateIngredientState> {
       return null;
     }
 
+    // Check if ingredient with same name already exists
+    final existingIngredient = await _checkIngredientExists(state.name.trim());
+    if (existingIngredient != null) {
+      state = state.copyWith(
+        error: 'An ingredient named "${state.name.trim()}" already exists',
+      );
+      return null;
+    }
+
     if (state.calories == 0 &&
         state.carbohydrates == 0 &&
         state.protein == 0 &&
@@ -280,7 +297,9 @@ class CreateIngredientNotifier extends Notifier<CreateIngredientState> {
         id: '',
         name: state.name.trim(),
         category: state.category,
-        description: state.name.trim(),
+        description: state.description.trim().isNotEmpty
+            ? state.description.trim()
+            : state.name.trim(),
         nutritionPer100g: nutritionInfo,
         densityGPerMl: state.isLiquid ? state.density : null,
         avgWeightG: !state.isLiquid ? state.avgWeight : null,
@@ -297,6 +316,25 @@ class CreateIngredientNotifier extends Notifier<CreateIngredientState> {
       state = state.copyWith(
         error: 'Failed to create ingredient: ${e.toString()}',
       );
+      return null;
+    }
+  }
+
+  Future<Ingredient?> _checkIngredientExists(String ingredientName) async {
+    try {
+      final ingredientService = ref.read(ingredientServiceProvider);
+      final allIngredients = await ingredientService.getAllIngredients();
+      
+      // Case-insensitive search for existing ingredient with same name
+      for (final ingredient in allIngredients) {
+        if (ingredient.name.toLowerCase() == ingredientName.toLowerCase()) {
+          return ingredient;
+        }
+      }
+      
+      return null;
+    } catch (e) {
+      // If check fails, allow creation to proceed
       return null;
     }
   }
