@@ -1,12 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:nutricook/core/constants.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
 import 'package:nutricook/features/admin/providers/admin_provider.dart';
+import 'package:nutricook/features/admin/screens/edit_recipe_modal.dart';
 import 'package:nutricook/features/auth/providers/auth_provider.dart';
 import 'package:nutricook/features/profile/provider/user_provider.dart';
 import 'package:nutricook/features/recipe/providers/recipe_report_provider.dart';
+import 'package:nutricook/models/recipe_report/recipe_report.dart';
 
 class AdminPanelPage extends ConsumerStatefulWidget {
   const AdminPanelPage({super.key});
@@ -307,91 +310,11 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
                       separatorBuilder: (_, _) => const SizedBox(height: 10),
                       itemBuilder: (context, index) {
                         final report = reports[index];
-                        return _AdminCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      report.reason,
-                                      style: const TextStyle(fontWeight: FontWeight.w800),
-                                    ),
-                                  ),
-                                  _ChipLabel(
-                                    label: report.status.toUpperCase(),
-                                    color: _statusColor(report.status),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              Text('Recipe ID: ${report.recipeId}'),
-                              Text('Reporter ID: ${report.reporterId}'),
-                              Text('Submitted: ${report.createdAt.toLocal()}'),
-                              if ((report.details ?? '').isNotEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 6),
-                                  child: Text(
-                                    report.details!,
-                                    style: const TextStyle(color: Colors.black54),
-                                  ),
-                                ),
-                              const SizedBox(height: 10),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: [
-                                  OutlinedButton.icon(
-                                    onPressed: report.status == 'open'
-                                        ? null
-                                        : () => _setReportStatus(
-                                              reportId: report.id,
-                                              status: 'open',
-                                            ),
-                                    icon: const Icon(Icons.refresh),
-                                    label: const Text('Reopen'),
-                                  ),
-                                  OutlinedButton.icon(
-                                    onPressed: report.status == 'reviewed'
-                                        ? null
-                                        : () => _setReportStatus(
-                                              reportId: report.id,
-                                              status: 'reviewed',
-                                            ),
-                                    icon: const Icon(Icons.task_alt),
-                                    label: const Text('Mark Reviewed'),
-                                  ),
-                                  OutlinedButton.icon(
-                                    onPressed: report.status == 'dismissed'
-                                        ? null
-                                        : () => _setReportStatus(
-                                              reportId: report.id,
-                                              status: 'dismissed',
-                                            ),
-                                    icon: const Icon(Icons.gpp_good),
-                                    label: const Text('Dismiss'),
-                                  ),
-                                  FilledButton.tonalIcon(
-                                    onPressed: () => _setRecipeVisibility(
-                                      recipeId: report.recipeId,
-                                      isPublic: false,
-                                    ),
-                                    icon: const Icon(Icons.visibility_off),
-                                    label: const Text('Hide Recipe'),
-                                  ),
-                                  FilledButton.tonalIcon(
-                                    onPressed: () => _setRecipeVisibility(
-                                      recipeId: report.recipeId,
-                                      isPublic: true,
-                                    ),
-                                    icon: const Icon(Icons.visibility),
-                                    label: const Text('Unhide Recipe'),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
+                        return _ReportCard(
+                          report: report,
+                          onStatusChanged: _setReportStatus,
+                          onRecipeVisibilityChanged: _setRecipeVisibility,
+                          statusColor: _statusColor,
                         );
                       },
                     );
@@ -791,125 +714,23 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
     required int initialServings,
     required bool initialIsPublic,
   }) async {
-    final nameController = TextEditingController(text: initialName);
-    final descriptionController = TextEditingController(text: initialDescription);
-    final prepTimeController = TextEditingController(
-      text: initialPrepTime.toString(),
-    );
-    final cookTimeController = TextEditingController(
-      text: initialCookTime.toString(),
-    );
-    final servingsController = TextEditingController(
-      text: initialServings.toString(),
-    );
-    bool isPublic = initialIsPublic;
-
-    final shouldSave = await showDialog<bool>(
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('Edit Recipe'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(labelText: 'Name'),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: descriptionController,
-                  minLines: 2,
-                  maxLines: 4,
-                  decoration: const InputDecoration(labelText: 'Description'),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: prepTimeController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Prep time (min)'),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: cookTimeController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Cook time (min)'),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: servingsController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Servings'),
-                ),
-                const SizedBox(height: 12),
-                SwitchListTile.adaptive(
-                  title: const Text('Public recipe'),
-                  value: isPublic,
-                  activeThumbColor: AppColors.rosePink,
-                  onChanged: (value) {
-                    setDialogState(() => isPublic = value);
-                  },
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Save'),
-            ),
-          ],
-        ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => EditRecipeModal(
+        recipeId: recipeId,
+        initialName: initialName,
+        initialDescription: initialDescription,
+        initialPrepTime: initialPrepTime,
+        initialCookTime: initialCookTime,
+        initialServings: initialServings,
+        initialIsPublic: initialIsPublic,
       ),
     );
-
-    if (shouldSave != true) return;
-
-    final name = nameController.text.trim();
-    final description = descriptionController.text.trim();
-    final prepTime = int.tryParse(prepTimeController.text.trim()) ?? 0;
-    final cookTime = int.tryParse(cookTimeController.text.trim()) ?? 0;
-    final servings = int.tryParse(servingsController.text.trim()) ?? 1;
-
-    if (name.isEmpty || servings <= 0 || prepTime < 0 || cookTime < 0) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please provide valid recipe fields.')),
-      );
-      return;
-    }
-
-    try {
-      await FirebaseFirestore.instance
-          .collection(FirestoreConstants.recipes)
-          .doc(recipeId)
-          .update(<String, dynamic>{
-            'name': name,
-            'description': description,
-            'prepTime': prepTime,
-            'cookTime': cookTime,
-            'servings': servings,
-            'isPublic': isPublic,
-            'updatedAt': Timestamp.fromDate(DateTime.now()),
-          });
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Recipe updated.')),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update recipe: $error')),
-      );
-    }
   }
+
 }
 
 class _OverviewTab extends StatelessWidget {
@@ -1017,3 +838,258 @@ class _ChipLabel extends StatelessWidget {
     );
   }
 }
+
+class _ReportCard extends ConsumerWidget {
+  const _ReportCard({
+    required this.report,
+    required this.onStatusChanged,
+    required this.onRecipeVisibilityChanged,
+    required this.statusColor,
+  });
+
+  final RecipeReport report;
+  final Function(
+      {required String reportId,
+      required String status}) onStatusChanged;
+  final Function({required String recipeId, required bool isPublic})
+      onRecipeVisibilityChanged;
+  final Color Function(String) statusColor;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Fetch recipe name using the stable provider
+    final recipeAsync = ref.watch(adminRecipeNameProvider(report.recipeId));
+
+    // Fetch reporter name
+    final reporterNameAsync = ref.watch(userDataByIdProvider(report.reporterId));
+
+    return _AdminCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header: Report Reason and Status
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Report Reason',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black54,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      report.reason,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              _ChipLabel(
+                label: report.status.toUpperCase(),
+                color: statusColor(report.status),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Divider(height: 1, color: Colors.black.withValues(alpha: 0.08)),
+          const SizedBox(height: 14),
+
+          // Recipe Info
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Recipe',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black54,
+                ),
+              ),
+              const SizedBox(height: 6),
+              recipeAsync.when(
+                loading: () => Text(
+                  'Loading...',
+                  style: TextStyle(color: Colors.black54),
+                ),
+                error: (_, __) => Text(
+                  'Error loading recipe',
+                  style: TextStyle(color: Colors.black54),
+                ),
+                data: (recipeName) {
+                  final displayName =
+                      recipeName ?? 'Unknown Recipe (${report.recipeId})';
+                  return Text(
+                    displayName,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  );
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Reporter Info
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Reporter',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black54,
+                ),
+              ),
+              const SizedBox(height: 6),
+              reporterNameAsync.when(
+                loading: () => Text(
+                  'Loading...',
+                  style: TextStyle(color: Colors.black54),
+                ),
+                error: (_, __) => Text(
+                  'Unknown User (${report.reporterId})',
+                  style: TextStyle(color: Colors.black54),
+                ),
+                data: (reporterData) {
+                  final reporterName =
+                      reporterData?['username'] ?? 'Unknown User';
+                  return Text(
+                    reporterName.toString(),
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  );
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Submission Details
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Submitted',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black54,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      DateFormat('MMM dd, yyyy HH:mm').format(
+                        report.createdAt.toLocal(),
+                      ),
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          // Details if available
+          if ((report.details ?? '').isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Divider(height: 1, color: Colors.black.withValues(alpha: 0.08)),
+            const SizedBox(height: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Additional Details',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black54,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  report.details!,
+                  style: const TextStyle(
+                    color: Colors.black87,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ],
+
+          const SizedBox(height: 14),
+          Divider(height: 1, color: Colors.black.withValues(alpha: 0.08)),
+          const SizedBox(height: 12),
+
+          // Action Buttons
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: report.status == 'open'
+                    ? null
+                    : () => onStatusChanged(
+                          reportId: report.id,
+                          status: 'open',
+                        ),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Reopen'),
+              ),
+              OutlinedButton.icon(
+                onPressed: report.status == 'reviewed'
+                    ? null
+                    : () => onStatusChanged(
+                          reportId: report.id,
+                          status: 'reviewed',
+                        ),
+                icon: const Icon(Icons.task_alt),
+                label: const Text('Mark Reviewed'),
+              ),
+              OutlinedButton.icon(
+                onPressed: report.status == 'dismissed'
+                    ? null
+                    : () => onStatusChanged(
+                          reportId: report.id,
+                          status: 'dismissed',
+                        ),
+                icon: const Icon(Icons.gpp_good),
+                label: const Text('Dismiss'),
+              ),
+              FilledButton.tonalIcon(
+                onPressed: () => onRecipeVisibilityChanged(
+                  recipeId: report.recipeId,
+                  isPublic: false,
+                ),
+                icon: const Icon(Icons.visibility_off),
+                label: const Text('Hide Recipe'),
+              ),
+              FilledButton.tonalIcon(
+                onPressed: () => onRecipeVisibilityChanged(
+                  recipeId: report.recipeId,
+                  isPublic: true,
+                ),
+                icon: const Icon(Icons.visibility),
+                label: const Text('Unhide Recipe'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
