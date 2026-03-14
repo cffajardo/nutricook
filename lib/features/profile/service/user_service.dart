@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:nutricook/core/constants.dart';
+import 'package:nutricook/features/profile/notifiers/follow_helper.dart';
 
 class UserService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -319,6 +321,8 @@ class UserService {
     final currentRef = _users.doc(currentUserId);
     final targetRef = _users.doc(targetUserId);
 
+    String? currentUserName;
+
     await _db.runTransaction((txn) async {
       final currentSnap = await txn.get(currentRef);
       final targetSnap = await txn.get(targetRef);
@@ -329,6 +333,8 @@ class UserService {
 
       final currentData = currentSnap.data() ?? <String, dynamic>{};
       final targetData = targetSnap.data() ?? <String, dynamic>{};
+
+      currentUserName = currentData['username'] as String?;
 
       final currentBlocked = List<String>.from(
         currentData['blockedUsers'] ?? [],
@@ -347,6 +353,27 @@ class UserService {
         'followers': FieldValue.arrayUnion([currentUserId]),
       });
     });
+
+    // Send notification to followed user
+    try {
+      // Fetch the target user's FCM token
+      final targetDoc = await _users.doc(targetUserId).get();
+      if (!targetDoc.exists) return;
+
+      final targetUserFcmToken = targetDoc.get('fcmToken') as String?;
+      if (targetUserFcmToken == null || targetUserFcmToken.isEmpty) return;
+
+      // Send the notification
+      await FollowHelper.onUserFollowed(
+        followerId: currentUserId,
+        followerName: currentUserName ?? 'Someone',
+        targetUserId: targetUserId,
+        targetUserFcmToken: targetUserFcmToken,
+      );
+    } catch (e) {
+      // Log error but don't fail the follow operation
+      debugPrint('Error sending follow notification: $e');
+    }
   }
 
   Future<void> unfollowUser({
