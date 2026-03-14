@@ -20,6 +20,8 @@ import 'package:nutricook/features/settings/screens/settings_page.dart';
 import 'package:nutricook/features/home/screens/home_user_search_results_screen.dart';
 import 'package:nutricook/features/notifications/screens/notifications_page.dart';
 import 'package:nutricook/features/library/screens/library_main.dart';
+import 'package:nutricook/features/library/screens/library_subcategory.dart';
+import 'package:nutricook/features/library/screens/library_main_item.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
 import 'package:nutricook/screens/home_screen.dart';
 import 'package:nutricook/screens/splash_screen.dart';
@@ -123,7 +125,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                   '${AppRoutes.profilePath}/${AppRoutes.profileConnectionsPath}';
 
           return Scaffold(
-            extendBody: true,
             body: navigationShell,
             bottomNavigationBar: hideBottomNav
                 ? null
@@ -230,6 +231,32 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: AppRoutes.libraryPath,
                 name: AppRoutes.libraryName,
                 builder: (context, state) => const LibraryMainScreen(),
+                routes: [
+                  GoRoute(
+                    path: ':categoryId',
+                    name: 'libSubCategory',
+                    builder: (context, state) {
+                      final categoryId = state.pathParameters['categoryId'] ?? '';
+                      return LibrarySubCategoryScreen(categoryId: categoryId);
+                    },
+                    routes: [
+                      GoRoute(
+                        path: ':subCategoryId',
+                        name: 'libItemDetail',
+                        builder: (context, state) {
+                          final categoryId =
+                              state.pathParameters['categoryId'] ?? '';
+                          final subCategoryId =
+                              state.pathParameters['subCategoryId'] ?? '';
+                          return LibraryItemDetailScreen(
+                            categoryId: categoryId,
+                            subCategoryId: subCategoryId,
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),
