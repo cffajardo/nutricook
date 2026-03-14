@@ -13,6 +13,8 @@ _Collection _$CollectionFromJson(Map<String, dynamic> json) => _Collection(
   description: json['description'] as String,
   thumbnailUrl: json['thumbnailUrl'] as String?,
   recipeCount: (json['recipeCount'] as num?)?.toInt() ?? 0,
+  isDefault: json['isDefault'] as bool? ?? false,
+  isPublic: json['isPublic'] as bool? ?? false,
   createdAt: const TimestampConverter().fromJson(
     json['createdAt'] as Timestamp,
   ),
@@ -29,6 +31,8 @@ Map<String, dynamic> _$CollectionToJson(_Collection instance) =>
       'description': instance.description,
       'thumbnailUrl': instance.thumbnailUrl,
       'recipeCount': instance.recipeCount,
+      'isDefault': instance.isDefault,
+      'isPublic': instance.isPublic,
       'createdAt': const TimestampConverter().toJson(instance.createdAt),
       'updatedAt': const TimestampConverter().toJson(instance.updatedAt),
     };

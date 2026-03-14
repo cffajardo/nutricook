@@ -14,6 +14,8 @@ abstract class Collection with _$Collection {
     required String description,
     String? thumbnailUrl,
     @Default(0) int recipeCount,
+    @Default(false) bool isDefault,
+    @Default(false) bool isPublic,
     @TimestampConverter() required DateTime createdAt,
     @TimestampConverter() required DateTime updatedAt,
   }) = _Collection;
