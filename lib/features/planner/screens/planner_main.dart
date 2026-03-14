@@ -181,7 +181,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     return Positioned(
       left: left,
       right: right,
-      bottom: 120,
+      bottom: 13,
       child: FloatingActionButton(
         heroTag: tag,
         backgroundColor: Colors.white,
@@ -374,15 +374,24 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
         itemCount: _mealTypes.length,
         itemBuilder: (context, index) {
           final isSelected = _mealTypes[index] == _selectedMeal;
-          return Center(
-            child: AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 300),
-              style: TextStyle(
-                fontSize: isSelected ? 32 : 22,
-                fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
-                color: isSelected ? AppColors.rosePink : Colors.black26,
+          return GestureDetector(
+            onTap: () {
+              _mealPageController.animateToPage(
+                index,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutCubic,
+              );
+            },
+            child: Center(
+              child: AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 300),
+                style: TextStyle(
+                  fontSize: isSelected ? 32 : 22,
+                  fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+                  color: isSelected ? AppColors.rosePink : Colors.black26,
+                ),
+                child: Text(_mealTypes[index]),
               ),
-              child: Text(_mealTypes[index]),
             ),
           );
         },
