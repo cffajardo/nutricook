@@ -125,10 +125,20 @@ final libraryItemsProvider =
       if (query.categoryId == LibraryCategoryIds.ingredients) {
         final ingredients = await ref.watch(ingredientsProvider.future);
         final filtered = ingredients.where((ingredient) {
-          final matchesSubCategory = ingredient.category == query.subCategoryId;
-          if (!matchesSubCategory) {
-            return false;
+          // Handle custom category - show only user-created ingredients
+          if (query.subCategoryId == LibrarySubCategoryIds.custom) {
+            final isCustom = ingredient.ownerId != null && ingredient.ownerId!.isNotEmpty;
+            if (!isCustom) {
+              return false;
+            }
+          } else {
+            // For other categories, filter by category
+            final matchesSubCategory = ingredient.category == query.subCategoryId;
+            if (!matchesSubCategory) {
+              return false;
+            }
           }
+          
           if (normalizedQuery.isEmpty) {
             return true;
           }
@@ -245,7 +255,7 @@ final libraryItemDetailProvider =
           final nutrition = ingredient.nutritionPer100g;
           final fields = <LibraryItemDetailField>[
             LibraryItemDetailField(
-              label: 'Category',
+              label: 'Category (per 100g)',
               value: ingredient.category,
             ),
             if (ingredient.densityGPerMl != null)
@@ -260,38 +270,38 @@ final libraryItemDetailProvider =
               ),
             if (nutrition != null)
               LibraryItemDetailField(
-                label: 'Calories (per 100g)',
+                label: 'Calories',
                 value: '${nutrition.calories} kcal',
               ),
             if (nutrition != null)
               LibraryItemDetailField(
-                label: 'Carbohydrates (per 100g)',
+                label: 'Carbohydrates',
                 value: '${nutrition.carbohydrates.toStringAsFixed(2)} g',
               ),
             if (nutrition != null)
               LibraryItemDetailField(
-                label: 'Protein (per 100g)',
+                label: 'Protein',
                 value: '${nutrition.protein.toStringAsFixed(2)} g',
               ),
             if (nutrition != null)
               LibraryItemDetailField(
-                label: 'Fat (per 100g)',
+                label: 'Fat',
                 value: '${nutrition.fat.toStringAsFixed(2)} g',
               ),
             if (nutrition != null)
               LibraryItemDetailField(
-                label: 'Fiber (per 100g)',
+                label: 'Fiber',
                 value: '${nutrition.fiber.toStringAsFixed(2)} g',
               ),
             if (nutrition != null)
               LibraryItemDetailField(
-                label: 'Sugar (per 100g)',
+                label: 'Sugar',
                 value: '${nutrition.sugar.toStringAsFixed(2)} g',
               ),
             if (nutrition != null)
               LibraryItemDetailField(
-                label: 'Sodium (per 100g)',
-                value: '${nutrition.sodium.toStringAsFixed(2)} mg',
+                label: 'Sodium',
+                value: '${(nutrition.sodium / 1000).toStringAsFixed(2)} g',
               ),
           ];
 
@@ -345,7 +355,6 @@ final libraryItemDetailProvider =
                 label: 'Recommended Daily Value',
                 value: '${nutrition.recommendedDailyValue.toStringAsFixed(2)}',
               ),
-              LibraryItemDetailField(label: 'Unit ID', value: nutrition.unitId),
             ],
           );
         }
@@ -364,10 +373,6 @@ final libraryItemDetailProvider =
                 : 'No description available.',
             fields: <LibraryItemDetailField>[
               LibraryItemDetailField(label: 'Type', value: unit.type),
-              LibraryItemDetailField(
-                label: 'Multiplier',
-                value: unit.multiplier.toStringAsFixed(4),
-              ),
             ],
           );
         }
