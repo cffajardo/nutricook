@@ -4,6 +4,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nutricook/core/validators.dart';
 import '../core/constants.dart';
+import 'collection_service.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -124,6 +125,9 @@ class AuthService {
         'blockedBy': [],
         'createdAt': FieldValue.serverTimestamp(),
       });
+
+      // Create default Favorites collection
+      await CollectionService().createDefaultFavoritesCollection(uid);
 
       await userCredential.user!.updateDisplayName(username.trim());
 
@@ -249,6 +253,14 @@ class AuthService {
   Future<void> verifyBeforeUpdateEmail(String newEmail) async {
     final user = _auth.currentUser;
     if (user == null) throw Exception('You must be signed in.');
+    final isGoogleSignInUser = user.providerData.any(
+      (provider) => provider.providerId == 'google.com',
+    );
+    if (isGoogleSignInUser) {
+      throw Exception(
+        'Email cannot be changed for Google sign-in accounts.',
+      );
+    }
     try {
       await user.verifyBeforeUpdateEmail(newEmail.trim());
     } on FirebaseAuthException catch (e) {
@@ -289,6 +301,9 @@ class AuthService {
       'blockedBy': [],
       'createdAt': FieldValue.serverTimestamp(),
     });
+
+    // Create default Favorites collection
+    await CollectionService().createDefaultFavoritesCollection(uid);
   }
 
   String _handleAuthException(FirebaseAuthException e) {
