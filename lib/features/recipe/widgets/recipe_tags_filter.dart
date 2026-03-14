@@ -460,7 +460,7 @@ class _RecipeTagsFilterModalState extends State<RecipeTagsFilterModal> {
     return filtered;
   }
 
-  Future<void> _createCustomTag() async {
+  Future<void> _createCustomTag({String? categoryId}) async {
     final tag = _tagSearchController.text.trim().toLowerCase();
     if (tag.isEmpty || _isCreatingTag) return;
 
@@ -474,7 +474,7 @@ class _RecipeTagsFilterModalState extends State<RecipeTagsFilterModal> {
     });
 
     try {
-      await _tagService.createCustomTag(tag);
+      await _tagService.createCustomTag(tag, categoryId: categoryId);
     } catch (error) {
       if (!mounted) return;
       // Keep local tag even if persistence fails (e.g., rule/network issue).
@@ -506,54 +506,105 @@ class _RecipeTagsFilterModalState extends State<RecipeTagsFilterModal> {
 
   Future<void> _handleCreateTagTap() async {
     final candidate = _tagSearchController.text.trim().toLowerCase();
+    String? tagName;
+    String? selectedCategoryId;
+
     if (candidate.isNotEmpty) {
-      await _createCustomTag();
-      return;
+      tagName = candidate;
+      selectedCategoryId = _selectedCategoryId;
+    } else {
+      final result = await _showCreateTagDialog();
+      if (!mounted || result == null) return;
+      tagName = result['name'];
+      selectedCategoryId = result['categoryId'];
     }
 
-    final created = await _showCreateTagDialog();
-    if (!mounted || created == null || created.isEmpty) return;
+    if (tagName == null || tagName.isEmpty) return;
 
-    _tagSearchController.text = created;
-    _query = created;
-    await _createCustomTag();
+    _tagSearchController.text = tagName;
+    _query = tagName;
+    await _createCustomTag(categoryId: selectedCategoryId);
   }
 
-  Future<String?> _showCreateTagDialog() async {
+  Future<Map<String, String>?> _showCreateTagDialog() async {
     String draft = '';
-    final created = await showDialog<String>(
+    String? selectedCategory = _selectedCategoryId;
+
+    final created = await showDialog<Map<String, String>>(
       context: context,
       useRootNavigator: true,
       barrierDismissible: true,
       builder: (dialogContext) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text('Create Custom Tag'),
-          content: TextField(
-            autofocus: true,
-            textInputAction: TextInputAction.done,
-            decoration: const InputDecoration(
-              hintText: 'e.g. post-workout',
-              border: OutlineInputBorder(),
-            ),
-            onChanged: (value) => draft = value,
-            onSubmitted: (_) =>
-                Navigator.of(dialogContext).pop(draft.trim().toLowerCase()),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () =>
-                  Navigator.of(dialogContext).pop(draft.trim().toLowerCase()),
-              child: const Text(
-                'Create',
-                style: TextStyle(color: AppColors.rosePink),
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: const Text('Create Custom Tag'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    autofocus: true,
+                    textInputAction: TextInputAction.next,
+                    decoration: const InputDecoration(
+                      hintText: 'e.g. African',
+                      labelText: 'Tag Name',
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (value) => draft = value,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Category',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButton<String>(
+                    isExpanded: true,
+                    value: selectedCategory,
+                    items: _categoryOptions
+                        .map(
+                          (cat) => DropdownMenuItem(
+                            value: cat['id'],
+                            child: Text(cat['name'] ?? ''),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() => selectedCategory = value);
+                      }
+                    },
+                  ),
+                ],
               ),
-            ),
-          ],
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    final tagName = draft.trim().toLowerCase();
+                    if (tagName.isNotEmpty && selectedCategory != null) {
+                      Navigator.of(dialogContext).pop({
+                        'name': tagName,
+                        'categoryId': selectedCategory!,
+                      });
+                    }
+                  },
+                  child: const Text(
+                    'Create',
+                    style: TextStyle(color: AppColors.rosePink),
+                  ),
+                ),
+              ],
+            );
+          },
         );
       },
     );
