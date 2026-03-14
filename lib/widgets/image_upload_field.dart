@@ -4,78 +4,23 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:nutricook/services/image_picker_service.dart';
 import 'package:nutricook/services/r2_upload_service.dart';
 
-/// Callback when image upload completes successfully
 typedef OnImageUploadSuccess = void Function(String imageUrl);
 
-/// Callback when image upload fails
 typedef OnImageUploadError = void Function(String error);
 
-/// A reusable image upload field widget
-/// 
-/// Features:
-/// - Tap to upload image via camera or gallery
-/// - Shows selected image preview
-/// - Upload status indicators (loading, success, error)
-/// - Customizable appearance
-/// - Error handling and user feedback
-/// 
-/// Usage:
-/// ```dart
-/// ImageUploadField(
-///   folder: 'recipes',
-///   onSuccess: (url) {
-///     setState(() => recipeImageUrl = url);
-///   },
-///   onError: (error) {
-///     ScaffoldMessenger.of(context).showSnackBar(
-///       SnackBar(content: Text('Upload failed: $error'))
-///     );
-///   },
-/// )
-/// ```
 class ImageUploadField extends StatefulWidget {
-  /// Folder in R2 bucket where image will be uploaded
-  /// Examples: 'recipes', 'ingredients', 'users'
   final String folder;
-
-  /// Callback when upload is successful
   final OnImageUploadSuccess onSuccess;
-
-  /// Callback when upload fails
   final OnImageUploadError? onError;
-
-  /// Initial/existing image URL to display
-  /// If provided, this image is shown as preview
   final String? initialImageUrl;
-
-  /// Custom label for the upload field
   final String label;
-
-  /// Whether to show the label above the field
   final bool showLabel;
-
-  /// Height of the upload area
   final double height;
-
-  /// Width of the upload area
   final double width;
-
-  /// Border radius for the upload area
   final double borderRadius;
-
-  /// Custom image quality (0-100)
-  /// Default: 90
   final int imageQuality;
-
-  /// Max width for picked images (resizing)
-  /// If null, image is not resized
   final double? maxWidth;
-
-  /// Max height for picked images (resizing)
-  /// If null, image is not resized
   final double? maxHeight;
-
-  /// Custom error message display duration
   final Duration errorDuration;
 
   const ImageUploadField({
@@ -116,7 +61,6 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
     _uploadedImageUrl = widget.initialImageUrl;
   }
 
-  /// Shows image source selection sheet
   void _showImageSourceSheet() {
     showModalBottomSheet(
       context: context,
@@ -148,7 +92,6 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
     );
   }
 
-  /// Picks image from camera
   Future<void> _pickImageFromCamera() async {
     try {
       _clearError();
@@ -167,7 +110,6 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
     }
   }
 
-  /// Picks image from gallery
   Future<void> _pickImageFromGallery() async {
     try {
       _clearError();
@@ -186,7 +128,6 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
     }
   }
 
-  /// Uploads the selected image to R2
   Future<void> _uploadImage(XFile imageFile) async {
     setState(() => _isUploading = true);
 
@@ -210,7 +151,6 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
     }
   }
 
-  /// Extracts readable error message from exception
   String _extractErrorMessage(dynamic error) {
     if (error is Exception) {
       return error.toString();
@@ -218,13 +158,11 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
     return error.toString();
   }
 
-  /// Shows error message
   void _showError(String message) {
     setState(() => _errorMessage = message);
     Future.delayed(widget.errorDuration, _clearError);
   }
 
-  /// Clears error message
   void _clearError() {
     if (mounted) {
       setState(() => _errorMessage = null);
