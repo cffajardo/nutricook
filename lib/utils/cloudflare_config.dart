@@ -1,47 +1,43 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-/// Configuration class for Cloudflare R2 settings
-/// 
-/// This class loads public configuration from .env file.
-/// Sensitive credentials (Access Key, Secret Key) are NOT stored in the app.
-/// They remain secure on your backend server only.
-/// 
-/// The app communicates with the backend to request pre-signed URLs for uploads.
+
 class CloudflareConfig {
-  /// R2 Account ID - found in Cloudflare dashboard
-  /// This is not secret and can be public
   static String get accountId {
-    final value = dotenv.env['R2_ACCOUNT_ID'];
+    final value = dotenv.env['CLOUDFLARE_ACCOUNT_ID'];
     if (value == null || value.isEmpty) {
-      throw ConfigurationException('R2_ACCOUNT_ID not configured in .env');
+      throw ConfigurationException('CLOUDFLARE_ACCOUNT_ID not configured in .env');
     }
     return value;
   }
 
-  /// R2 Bucket Name
   static String get bucketName {
-    final value = dotenv.env['R2_BUCKET_NAME'];
+    final value = dotenv.env['CLOUDFLARE_BUCKET_NAME'];
     if (value == null || value.isEmpty) {
-      throw ConfigurationException('R2_BUCKET_NAME not configured in .env');
+      throw ConfigurationException('CLOUDFLARE_BUCKET_NAME not configured in .env');
     }
     return value;
   }
 
-  /// Public URL for accessing uploaded images (CDN or R2 endpoint)
-  static String get publicUrl {
-    final value = dotenv.env['R2_PUBLIC_URL'];
+  static String get accessKeyId {
+    final value = dotenv.env['CLOUDFLARE_ACCESS_KEY_ID'];
     if (value == null || value.isEmpty) {
-      throw ConfigurationException('R2_PUBLIC_URL not configured in .env');
+      throw ConfigurationException('CLOUDFLARE_ACCESS_KEY_ID not configured in .env');
     }
-    return value.endsWith('/') ? value.substring(0, value.length - 1) : value;
+    return value;
   }
 
-  /// Backend API endpoint for requesting pre-signed URLs
-  /// Example: https://api.yourdomain.com or http://localhost:3000
-  static String get backendApiUrl {
-    final value = dotenv.env['BACKEND_API_URL'];
+  static String get secretAccessKey {
+    final value = dotenv.env['CLOUDFLARE_SECRET_ACCESS_KEY'];
     if (value == null || value.isEmpty) {
-      throw ConfigurationException('BACKEND_API_URL not configured in .env');
+      throw ConfigurationException('CLOUDFLARE_SECRET_ACCESS_KEY not configured in .env');
+    }
+    return value;
+  }
+
+  static String get publicUrl {
+    final value = dotenv.env['CLOUDFLARE_PUBLIC_URL'];
+    if (value == null || value.isEmpty) {
+      throw ConfigurationException('CLOUDFLARE_PUBLIC_URL not configured in .env');
     }
     return value.endsWith('/') ? value.substring(0, value.length - 1) : value;
   }
@@ -52,26 +48,33 @@ class CloudflareConfig {
     return value == 'true' || value == '1';
   }
 
-  /// Constructs the S3-compatible endpoint URL for R2
-  /// Format: https://{accountId}.r2.cloudflairstorage.com
   static String get s3Endpoint {
-    return 'https://$accountId.r2.cloudflairstorage.com';
+    final customEndpoint = dotenv.env['CLOUDFLARE_S3_ENDPOINT'];
+    if (customEndpoint != null && customEndpoint.isNotEmpty) {
+      return customEndpoint;
+    }
+    
+    final id = accountId; 
+    if (id.isEmpty) {
+      throw ConfigurationException('Account ID is empty');
+    }
+    return 'https://$id.r2.cloudflarestorage.com';
   }
 
-  /// Constructs the upload URL for a specific object in R2
-  /// Used for PUT requests (now with pre-signed URLs)
   static String getUploadUrl(String objectKey) {
-    return '$s3Endpoint/$bucketName/$objectKey';
+    final endpoint = s3Endpoint;
+    final bucket = bucketName;
+    if (bucket.isEmpty) {
+      throw ConfigurationException('Bucket name is empty');
+    }
+    return '$endpoint/$bucket/${objectKey.trim().replaceAll(RegExp(r'^/+|/+$'), '')}';
   }
 
-  /// Constructs the public-facing URL for an uploaded object
-  /// Used for displaying images to users
   static String getPublicUrl(String objectKey) {
     return '$publicUrl/$objectKey';
   }
 }
 
-/// Exception thrown when configuration is missing or invalid
 class ConfigurationException implements Exception {
   final String message;
 
