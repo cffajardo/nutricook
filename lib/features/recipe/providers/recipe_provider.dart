@@ -657,7 +657,7 @@ class ToggleFavoriteNotifier extends AsyncNotifier<void> {
         await collectionService.addRecipeToFavorites(
           recipeId: recipeId,
           recipeName: recipe?.name ?? 'Recipe',
-          thumbnailUrl: recipe?.imageURL?.isNotEmpty == true ? recipe!.imageURL!.first : null,
+          thumbnailUrl: recipe != null && recipe.imageURL.isNotEmpty == true ? recipe.imageURL.first : null,
         );
       }
     });
