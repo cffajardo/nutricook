@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
+import 'package:nutricook/core/enums/notification_type.dart';
 import 'package:nutricook/features/auth/providers/auth_provider.dart';
 import 'package:nutricook/features/notifications/provider/notification_provider.dart';
 import 'package:nutricook/routing/app_routes.dart';
+import 'package:nutricook/services/recipe_service.dart';
 
 class NotificationsPage extends ConsumerWidget {
   const NotificationsPage({super.key});
@@ -65,19 +67,58 @@ class NotificationsPage extends ConsumerWidget {
               return InkWell(
                 borderRadius: BorderRadius.circular(16),
                 onTap: () async {
+                  // Mark notification as read
                   if (!item.isRead) {
                     await ref
                         .read(notificationServiceProvider)
                         .markNotificationAsRead(item.id);
                   }
 
-                  if (context.mounted &&
-                      item.type == 'profile' &&
-                      item.entityId != null) {
-                    context.pushNamed(
-                      AppRoutes.profileUserName,
-                      pathParameters: {'userId': item.entityId!},
-                    );
+                  // Route based on notification type
+                  if (context.mounted && item.type != null) {
+                    final notificationType = NotificationType.fromString(item.type);
+                    if (notificationType != null) {
+                      switch (notificationType) {
+                        case NotificationType.recipeLike:
+                          if (item.entityId != null) {
+                            try {
+                              debugPrint(
+                                  'Fetching recipe: ${item.entityId}');
+                              // Fetch the recipe first
+                              final recipeService = RecipeService();
+                              final recipe = await recipeService
+                                  .getRecipeById(item.entityId!)
+                                  .first;
+                              
+                              if (recipe != null && context.mounted) {
+                                debugPrint(
+                                    'Navigating to recipe: ${recipe.id}');
+                                context.pushNamed(
+                                  AppRoutes.recipeDetailsName,
+                                  extra: recipe,
+                                );
+                              }
+                            } catch (e) {
+                              debugPrint('Error fetching recipe: $e');
+                            }
+                          }
+                          break;
+                        case NotificationType.follow:
+                          if (item.senderId != null) {
+                            debugPrint(
+                                'Navigating to profile: ${item.senderId}');
+                            context.pushNamed(
+                              AppRoutes.profileUserName,
+                              pathParameters: {'userId': item.senderId!},
+                            );
+                          }
+                          break;
+                        case NotificationType.mealReminder:
+                          debugPrint('Navigating to meal planner');
+                          context.pushNamed(AppRoutes.plannerName);
+                          break;
+                      }
+                    }
                   }
                 },
                 child: Container(

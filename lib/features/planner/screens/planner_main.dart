@@ -43,18 +43,34 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
   @override
   void initState() {
     super.initState();
+    
+    // Initialize the current meal based on time settings (only if today's date)
+    if (isSameCalendarDay(_selectedDate, DateTime.now())) {
+      final mealStartHours = ref.read(mealStartHoursProvider);
+      final currentMeal = resolveMealTypeForTime(DateTime.now(), mealStartHours);
+      final index = _mealTypes.indexOf(currentMeal);
+      
+      if (index != -1) {
+        _selectedMeal = currentMeal;
+        _didInitializeAutoMeal = true;
+      }
+    }
+    
+    _dateScrollController = ScrollController(
+      initialScrollOffset: _calculateDateOffset(_selectedDate),
+    );
+    
+    _mealPageController = PageController(
+      viewportFraction: 0.45,
+      initialPage: _mealTypes.indexOf(_selectedMeal),
+    );
+    
+    // Set up periodic sync for auto meal selection
     _clockTimer = Timer.periodic(const Duration(minutes: 1), (_) {
       if (!mounted) return;
       final mealStartHours = ref.read(mealStartHoursProvider);
       _syncAutoMealSelection(mealStartHours);
     });
-    _dateScrollController = ScrollController(
-      initialScrollOffset: _calculateDateOffset(_selectedDate),
-    );
-    _mealPageController = PageController(
-      viewportFraction: 0.45,
-      initialPage: _mealTypes.indexOf(_selectedMeal),
-    );
   }
 
   double _calculateDateOffset(DateTime date) {

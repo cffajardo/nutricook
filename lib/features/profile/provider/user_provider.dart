@@ -13,7 +13,44 @@ final userDataProvider = StreamProvider((ref) {
   if (userId == null) return Stream.value(null);
 
   final userService = ref.watch(userServiceProvider);
-  return userService.getUserDataStream(userId);
+  // Never emit null for signed-in users; emit an empty map if user doc is missing
+  return userService.getUserDataStream(userId).map((data) {
+    if (data == null) return <String, dynamic>{};
+    return data;
+  });
+});
+
+// Core user data provider for routing - excludes frequently-changing social fields
+// to prevent unnecessary router re-evaluations when following/unfollowing
+final coreUserDataProvider = StreamProvider((ref) {
+  final userId = ref.watch(currentUserIdProvider);
+  if (userId == null) return Stream.value(null);
+
+  final userService = ref.watch(userServiceProvider);
+  return userService.getUserDataStream(userId)
+      .map((data) {
+        if (data == null) return <String, dynamic>{};
+        // Only include routing-critical fields, exclude social/frequently-changing data
+        return <String, dynamic>{
+          'id': data['id'],
+          'email': data['email'],
+          'isBanned': data['isBanned'],
+          'isAdmin': data['isAdmin'],
+          'role': data['role'],
+          'username': data['username'],
+        };
+      })
+      .distinct((a, b) {
+        // Only emit if core data actually changed, not just if document was updated elsewhere
+        if (identical(a, b)) return true;
+        if (a.isEmpty && b.isEmpty) return true;
+        return a['id'] == b['id'] &&
+            a['email'] == b['email'] &&
+            a['isBanned'] == b['isBanned'] &&
+            a['isAdmin'] == b['isAdmin'] &&
+            a['role'] == b['role'] &&
+            a['username'] == b['username'];
+      });
 });
 
 final userDataByIdProvider =

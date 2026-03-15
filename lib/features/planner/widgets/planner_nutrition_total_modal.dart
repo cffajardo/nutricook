@@ -23,16 +23,20 @@ class PlannerNutritionTotalsModal extends ConsumerStatefulWidget {
 
 class _PlannerNutritionTotalsModalState
     extends ConsumerState<PlannerNutritionTotalsModal> {
-  bool _showMonthly = false;
+  int _viewMode = 0; // 0: Day, 1: Week, 2: Month
 
   @override
   Widget build(BuildContext context) {
-    final itemsAsync = _showMonthly
-        ? ref.watch(plannerItemsForMonthProvider(widget.selectedDate))
-        : ref.watch(plannerItemsForDateProvider(widget.selectedDate));
-    final nutritionAsync = _showMonthly
-        ? ref.watch(monthlyNutritionTotalProvider(widget.selectedDate))
-        : ref.watch(dailyNutritionTotalProvider(widget.selectedDate));
+    final itemsAsync = _viewMode == 0
+        ? ref.watch(plannerItemsForDateProvider(widget.selectedDate))
+        : _viewMode == 1
+        ? ref.watch(plannerItemsForWeekProvider(widget.selectedDate))
+        : ref.watch(plannerItemsForMonthProvider(widget.selectedDate));
+    final nutritionAsync = _viewMode == 0
+        ? ref.watch(dailyNutritionTotalProvider(widget.selectedDate))
+        : _viewMode == 1
+        ? ref.watch(weeklyNutritionTotalProvider(widget.selectedDate))
+        : ref.watch(monthlyNutritionTotalProvider(widget.selectedDate));
 
     final preferences = ref.watch(userPreferencesProvider).asData?.value;
     final dailyCalorieGoal = preferences?.dailyCalorieGoal ?? 2000;
@@ -40,6 +44,12 @@ class _PlannerNutritionTotalsModalState
       widget.selectedDate.year,
       widget.selectedDate.month,
     );
+
+    // For week view, calculate number of days in the week
+    final weekStart = widget.selectedDate.subtract(
+      Duration(days: widget.selectedDate.weekday - 1),
+    );
+    final daysInWeek = 7;
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.75,
@@ -63,13 +73,19 @@ class _PlannerNutritionTotalsModalState
           ),
           const SizedBox(height: 20),
           Text(
-            _showMonthly ? 'Monthly Nutrition' : 'Daily Nutrition',
+            _viewMode == 0
+                ? 'Daily Nutrition'
+                : _viewMode == 1
+                ? 'Weekly Nutrition'
+                : 'Monthly Nutrition',
             style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900),
           ),
           Text(
-            _showMonthly
-                ? 'Totals for ${widget.selectedDate.month}/${widget.selectedDate.year}'
-                : 'Totals for ${widget.selectedDate.day}/${widget.selectedDate.month}/${widget.selectedDate.year}',
+            _viewMode == 0
+                ? 'Totals for ${widget.selectedDate.day}/${widget.selectedDate.month}/${widget.selectedDate.year}'
+                : _viewMode == 1
+                ? 'Totals for week starting ${weekStart.day}/${weekStart.month}/${weekStart.year}'
+                : 'Totals for ${widget.selectedDate.month}/${widget.selectedDate.year}',
             style: const TextStyle(
               color: Colors.black38,
               fontWeight: FontWeight.bold,
@@ -78,15 +94,16 @@ class _PlannerNutritionTotalsModalState
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
-            child: SegmentedButton<bool>(
+            child: SegmentedButton<int>(
               segments: const [
-                ButtonSegment<bool>(value: false, label: Text('Day')),
-                ButtonSegment<bool>(value: true, label: Text('Month')),
+                ButtonSegment<int>(value: 0, label: Text('Day')),
+                ButtonSegment<int>(value: 1, label: Text('Week')),
+                ButtonSegment<int>(value: 2, label: Text('Month')),
               ],
-              selected: <bool>{_showMonthly},
+              selected: <int>{_viewMode},
               onSelectionChanged: (selection) {
                 setState(() {
-                  _showMonthly = selection.first;
+                  _viewMode = selection.first;
                 });
               },
             ),
@@ -102,27 +119,34 @@ class _PlannerNutritionTotalsModalState
             loading: () => _buildGoalStatus(
               totalCalories: 0,
               dailyCalorieGoal: dailyCalorieGoal,
-              showMonthlyContext: _showMonthly,
+              viewMode: _viewMode,
               monthDayCount: daysInMonth,
+              weekDayCount: daysInWeek,
               isLoading: true,
             ),
             error: (_, _) => _buildGoalStatus(
               totalCalories: 0,
               dailyCalorieGoal: dailyCalorieGoal,
-              showMonthlyContext: _showMonthly,
+              viewMode: _viewMode,
               monthDayCount: daysInMonth,
+              weekDayCount: daysInWeek,
               hasError: true,
             ),
             data: (nutrition) => _buildGoalStatus(
               totalCalories: nutrition.calories,
               dailyCalorieGoal: dailyCalorieGoal,
-              showMonthlyContext: _showMonthly,
+              viewMode: _viewMode,
               monthDayCount: daysInMonth,
+              weekDayCount: daysInWeek,
             ),
           ),
           const SizedBox(height: 32),
           Text(
-            _showMonthly ? 'Monthly Meal Breakdown' : 'Meal Breakdown',
+            _viewMode == 0
+                ? 'Meal Breakdown'
+                : _viewMode == 1
+                ? 'Weekly Meal Breakdown'
+                : 'Monthly Meal Breakdown',
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 12),
@@ -153,14 +177,14 @@ class _PlannerNutritionTotalsModalState
   }
 
   NutritionInfo get _emptyNutrition => const NutritionInfo(
-        calories: 0,
-        carbohydrates: 0,
-        protein: 0,
-        fat: 0,
-        fiber: 0,
-        sugar: 0,
-        sodium: 0,
-      );
+    calories: 0,
+    carbohydrates: 0,
+    protein: 0,
+    fat: 0,
+    fiber: 0,
+    sugar: 0,
+    sodium: 0,
+  );
 
   Widget _buildUnifiedHero(NutritionInfo nutrition) {
     return Container(
@@ -186,7 +210,11 @@ class _PlannerNutritionTotalsModalState
           children: [
             _buildHeroStat('Calories', '${nutrition.calories}', 'kcal'),
             _buildDivider(),
-            _buildHeroStat('Protein', nutrition.protein.toStringAsFixed(1), 'g'),
+            _buildHeroStat(
+              'Protein',
+              nutrition.protein.toStringAsFixed(1),
+              'g',
+            ),
             _buildDivider(),
             _buildHeroStat(
               'Carbs',
@@ -214,14 +242,17 @@ class _PlannerNutritionTotalsModalState
   Widget _buildGoalStatus({
     required int totalCalories,
     required int dailyCalorieGoal,
-    required bool showMonthlyContext,
+    required int viewMode, // 0: Day, 1: Week, 2: Month
     required int monthDayCount,
+    required int weekDayCount,
     bool isLoading = false,
     bool hasError = false,
   }) {
-    final targetCalories = showMonthlyContext
-        ? dailyCalorieGoal * monthDayCount
-        : dailyCalorieGoal;
+    final targetCalories = viewMode == 0
+        ? dailyCalorieGoal
+        : viewMode == 1
+        ? dailyCalorieGoal * weekDayCount
+        : dailyCalorieGoal * monthDayCount;
     final delta = totalCalories - targetCalories;
     final isOver = delta > 0;
     final isOnTarget = delta == 0;
@@ -229,24 +260,26 @@ class _PlannerNutritionTotalsModalState
     final statusColor = hasError
         ? Colors.redAccent
         : isLoading
-            ? Colors.blueGrey
-            : isOnTarget
-                ? Colors.green
-                : isOver
-                    ? Colors.redAccent
-                    : AppColors.rosePink;
+        ? Colors.blueGrey
+        : isOnTarget
+        ? Colors.green
+        : isOver
+        ? Colors.redAccent
+        : AppColors.rosePink;
 
     final statusText = hasError
         ? 'Goal status unavailable'
         : isLoading
-            ? (showMonthlyContext
-                ? 'Checking monthly goal...'
-                : 'Checking daily goal...')
-            : isOnTarget
-                ? 'On goal: $targetCalories kcal'
-                : isOver
-                    ? 'Over by ${delta.abs()} kcal'
-                    : '${delta.abs()} kcal remaining';
+        ? (viewMode == 0
+              ? 'Checking daily goal...'
+              : viewMode == 1
+              ? 'Checking weekly goal...'
+              : 'Checking monthly goal...')
+        : isOnTarget
+        ? 'On goal: $targetCalories kcal'
+        : isOver
+        ? 'Over by ${delta.abs()} kcal'
+        : '${delta.abs()} kcal remaining';
 
     return Container(
       width: double.infinity,
@@ -330,7 +363,7 @@ class _PlannerNutritionTotalsModalState
       Container(width: 1, height: 35, color: Colors.white24);
 
   Widget _buildMealRow(String meal, int calories) {
-    final label = _showMonthly ? '$calories kcal total' : '$calories kcal';
+    final label = _viewMode == 2 ? '$calories kcal total' : '$calories kcal';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),

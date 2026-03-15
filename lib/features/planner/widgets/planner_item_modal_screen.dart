@@ -371,7 +371,7 @@ class PlannerItemModal extends ConsumerWidget {
             _buildDivider(),
             _buildHeroStat('Sugars', sugar.toStringAsFixed(1), 'g'),
             _buildDivider(),
-            _buildHeroStat('Sodium', sodium.toStringAsFixed(0), 'mg'),
+            _buildHeroStat('Sodium', (sodium / 1000).toStringAsFixed(1), 'g'),
           ],
         ),
       ),

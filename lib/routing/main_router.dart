@@ -34,7 +34,7 @@ import 'package:nutricook/services/recipe_service.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final userAsync = ref.watch(authStateProvider);
-  final userDataAsync = ref.watch(userDataProvider);
+  final coreUserDataAsync = ref.watch(coreUserDataProvider);
 
   return GoRouter(
     initialLocation: AppRoutes.splashPath,
@@ -62,8 +62,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             return isAuthRoute ? null : AppRoutes.loginPath;
           }
 
-          final userData = userDataAsync.asData?.value;
-          final isBanned = userData?['isBanned'] == true;
+          // coreUserDataProvider only includes routing-critical fields
+          final userData = coreUserDataAsync.asData?.value;
+          // If userData is null or empty, treat as not banned/not admin
+          final isBanned = userData != null && userData['isBanned'] == true;
           if (isBanned) {
             return isBannedRoute ? null : AppRoutes.bannedPath;
           }
@@ -87,7 +89,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           }
 
           if (isAuthRoute || isVerifyEmailRoute) return AppRoutes.homePath;
-          
+
           // Allow deep link routes for authenticated users
           if (isDeepLinkRoute) return null;
           return null;

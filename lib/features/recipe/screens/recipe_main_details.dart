@@ -18,7 +18,6 @@ import 'package:nutricook/features/collection/screens/add_to_collections_modal.d
 import 'package:nutricook/features/utils/nutrition_calculator.dart';
 import 'package:nutricook/routing/app_routes.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:nutricook/services/recipe_share_service.dart';
 
 class RecipeDetailsScreen extends ConsumerStatefulWidget {
   final Recipe recipe;
@@ -296,14 +295,59 @@ class _RecipeDetailsScreenState extends ConsumerState<RecipeDetailsScreen> {
 
   void _shareRecipe() {
     try {
-      final deepLink = RecipeShareService.generateDeepLink(widget.recipe.id);
-      final caloriesText = widget.recipe.nutritionTotal != null
-          ? '\nCalories: ${widget.recipe.nutritionTotal!.calories} kcal'
-          : '';
-      final shareText =
-          'Check out this recipe: ${widget.recipe.name}\nServings: ${widget.recipe.servings}$caloriesText\n\n$deepLink';
-
-      Share.share(shareText, subject: widget.recipe.name);
+      // Build formatted recipe text
+      final buffer = StringBuffer();
+      
+      buffer.writeln('═══════════════════════════════════');
+      buffer.writeln(widget.recipe.name.toUpperCase());
+      buffer.writeln('═══════════════════════════════════\n');
+      
+      // Basic info
+      buffer.writeln('📋 RECIPE DETAILS');
+      buffer.writeln('Servings: ${widget.recipe.servings}');
+      buffer.writeln('Prep Time: ${widget.recipe.prepTime} min');
+      buffer.writeln('Cook Time: ${widget.recipe.cookTime} min\n');
+      
+      // Nutrition information
+      if (widget.recipe.nutritionTotal != null) {
+        final nutrition = widget.recipe.nutritionTotal!;
+        buffer.writeln('🥗 NUTRITION (per serving)');
+        buffer.writeln('Calories: ${nutrition.calories.toStringAsFixed(0)} kcal');
+        buffer.writeln('Protein: ${nutrition.protein.toStringAsFixed(1)}g');
+        buffer.writeln('Carbs: ${nutrition.carbohydrates.toStringAsFixed(1)}g');
+        buffer.writeln('Fat: ${nutrition.fat.toStringAsFixed(1)}g');
+        buffer.writeln('Fiber: ${nutrition.fiber.toStringAsFixed(1)}g');
+        buffer.writeln('Sugar: ${nutrition.sugar.toStringAsFixed(1)}g');
+        buffer.writeln('Sodium: ${(nutrition.sodium / 1000).toStringAsFixed(1)}g\n');
+      }
+      
+      // Ingredients
+      if (widget.recipe.ingredients.isNotEmpty) {
+        buffer.writeln('🛒 INGREDIENTS');
+        for (final ingredient in widget.recipe.ingredients) {
+          buffer.writeln('• ${ingredient.name}');
+          buffer.writeln('  ${ingredient.quantity} ${ingredient.unitName}');
+          if (ingredient.preparation != null && ingredient.preparation!.isNotEmpty) {
+            buffer.writeln('  (${ingredient.preparation})');
+          }
+        }
+        buffer.writeln('');
+      }
+      
+      // Instructions / Steps
+      if (widget.recipe.steps.isNotEmpty) {
+        buffer.writeln('👨‍🍳 INSTRUCTIONS');
+        for (int i = 0; i < widget.recipe.steps.length; i++) {
+          buffer.writeln('${i + 1}. ${widget.recipe.steps[i].instruction}');
+        }
+        buffer.writeln('');
+      }
+      
+      buffer.writeln('═══════════════════════════════════');
+      buffer.writeln('Shared from NutriCook');
+      buffer.writeln('═══════════════════════════════════');
+      
+      Share.share(buffer.toString(), subject: widget.recipe.name);
     } catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to share recipe: $error')),

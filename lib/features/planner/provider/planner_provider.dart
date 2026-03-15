@@ -11,13 +11,16 @@ final plannerServiceProvider = Provider<PlannerService>((ref) {
 });
 
 // Stream of planner items for a specific date (Only for single day for now)
-final plannerItemsForDateProvider = StreamProvider.family<List<PlannerItem>, DateTime>((ref, selectedDate) {
-  final userId = ref.watch(currentUserIdProvider);
-  
-  if (userId == null) return Stream.value([]);
-  
-  return ref.watch(plannerServiceProvider).getPlannerItemStream(userId, selectedDate);
-});
+final plannerItemsForDateProvider =
+    StreamProvider.family<List<PlannerItem>, DateTime>((ref, selectedDate) {
+      final userId = ref.watch(currentUserIdProvider);
+
+      if (userId == null) return Stream.value([]);
+
+      return ref
+          .watch(plannerServiceProvider)
+          .getPlannerItemStream(userId, selectedDate);
+    });
 
 final plannerItemsForMonthProvider =
     StreamProvider.family<List<PlannerItem>, DateTime>((ref, selectedDate) {
@@ -25,7 +28,11 @@ final plannerItemsForMonthProvider =
       if (userId == null) return Stream.value([]);
 
       final monthStart = DateTime(selectedDate.year, selectedDate.month, 1);
-      final nextMonthStart = DateTime(selectedDate.year, selectedDate.month + 1, 1);
+      final nextMonthStart = DateTime(
+        selectedDate.year,
+        selectedDate.month + 1,
+        1,
+      );
 
       return ref
           .watch(plannerServiceProvider)
@@ -34,23 +41,58 @@ final plannerItemsForMonthProvider =
 
 // Filtered planner items by meal type (breakfast, lunch, dinner, snacks)
 final plannerItemsByMealTypeProvider =
-    Provider.family<List<PlannerItem>, ({DateTime date, String mealType})>((ref, input) {
-  final items = ref.watch(plannerItemsForDateProvider(input.date)).value ?? [];
-  return items.where((item) => item.mealType == input.mealType).toList();
-});
-
+    Provider.family<List<PlannerItem>, ({DateTime date, String mealType})>((
+      ref,
+      input,
+    ) {
+      final items =
+          ref.watch(plannerItemsForDateProvider(input.date)).value ?? [];
+      return items.where((item) => item.mealType == input.mealType).toList();
+    });
 
 // Daily nutrition total for the day based on planner items
-final dailyNutritionTotalProvider = Provider.family<AsyncValue<NutritionInfo>, DateTime>((ref, date) {
-  final plannerItemsAsync = ref.watch(plannerItemsForDateProvider(date));
-  return plannerItemsAsync.whenData((plannerItems) {
-    return calculatePlannerNutrition(plannerItems: plannerItems);
-  });
-});
+final dailyNutritionTotalProvider =
+    Provider.family<AsyncValue<NutritionInfo>, DateTime>((ref, date) {
+      final plannerItemsAsync = ref.watch(plannerItemsForDateProvider(date));
+      return plannerItemsAsync.whenData((plannerItems) {
+        return calculatePlannerNutrition(plannerItems: plannerItems);
+      });
+    });
 
 final monthlyNutritionTotalProvider =
     Provider.family<AsyncValue<NutritionInfo>, DateTime>((ref, date) {
       final plannerItemsAsync = ref.watch(plannerItemsForMonthProvider(date));
+      return plannerItemsAsync.whenData((plannerItems) {
+        return calculatePlannerNutrition(plannerItems: plannerItems);
+      });
+    });
+
+final plannerItemsForWeekProvider =
+    StreamProvider.family<List<PlannerItem>, DateTime>((ref, selectedDate) {
+      final userId = ref.watch(currentUserIdProvider);
+      if (userId == null) return Stream.value([]);
+
+      // Get the start of the week (Monday)
+      final weekStart = selectedDate.subtract(
+        Duration(days: selectedDate.weekday - 1),
+      );
+      final startOfWeek = DateTime(
+        weekStart.year,
+        weekStart.month,
+        weekStart.day,
+      );
+
+      // Get the end of the week (Sunday) - 7 days after start
+      final endOfWeek = startOfWeek.add(const Duration(days: 7));
+
+      return ref
+          .watch(plannerServiceProvider)
+          .getPlannerItemsInRange(userId, startOfWeek, endOfWeek);
+    });
+
+final weeklyNutritionTotalProvider =
+    Provider.family<AsyncValue<NutritionInfo>, DateTime>((ref, date) {
+      final plannerItemsAsync = ref.watch(plannerItemsForWeekProvider(date));
       return plannerItemsAsync.whenData((plannerItems) {
         return calculatePlannerNutrition(plannerItems: plannerItems);
       });

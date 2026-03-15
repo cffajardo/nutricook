@@ -87,13 +87,14 @@ class UserPreferencesNotifier extends AsyncNotifier<UserPreferences> {
     );
   }
 
-  Future<void> updateMealStartHour(String mealType, int hour) {
+  Future<void> updateMealStartHour(String mealType, int minutesValue) {
     return _update((current) {
-      final updatedHours = Map<String, int>.from(current.mealStartHours)
-        ..[mealType] = hour.clamp(0, 23).toInt();
-      return current.copyWith(
-        mealStartHours: sanitizeMealStartHours(updatedHours),
+      final validatedHours = validateAndClampMealTimes(
+        current.mealStartHours,
+        mealType,
+        minutesValue,
       );
+      return current.copyWith(mealStartHours: validatedHours);
     });
   }
 
@@ -183,8 +184,10 @@ class UserPreferencesNotifier extends AsyncNotifier<UserPreferences> {
     }
 
     try {
+      // Sync to separate userPreferences collection instead of main user doc
+      // This prevents preference updates from triggering router re-evaluation
       await FirebaseFirestore.instance
-          .collection(FirestoreConstants.users)
+          .collection('userPreferences')
           .doc(uid)
           .set(update, SetOptions(merge: true));
     } catch (_) {
@@ -200,8 +203,9 @@ class UserPreferencesNotifier extends AsyncNotifier<UserPreferences> {
     }
 
     try {
+      // Load from separate userPreferences collection to avoid coupling with user doc
       final snapshot = await FirebaseFirestore.instance
-          .collection(FirestoreConstants.users)
+          .collection('userPreferences')
           .doc(uid)
           .get();
       final data = snapshot.data();

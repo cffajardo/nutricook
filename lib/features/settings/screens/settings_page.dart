@@ -503,6 +503,7 @@ class _MealTimesSectionContent extends StatelessWidget {
           _MealHourRow(
             mealType: orderedMealTypes[i],
             minutes: sanitizedHours[orderedMealTypes[i]]!,
+            allMealTimes: sanitizedHours,
             onChanged: (minutes) =>
                 notifier.updateMealStartHour(orderedMealTypes[i], minutes),
           ),
@@ -517,11 +518,13 @@ class _MealHourRow extends StatelessWidget {
   const _MealHourRow({
     required this.mealType,
     required this.minutes,
+    required this.allMealTimes,
     required this.onChanged,
   });
 
   final String mealType;
   final int minutes;
+  final Map<String, int> allMealTimes;
   final ValueChanged<int> onChanged;
 
   void _openHourPicker(BuildContext context) {
@@ -560,8 +563,43 @@ class _MealHourRow extends StatelessWidget {
           top: false,
           child: StatefulBuilder(
             builder: (context, setState) {
+              // Calculate what the result would be
+              final isPm = selectedPeriodIndex == 1;
+              final nextHour =
+                  isPm ? (selectedHour12 % 12) + 12 : (selectedHour12 % 12);
+              final selectedMinutes = nextHour * 60 + selectedMinute;
+              
+              // Check if this would violate meal time ordering
+              // "Other" can be at any time, so no validation for it
+              final mealIndex = orderedMealTypes.indexOf(mealType);
+              var warning = '';
+              
+              if (mealType != 'Other') {
+                if (mealIndex > 0) {
+                  final prevMealType = orderedMealTypes[mealIndex - 1];
+                  if (prevMealType != 'Other') {
+                    final prevTime = allMealTimes[prevMealType]!;
+                    if (selectedMinutes < prevTime) {
+                      warning =
+                          '$mealType cannot be before ${prevMealType.toLowerCase()}';
+                    }
+                  }
+                }
+                
+                if (mealIndex < orderedMealTypes.length - 1) {
+                  final nextMealType = orderedMealTypes[mealIndex + 1];
+                  if (nextMealType != 'Other') {
+                    final nextTime = allMealTimes[nextMealType]!;
+                    if (selectedMinutes > nextTime) {
+                      warning =
+                          '$mealType cannot be after ${nextMealType.toLowerCase()}';
+                    }
+                  }
+                }
+              }
+
               return SizedBox(
-                height: 320,
+                height: 360,
                 child: Column(
                   children: [
                     Padding(
@@ -582,15 +620,12 @@ class _MealHourRow extends StatelessWidget {
                           ),
                           const Spacer(),
                           TextButton(
-                            onPressed: () {
-                              final isPm = selectedPeriodIndex == 1;
-                              final nextHour = isPm
-                                  ? (selectedHour12 % 12) + 12
-                                  : (selectedHour12 % 12);
-                              final totalMinutes = nextHour * 60 + selectedMinute;
-                              onChanged(totalMinutes);
-                              Navigator.pop(ctx);
-                            },
+                            onPressed: warning.isEmpty
+                                ? () {
+                                    onChanged(selectedMinutes);
+                                    Navigator.pop(ctx);
+                                  }
+                                : null,
                             child: const Text(
                               'Done',
                               style: TextStyle(fontWeight: FontWeight.w700),
@@ -599,6 +634,40 @@ class _MealHourRow extends StatelessWidget {
                         ],
                       ),
                     ),
+                    if (warning.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withValues(alpha: 0.1),
+                            border: Border.all(
+                              color: Colors.red.withValues(alpha: 0.3),
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.warning_rounded,
+                                color: Colors.red.shade600,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  warning,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.red.shade600,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     const Divider(height: 1),
                     Expanded(
                       child: Row(
