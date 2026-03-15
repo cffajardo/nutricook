@@ -52,7 +52,15 @@ class _CreateCollectionModalState extends State<CreateCollectionModal> {
     final name = _nameController.text.trim();
     final description = _descriptionController.text.trim();
 
-    if (name.isEmpty) return;
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a collection name.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
 
     try {
       setState(() => _isSaving = true);
@@ -84,94 +92,94 @@ class _CreateCollectionModalState extends State<CreateCollectionModal> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.80,
-      decoration: const BoxDecoration(
-        color: Color(0xFFFFF9FA), // Standard page background
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-      ),
-      child: Column(
-        children: [
-          _buildDragHandle(),
-          _buildHeader(),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              physics: const BouncingScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildThumbnailSection(),
-                  const SizedBox(height: 24),
-                  
-                  _buildThemedField(
-                    label: 'Collection Name',
-                    hint: 'e.g. Quick Weeknight Dinners',
-                    controller: _nameController,
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  _buildThemedField(
-                    label: 'Description (Optional)',
-                    hint: 'Tell us what this collection is about...',
-                    controller: _descriptionController,
-                    maxLines: 4,
-                  ),
-                  const SizedBox(height: 24),
-                  
-                  _buildSectionHeader('PRIVACY SETTINGS'),
-                  const SizedBox(height: 12),
-                  _buildPrivacyToggle(),
-                  const SizedBox(height: 32),
-                ],
-              ),
-            ),
+    return DraggableScrollableSheet(
+      initialChildSize: 0.95,
+      minChildSize: 0.6,
+      maxChildSize: 0.95,
+      expand: false,
+      builder: (context, scrollController) {
+        final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+        return Container(
+          padding: EdgeInsets.only(bottom: keyboardInset),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
           ),
-          _buildActionButtons(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDragHandle() {
-    return Center(
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 12),
-        height: 4,
-        width: 40,
-        decoration: BoxDecoration(
-          color: Colors.black12,
-          borderRadius: BorderRadius.circular(2),
-        ),
-      ),
+          child: Column(
+            children: [
+              const SizedBox(height: 12),
+              const _DragHandle(),
+              _buildHeader(),
+              const Divider(height: 1),
+              
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+                  physics: const BouncingScrollPhysics(),
+                  children: [
+                    _buildThumbnailSection(),
+                    const SizedBox(height: 32),
+                    
+                    _buildThemedField(
+                      label: 'Name',
+                      hint: 'e.g. Quick Weeknight Dinners',
+                      controller: _nameController,
+                    ),
+                    const SizedBox(height: 32),
+                    
+                    _buildThemedField(
+                      label: 'Description',
+                      hint: 'Tell us what this collection is about...',
+                      controller: _descriptionController,
+                      maxLines: 4,
+                    ),
+                    const SizedBox(height: 32),
+                    
+                    _buildPrivacySection(),
+                    const SizedBox(height: 40),
+                    
+                    _buildSaveButton(),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
             onPressed: () => context.pop(),
-            icon: const Icon(Icons.chevron_left_rounded, color: AppColors.rosePink, size: 28),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
+            icon: const Icon(
+              Icons.chevron_left,
+              color: AppColors.rosePink,
+              size: 32,
+            ),
           ),
-          Expanded(
-            child: Center(
-              child: Text(
-                widget.isEditMode ? 'Edit Collection' : 'New Collection',
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.5,
-                  color: Colors.black87,
-                ),
+          Text(
+            widget.isEditMode ? 'Edit Collection' : 'New Collection',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          TextButton(
+            onPressed: _isSaving ? null : _handleSave,
+            child: const Text(
+              'Save',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.rosePink,
               ),
             ),
           ),
-          const SizedBox(width: 44), 
         ],
       ),
     );
@@ -180,20 +188,9 @@ class _CreateCollectionModalState extends State<CreateCollectionModal> {
   Widget _buildThumbnailSection() {
     return ImageUploadField(
       folder: 'collections',
-      label: 'Upload Collection Thumbnail',
+      label: 'Upload Thumbnail',
       height: 180,
       onSuccess: (url) => setState(() => _thumbnailUrl = url),
-    );
-  }
-
-  Widget _buildSectionHeader(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w900,
-        color: AppColors.rosePink,
-      ),
     );
   }
 
@@ -206,28 +203,30 @@ class _CreateCollectionModalState extends State<CreateCollectionModal> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label, 
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black54)
-        ),
-        const SizedBox(height: 8),
+        _SectionTitle(title: label),
         TextField(
           controller: controller,
           maxLines: maxLines,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
           decoration: InputDecoration(
             hintText: hint,
+            hintStyle: const TextStyle(color: Colors.black26),
             filled: true,
-            fillColor: Colors.white,
+            fillColor: AppColors.cardRose.withValues(alpha: 0.3),
+            contentPadding: const EdgeInsets.all(16),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(20),
               borderSide: BorderSide(
-                color: AppColors.rosePink.withValues(alpha: 0.1), 
-                width: 1.5
+                color: AppColors.rosePink.withValues(alpha: 0.15),
+                width: 1.5,
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: AppColors.rosePink, width: 1.5),
+              borderRadius: BorderRadius.circular(20),
+              borderSide: const BorderSide(
+                color: AppColors.rosePink,
+                width: 1.5,
+              ),
             ),
           ),
         ),
@@ -235,87 +234,138 @@ class _CreateCollectionModalState extends State<CreateCollectionModal> {
     );
   }
 
-  Widget _buildPrivacyToggle() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cardRose.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.rosePink.withValues(alpha: 0.1), 
-          width: 1.5
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            _isPublic ? Icons.public : Icons.lock_outline, 
-            color: AppColors.rosePink
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Public Collection', style: TextStyle(fontWeight: FontWeight.bold)),
-                Text(
-                  _isPublic ? 'Visible to everyone' : 'Only visible to you', 
-                  style: const TextStyle(fontSize: 11, color: Colors.black54)
-                ),
-              ],
+  Widget _buildPrivacySection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionTitle(title: 'Privacy'),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: AppColors.rosePink.withValues(alpha: 0.14),
+              width: 1.5,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          Switch.adaptive(
-            value: _isPublic,
-            onChanged: (val) => setState(() => _isPublic = val),
-            activeThumbColor: AppColors.rosePink,
-            activeTrackColor: AppColors.rosePink.withValues(alpha: 0.3),
+          child: Row(
+            children: [
+              Icon(
+                _isPublic ? Icons.public : Icons.lock_outline,
+                color: AppColors.rosePink,
+                size: 28,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Public Collection',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _isPublic ? 'Visible to everyone' : 'Only visible to you',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black45,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch.adaptive(
+                value: _isPublic,
+                onChanged: (val) => setState(() => _isPublic = val),
+                activeColor: Colors.white,
+                activeTrackColor: AppColors.rosePink,
+                inactiveThumbColor: Colors.white,
+                inactiveTrackColor: Colors.black12,
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildActionButtons() {
-    return Container(
-      padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(context).padding.bottom + 16),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.black12, width: 0.5)),
+  Widget _buildSaveButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 60,
+      child: ElevatedButton(
+        onPressed: _isSaving ? null : _handleSave,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.rosePink,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+        ),
+        child: _isSaving
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : const Text(
+                'Save Collection',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: OutlinedButton(
-              onPressed: _isSaving ? null : () => context.pop(),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.black12, width: 1.5),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                minimumSize: const Size(0, 55),
-              ),
-              child: const Text(
-                'CANCEL', 
-                style: TextStyle(color: Colors.black54, fontWeight: FontWeight.w900)
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: ElevatedButton(
-              onPressed: _isSaving ? null : _handleSave,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.rosePink,
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                minimumSize: const Size(0, 55),
-              ),
-              child: Text(
-                _isSaving ? 'Saving...' : 'Save Collection',
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
-              ),
-            ),
-          ),
-        ],
+    );
+  }
+}
+
+class _DragHandle extends StatelessWidget {
+  const _DragHandle();
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 40,
+      height: 5,
+      decoration: BoxDecoration(
+        color: Colors.black12,
+        borderRadius: BorderRadius.circular(10),
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  final String title;
+  const _SectionTitle({required this.title});
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 12),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: AppColors.rosePink,
+        ),
       ),
     );
   }

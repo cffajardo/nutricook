@@ -135,6 +135,41 @@ final userRecipesByOwnerProvider = StreamProvider.family<List<Recipe>, String>((
   return ref.watch(recipeServiceProvider).getUserRecipes(ownerId);
 });
 
+// Provider for the "Custom" category: includes the current user's own recipes
+// (public and private) plus public recipes by other users, excluding any
+// recipes authored by the current user's own public recipes (avoid duplication)
+// and recipes from the system account "NutriCook".
+final userCustomRecipesProvider = Provider<AsyncValue<List<Recipe>>>((ref) {
+  final publicAsync = ref.watch(visiblePublicRecipesProvider);
+  final ownAsync = ref.watch(userRecipesProvider);
+  final currentUserId = ref.watch(currentUserIdProvider);
+
+  if (publicAsync is AsyncLoading || ownAsync is AsyncLoading) {
+    return const AsyncValue.loading();
+  }
+  if (publicAsync is AsyncError) return publicAsync;
+  if (ownAsync is AsyncError) return ownAsync;
+
+  final public = publicAsync.asData?.value ?? <Recipe>[];
+  final own = ownAsync.asData?.value ?? <Recipe>[];
+
+  // Filter public recipes: exclude any authored by the current user (to avoid
+  // duplication). Full NutriCook filtering will be added once we confirm
+  // recipes show up in the Custom category.
+  final filteredPublic = public.where((r) {
+    final ownerId = r.ownerId;
+    if (ownerId == null || ownerId.isEmpty) return true;
+    // Exclude current user's public recipes (already in own)
+    if (ownerId == currentUserId) return false;
+    return true;
+  }).toList();
+
+  final merged = <Recipe>[...own, ...filteredPublic];
+  merged.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+  return AsyncValue.data(merged);
+});
+
 // Provider for calculating total nutrition information for a recipe (used in recipe details)
 final recipeNutritionTotalsProvider = Provider<NutritionInfo Function(Recipe)>((
   ref,
@@ -167,30 +202,33 @@ class RecipeFilterInput {
 
 class RecipeAdvancedFilters {
   const RecipeAdvancedFilters({
-    this.maxCalories = 500,
-    this.maxCarbs = 50,
-    this.maxFats = 30,
-    this.maxProtein = 40,
-    this.maxSugar = 20,
-    this.maxFiber = 10,
-    this.maxSodium = 500,
-    this.useCaloriesFilter = false,
-    this.useCarbsFilter = false,
-    this.useFatsFilter = false,
-    this.useProteinFilter = false,
-    this.useSugarFilter = false,
-    this.useFiberFilter = false,
-    this.useSodiumFilter = false,
-    this.caloriesComparisonMode = false,
-    this.carbsComparisonMode = false,
-    this.fatsComparisonMode = false,
-    this.proteinComparisonMode = false,
-    this.sugarComparisonMode = false,
-    this.fiberComparisonMode = false,
-    this.sodiumComparisonMode = false,
-    this.maxCookTimeMinutes = 30,
-    this.includeTags = const <String>[],
-    this.excludeTags = const <String>[],
+    required this.maxCalories,
+    required this.maxCarbs,
+    required this.maxFats,
+    required this.maxProtein,
+    required this.maxSugar,
+    required this.maxFiber,
+    required this.maxSodium,
+    required this.useCaloriesFilter,
+    required this.useCarbsFilter,
+    required this.useFatsFilter,
+    required this.useProteinFilter,
+    required this.useSugarFilter,
+    required this.useFiberFilter,
+    required this.useSodiumFilter,
+    required this.caloriesComparisonMode,
+    required this.carbsComparisonMode,
+    required this.fatsComparisonMode,
+    required this.proteinComparisonMode,
+    required this.sugarComparisonMode,
+    required this.fiberComparisonMode,
+    required this.sodiumComparisonMode,
+    required this.maxCookTimeMinutes,
+    required this.includeTags,
+    required this.excludeTags,
+    required this.userCreatedOnly,
+    required this.createdByOthersOnly,
+    required this.followingOnly,
   });
 
   final double maxCalories;
@@ -217,6 +255,9 @@ class RecipeAdvancedFilters {
   final double maxCookTimeMinutes;
   final List<String> includeTags;
   final List<String> excludeTags;
+  final bool userCreatedOnly;
+  final bool createdByOthersOnly;
+  final bool followingOnly;
 
   RecipeAdvancedFilters copyWith({
     double? maxCalories,
@@ -243,6 +284,9 @@ class RecipeAdvancedFilters {
     double? maxCookTimeMinutes,
     List<String>? includeTags,
     List<String>? excludeTags,
+    bool? userCreatedOnly,
+    bool? createdByOthersOnly,
+    bool? followingOnly,
   }) {
     return RecipeAdvancedFilters(
       maxCalories: maxCalories ?? this.maxCalories,
@@ -269,6 +313,9 @@ class RecipeAdvancedFilters {
       maxCookTimeMinutes: maxCookTimeMinutes ?? this.maxCookTimeMinutes,
       includeTags: includeTags ?? this.includeTags,
       excludeTags: excludeTags ?? this.excludeTags,
+      userCreatedOnly: userCreatedOnly ?? this.userCreatedOnly,
+      createdByOthersOnly: createdByOthersOnly ?? this.createdByOthersOnly,
+      followingOnly: followingOnly ?? this.followingOnly,
     );
   }
 
@@ -283,7 +330,10 @@ class RecipeAdvancedFilters {
         useFiberFilter ||
         useSodiumFilter ||
         maxCookTimeMinutes < defaults.maxCookTimeMinutes ||
-        hasAnyTagFilters;
+        hasAnyTagFilters ||
+        userCreatedOnly ||
+        createdByOthersOnly ||
+        followingOnly;
   }
 
   static const RecipeAdvancedFilters defaults = RecipeAdvancedFilters(
@@ -294,7 +344,26 @@ class RecipeAdvancedFilters {
     maxSugar: 100,
     maxFiber: 50,
     maxSodium: 2500,
+    useCaloriesFilter: false,
+    useCarbsFilter: false,
+    useFatsFilter: false,
+    useProteinFilter: false,
+    useSugarFilter: false,
+    useFiberFilter: false,
+    useSodiumFilter: false,
+    caloriesComparisonMode: false,
+    carbsComparisonMode: false,
+    fatsComparisonMode: false,
+    proteinComparisonMode: false,
+    sugarComparisonMode: false,
+    fiberComparisonMode: false,
+    sodiumComparisonMode: false,
     maxCookTimeMinutes: 180,
+    includeTags: <String>[],
+    excludeTags: <String>[],
+    userCreatedOnly: false,
+    createdByOthersOnly: false,
+    followingOnly: false,
   );
 }
 
@@ -333,6 +402,9 @@ final filteredRecipesProvider =
       final query = input.query;
       final tags = input.tags;
       final filters = ref.watch(recipeAdvancedFiltersProvider);
+      final currentUserId = ref.watch(currentUserIdProvider);
+      final followingIdsAsync = ref.watch(userFollowingIdsProvider);
+      final followingIds = followingIdsAsync.asData?.value ?? const <String>[];
 
       return recipesAsync.whenData((recipes) {
         var result = recipes;
@@ -341,6 +413,8 @@ final filteredRecipesProvider =
           result,
           filters,
           forcedIncludeTags: tags,
+          currentUserId: currentUserId,
+          followingIds: followingIds,
         );
 
         return result;
@@ -351,8 +425,23 @@ List<Recipe> applyAdvancedRecipeFilters(
   List<Recipe> recipes,
   RecipeAdvancedFilters filters, {
   List<String> forcedIncludeTags = const <String>[],
+  String? currentUserId,
+  List<String> followingIds = const <String>[],
 }) {
   var result = recipes;
+
+  // Apply source filters
+  if (filters.userCreatedOnly && currentUserId != null) {
+    result = result.where((recipe) => recipe.ownerId == currentUserId).toList();
+  }
+  
+  if (filters.createdByOthersOnly && currentUserId != null) {
+    result = result.where((recipe) => recipe.ownerId != null && recipe.ownerId != currentUserId).toList();
+  }
+  
+  if (filters.followingOnly && followingIds.isNotEmpty) {
+    result = result.where((recipe) => recipe.ownerId != null && followingIds.contains(recipe.ownerId)).toList();
+  }
 
   result = filterByTag(
     result,

@@ -29,7 +29,7 @@ class ImageUploadField extends StatefulWidget {
   final bool autoUpload;
 
   const ImageUploadField({
-    Key? key,
+    super.key,
     required this.folder,
     this.onSuccess,
     this.onError,
@@ -44,7 +44,7 @@ class ImageUploadField extends StatefulWidget {
     this.maxHeight,
     this.errorDuration = const Duration(seconds: 5),
     this.autoUpload = false,
-  }) : super(key: key);
+  });
 
   @override
   State<ImageUploadField> createState() => _ImageUploadFieldState();
@@ -347,7 +347,7 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
                 // Loading indicator
                 if (_isUploading)
                   Container(
-                    color: Colors.black.withOpacity(0.5),
+                    color: Colors.black.withValues(alpha: 0.5),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [

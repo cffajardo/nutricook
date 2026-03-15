@@ -213,6 +213,9 @@ class _CreateRecipeAboutPageState extends ConsumerState<CreateRecipeAboutPage> {
           keyboardType: TextInputType.number,
           decoration: InputDecoration(
             hintText: '0',
+            hintStyle: TextStyle(
+              color: Colors.black.withValues(alpha: 0.4),
+            ),
             suffixIcon: Padding(
               padding: const EdgeInsets.only(right: 12),
               child: Column(

@@ -6,7 +6,7 @@ import 'package:nutricook/services/notification_trigger.dart';
 /// Development-only page for testing notifications
 /// This page is only shown in debug mode
 class NotificationTestPage extends ConsumerStatefulWidget {
-  const NotificationTestPage({Key? key}) : super(key: key);
+  const NotificationTestPage({super.key});
 
   @override
   ConsumerState<NotificationTestPage> createState() =>
@@ -198,7 +198,7 @@ class _NotificationTestPageState extends ConsumerState<NotificationTestPage> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: _messageColor.withOpacity(0.1),
+                  color: _messageColor.withValues(alpha: 0.1),
                   border: Border.all(color: _messageColor),
                   borderRadius: BorderRadius.circular(8),
                 ),

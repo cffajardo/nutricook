@@ -19,6 +19,7 @@ class EditProfilePage extends ConsumerStatefulWidget {
 class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _deleteController = TextEditingController(); // Added class-level controller for the dialog
 
   bool _initialized = false;
   bool _savingUsername = false;
@@ -31,6 +32,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   void dispose() {
     _usernameController.dispose();
     _emailController.dispose();
+    _deleteController.dispose(); // Properly dispose it here
     super.dispose();
   }
 
@@ -47,7 +49,14 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
         appBar: AppBar(
           backgroundColor: const Color(0xFFFFF9FA),
           elevation: 0,
-          title: const Text('Edit Profile'),
+          leading: IconButton(
+            icon: const Icon(Icons.chevron_left, color: AppColors.rosePink, size: 32),
+            onPressed: () => context.pop(),
+          ),
+          title: const Text(
+            'Edit Profile',
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+          ),
         ),
         body: const Center(child: Text('Please sign in again.')),
       );
@@ -60,13 +69,19 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       appBar: AppBar(
         backgroundColor: const Color(0xFFFFF9FA),
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.chevron_left, color: AppColors.rosePink, size: 32),
+          onPressed: () => context.pop(),
+        ),
         title: const Text(
           'Edit Profile',
-          style: TextStyle(fontWeight: FontWeight.w900),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
         ),
       ),
       body: userDataAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: AppColors.rosePink),
+        ),
         error: (error, _) => Center(child: Text('Failed to load profile: $error')),
         data: (userData) {
           final username =
@@ -84,17 +99,17 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
           return ListView(
             physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 40),
             children: [
               _buildPhotoCard(photoUrl: photoUrl),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
               _buildAccountCard(
                 uid: uid,
                 currentUsername: username,
                 currentEmail: email,
                 isGoogleSignInUser: isGoogleSignInUser,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
               _buildDangerZone(uid: uid),
             ],
           );
@@ -105,11 +120,18 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
   Widget _buildPhotoCard({String? photoUrl}) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.rosePink.withValues(alpha: 0.14)),
+        border: Border.all(color: AppColors.rosePink.withValues(alpha: 0.14), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -129,7 +151,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                   : null,
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
@@ -138,15 +160,18 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                   ? const SizedBox(
                       width: 16,
                       height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.rosePink),
                     )
                   : const Icon(Icons.photo_camera_outlined),
-              label: Text(_updatingPhoto ? 'Updating photo...' : 'Change Profile Picture'),
+              label: Text(
+                _updatingPhoto ? 'Updating photo...' : 'Change Profile Picture',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.rosePink,
-                side: BorderSide(color: AppColors.rosePink.withValues(alpha: 0.5)),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                side: BorderSide(color: AppColors.rosePink.withValues(alpha: 0.3), width: 1.5),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                padding: const EdgeInsets.symmetric(vertical: 16),
               ),
             ),
           ),
@@ -162,28 +187,37 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     required bool isGoogleSignInUser,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.rosePink.withValues(alpha: 0.14)),
+        border: Border.all(color: AppColors.rosePink.withValues(alpha: 0.14), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Account',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
-          ),
-          const SizedBox(height: 14),
-          TextField(
-            controller: _usernameController,
-            decoration: const InputDecoration(
-              labelText: 'Username',
-              border: OutlineInputBorder(),
+            'Account Details',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.rosePink,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 20),
+          
+          _buildThemedField(
+            label: 'Username',
+            controller: _usernameController,
+          ),
+          const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -192,31 +226,38 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                   : () => _updateUsername(uid: uid, currentUsername: currentUsername),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.rosePink,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               ),
-              child: Text(_savingUsername ? 'Saving...' : 'Save Username'),
+              child: Text(
+                _savingUsername ? 'Saving...' : 'Save Username',
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+              ),
             ),
           ),
+          
           if (!isGoogleSignInUser) ...[
-            const SizedBox(height: 18),
-            TextField(
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Divider(height: 1),
+            ),
+            
+            _buildThemedField(
+              label: 'Email',
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                border: OutlineInputBorder(),
-              ),
             ),
             const SizedBox(height: 8),
             Text(
               'Changing email sends a verification link to the new address.',
               style: TextStyle(
-                color: Colors.black.withValues(alpha: 0.6),
+                color: Colors.black.withValues(alpha: 0.45),
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -225,23 +266,32 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                     : () => _updateEmail(uid: uid, currentEmail: currentEmail),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.rosePink,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                 ),
-                child: Text(_savingEmail ? 'Updating...' : 'Change Email'),
+                child: Text(
+                  _savingEmail ? 'Updating...' : 'Change Email',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                ),
               ),
             ),
           ],
-          const SizedBox(height: 18),
+          const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
               onPressed: _sendingReset ? null : _sendPasswordReset,
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.rosePink,
-                side: BorderSide(color: AppColors.rosePink.withValues(alpha: 0.4)),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                side: BorderSide(color: AppColors.rosePink.withValues(alpha: 0.3), width: 1.5),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                padding: const EdgeInsets.symmetric(vertical: 16),
               ),
-              child: Text(_sendingReset ? 'Sending...' : 'Send Password Reset Email'),
+              child: Text(
+                _sendingReset ? 'Sending...' : 'Send Password Reset Email',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
           ),
         ],
@@ -249,13 +299,58 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     );
   }
 
+  Widget _buildThemedField({
+    required String label,
+    required TextEditingController controller,
+    TextInputType? keyboardType,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+            color: Colors.black54,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          keyboardType: keyboardType,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: AppColors.cardRose.withValues(alpha: 0.3),
+            contentPadding: const EdgeInsets.all(16),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(20),
+              borderSide: BorderSide(
+                color: AppColors.rosePink.withValues(alpha: 0.15),
+                width: 1.5,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(20),
+              borderSide: const BorderSide(
+                color: AppColors.rosePink,
+                width: 1.5,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildDangerZone({required String uid}) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.redAccent.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
+        border: Border.all(color: Colors.redAccent.withValues(alpha: 0.2), width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -263,8 +358,8 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
           const Text(
             'Danger Zone',
             style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
               color: Colors.redAccent,
             ),
           ),
@@ -272,21 +367,28 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
           Text(
             'Deleting your account is permanent and cannot be undone.',
             style: TextStyle(
-              color: Colors.black.withValues(alpha: 0.65),
+              color: Colors.black.withValues(alpha: 0.55),
               fontWeight: FontWeight.w600,
+              fontSize: 14,
+              height: 1.3,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: _deletingAccount ? null : () => _deleteAccount(uid),
               icon: const Icon(Icons.delete_forever_rounded),
-              label: Text(_deletingAccount ? 'Deleting...' : 'Delete Account'),
+              label: Text(
+                _deletingAccount ? 'Deleting...' : 'Delete Account',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.redAccent,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               ),
             ),
           ),
@@ -300,7 +402,10 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
-        SnackBar(content: Text(message)),
+        SnackBar(
+          content: Text(message),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
   }
 
@@ -333,14 +438,20 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(content: Text('Profile picture updated.')),
+          const SnackBar(
+            content: Text('Profile picture updated.'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          SnackBar(content: Text('Failed to update picture: $e')),
+          SnackBar(
+            content: Text('Failed to update picture: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
     } finally {
       if (mounted) setState(() => _updatingPhoto = false);
@@ -429,23 +540,39 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   }
 
   Future<void> _deleteAccount(String uid) async {
-    final controller = TextEditingController();
+    _deleteController.clear(); // Ensure it is empty when opened
+    
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete account?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Delete account?', style: TextStyle(fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Type DELETE to confirm. This action cannot be undone.'),
-            const SizedBox(height: 12),
+            const Text(
+              'Type DELETE to confirm. This action cannot be undone.',
+              style: TextStyle(height: 1.35),
+            ),
+            const SizedBox(height: 16),
             TextField(
-              controller: controller,
+              controller: _deleteController,
               autofocus: true,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
+              style: const TextStyle(fontWeight: FontWeight.bold),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.redAccent.withValues(alpha: 0.05),
                 hintText: 'DELETE',
+                contentPadding: const EdgeInsets.all(16),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: Colors.redAccent.withValues(alpha: 0.2), width: 1.5),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+                ),
               ),
             ),
           ],
@@ -453,19 +580,16 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: const Text('Cancel', style: TextStyle(color: Colors.black54)),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, controller.text.trim() == 'DELETE'),
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: Colors.redAccent),
-            ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, _deleteController.text.trim() == 'DELETE'),
+            style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),
+            child: const Text('Delete'),
           ),
         ],
       ),
     );
-    controller.dispose();
 
     if (confirm != true) return;
 

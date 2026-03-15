@@ -778,7 +778,7 @@ class _MealHourRow extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '${mealType} starts at ${formatMealHourLabel(minutes)}',
+                  '$mealType starts at ${formatMealHourLabel(minutes)}',
                   style: const TextStyle(fontSize: 12, color: Colors.black45),
                 ),
               ],
@@ -1349,7 +1349,7 @@ class _AllergenDetailsSheet extends StatelessWidget {
                         ),
                       );
                     },
-                    separatorBuilder: (_, __) => Divider(
+                    separatorBuilder: (_, _) => Divider(
                       height: 1,
                       color: AppColors.rosePink.withValues(alpha: 0.08),
                     ),

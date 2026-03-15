@@ -353,7 +353,7 @@ final libraryItemDetailProvider =
             fields: <LibraryItemDetailField>[
               LibraryItemDetailField(
                 label: 'Recommended Daily Value',
-                value: '${nutrition.recommendedDailyValue.toStringAsFixed(2)}',
+                value: nutrition.recommendedDailyValue.toStringAsFixed(2),
               ),
             ],
           );

@@ -20,19 +20,22 @@ class CollectionRecipesScreen extends ConsumerWidget {
       backgroundColor: const Color(0xFFFFF9FA), // System background
       appBar: AppBar(
         title: Text(
-          collection.name.toUpperCase(),
+          collection.name, // Removed toUpperCase()
           style: const TextStyle(
             color: Colors.black,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.bold, // Softened from w900
             fontSize: 18,
-            letterSpacing: -0.5,
           ),
         ),
         centerTitle: true,
         backgroundColor: const Color(0xFFFFF9FA),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black, size: 20),
+          icon: const Icon(
+            Icons.chevron_left, // Unified chevron icon
+            color: AppColors.rosePink,
+            size: 32,
+          ),
           onPressed: () => context.pop(),
         ),
       ),
@@ -46,13 +49,19 @@ class CollectionRecipesScreen extends ConsumerWidget {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
-            child: CircularProgressIndicator(color: AppColors.rosePink, strokeWidth: 3),
+            child: CircularProgressIndicator(
+              color: AppColors.rosePink,
+              strokeWidth: 3,
+            ),
           );
         }
 
         if (snapshot.hasError) {
           return Center(
-            child: Text('Error: ${snapshot.error}', style: const TextStyle(fontWeight: FontWeight.bold)),
+            child: Text(
+              'Error: ${snapshot.error}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
           );
         }
 
@@ -66,21 +75,36 @@ class CollectionRecipesScreen extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: AppColors.cardRose,
+                    color: AppColors.cardRose.withValues(alpha: 0.5),
                     shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.rosePink.withValues(alpha: 0.1), width: 1.5),
+                    border: Border.all(
+                      color: AppColors.rosePink.withValues(alpha: 0.15),
+                      width: 1.5,
+                    ),
                   ),
-                  child: const Icon(Icons.restaurant_menu_rounded, size: 48, color: AppColors.rosePink),
+                  child: const Icon(
+                    Icons.restaurant_menu_rounded,
+                    size: 48,
+                    color: AppColors.rosePink,
+                  ),
                 ),
                 const SizedBox(height: 24),
                 const Text(
-                  'NO RECIPES YET',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.black87),
+                  'No recipes yet', // Sentence case
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Start adding to ${collection.name}',
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black26),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black45,
+                  ),
                 ),
               ],
             ),
@@ -104,9 +128,9 @@ class CollectionRecipesScreen extends ConsumerWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20), // Standardized to 20px
         border: Border.all(
-          color: AppColors.rosePink.withValues(alpha: 0.1),
+          color: AppColors.rosePink.withValues(alpha: 0.14),
           width: 1.5,
         ),
         boxShadow: [
@@ -118,7 +142,7 @@ class CollectionRecipesScreen extends ConsumerWidget {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(18), // Slightly smaller than outer radius
         child: Material(
           color: Colors.transparent,
           child: InkWell(
@@ -134,9 +158,12 @@ class CollectionRecipesScreen extends ConsumerWidget {
                     width: 90,
                     height: 90,
                     decoration: BoxDecoration(
-                      color: AppColors.cardRose,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.rosePink.withValues(alpha: 0.05), width: 1),
+                      color: AppColors.cardRose.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: AppColors.rosePink.withValues(alpha: 0.1),
+                        width: 1,
+                      ),
                       image: item.thumbnailUrl != null
                           ? DecorationImage(
                               image: NetworkImage(item.thumbnailUrl!),
@@ -145,7 +172,11 @@ class CollectionRecipesScreen extends ConsumerWidget {
                           : null,
                     ),
                     child: item.thumbnailUrl == null
-                        ? const Icon(Icons.restaurant_rounded, color: AppColors.rosePink, size: 28)
+                        ? const Icon(
+                            Icons.restaurant_rounded,
+                            color: AppColors.rosePink,
+                            size: 28,
+                          )
                         : null,
                   ),
                   const SizedBox(width: 16),
@@ -156,28 +187,34 @@ class CollectionRecipesScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          item.recipeName.toUpperCase(),
+                          item.recipeName, // Removed toUpperCase()
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w900,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                             color: Colors.black87,
-                            height: 1.1,
+                            height: 1.25,
                           ),
                         ),
-                        const SizedBox(height: 10),
-                        Row(
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
                           children: [
                             _buildBadge(Icons.timer_outlined, '${item.prepTime + item.cookTime}m'),
-                            const SizedBox(width: 8),
                             _buildBadge(Icons.bolt_rounded, '350 cal'), // Mock data for calories
                           ],
                         ),
                       ],
                     ),
                   ),
-                  const Icon(Icons.chevron_right_rounded, color: Colors.black12, size: 24),
+                  const SizedBox(width: 8),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.rosePink, // Changed to rose pink to match the other chevrons
+                    size: 28,
+                  ),
                 ],
               ),
             ),
@@ -189,21 +226,21 @@ class CollectionRecipesScreen extends ConsumerWidget {
 
   Widget _buildBadge(IconData icon, String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColors.cardRose.withValues(alpha: 0.5),
+        color: AppColors.cardRose.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: AppColors.rosePink),
+          Icon(icon, size: 14, color: AppColors.rosePink),
           const SizedBox(width: 4),
           Text(
             label,
             style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w900,
+              fontSize: 11,
+              fontWeight: FontWeight.bold, 
               color: AppColors.rosePink,
             ),
           ),

@@ -174,7 +174,7 @@ class _RecipeStackCard extends ConsumerWidget {
                 Image.network(
                   imageUrl,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _fallbackBg(),
+                  errorBuilder: (_, _, _) => _fallbackBg(),
                 )
               else
                 _fallbackBg(),

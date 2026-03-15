@@ -172,7 +172,7 @@ class CustomIngredientsScreen extends ConsumerWidget {
                     ? Image.network(
                         item.imageUrl!,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _buildImagePlaceholder(),
+                        errorBuilder: (_, _, _) => _buildImagePlaceholder(),
                       )
                     : _buildImagePlaceholder(),
               ),

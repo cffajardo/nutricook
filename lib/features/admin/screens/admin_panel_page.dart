@@ -838,7 +838,7 @@ class _ReportCard extends ConsumerWidget {
                   'Loading...',
                   style: TextStyle(color: Colors.black54),
                 ),
-                error: (_, __) => Text(
+                error: (_, _) => Text(
                   'Error loading recipe',
                   style: TextStyle(color: Colors.black54),
                 ),
@@ -873,7 +873,7 @@ class _ReportCard extends ConsumerWidget {
                   'Loading...',
                   style: TextStyle(color: Colors.black54),
                 ),
-                error: (_, __) => Text(
+                error: (_, _) => Text(
                   'Unknown User (${report.reporterId})',
                   style: TextStyle(color: Colors.black54),
                 ),

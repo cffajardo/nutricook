@@ -158,7 +158,7 @@ class LibrarySingleItemDetailScreen extends ConsumerWidget {
             ? Image.network(
                 imageUrl,
                 fit: BoxFit.cover,
-                errorBuilder: (context, _, __) => const Center(
+                errorBuilder: (context, _, _) => const Center(
                   child: Icon(
                     Icons.image_not_supported_outlined,
                     color: AppColors.rosePink,

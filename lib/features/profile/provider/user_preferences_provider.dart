@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:nutricook/core/constants.dart';
 import 'package:nutricook/core/meal_time_preferences.dart';
 import 'package:nutricook/features/auth/providers/auth_provider.dart';
 import 'package:nutricook/features/profile/service/user_preferences_service.dart';

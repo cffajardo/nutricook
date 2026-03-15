@@ -37,9 +37,9 @@ class _RecipeMainScreenState extends ConsumerState<RecipeMainScreen> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFFFFF9FA), // Unified pink tint
+      color: const Color(0xFFFFF9FA), 
       child: SafeArea(
-        bottom: false, // Prevents gap above NavBar
+        bottom: false, 
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -100,7 +100,7 @@ class _RecipeMainScreenState extends ConsumerState<RecipeMainScreen> {
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: 'Search ingredients...',
+                  hintText: 'Search recipes...',
                   prefixIcon: const Icon(Icons.search, color: AppColors.rosePink),
                   filled: true,
                   fillColor: AppColors.cardRose.withValues(alpha: 0.3),
@@ -146,7 +146,7 @@ class _RecipeMainScreenState extends ConsumerState<RecipeMainScreen> {
   }
 
   Widget _buildCategoryPills() {
-    final categories = ['Cuisine', 'Nutrition', 'Dietary', 'Difficulty', 'Custom'];
+    final categories = ['Cuisine', 'Nutrition', 'Dietary', 'Difficulty'];
     return SizedBox(
       height: 60,
       child: ListView.builder(
@@ -159,14 +159,10 @@ class _RecipeMainScreenState extends ConsumerState<RecipeMainScreen> {
             child: ActionChip(
               onPressed: () {
                     final tappedCategory = categories[index];
-                    if (tappedCategory == 'Custom') {
-                      context.pushNamed(AppRoutes.userCustomRecipesName);
-                    } else {
-                      context.pushNamed(
-                        AppRoutes.subCategoryName,
-                        pathParameters: {'category': tappedCategory},
-                      );
-                    }
+                    context.pushNamed(
+                      AppRoutes.subCategoryName,
+                      pathParameters: {'category': tappedCategory},
+                    );
                   },
               label: Text(categories[index]),
               backgroundColor: Colors.white,

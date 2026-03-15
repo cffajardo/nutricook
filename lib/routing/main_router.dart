@@ -90,7 +90,6 @@ final routerProvider = Provider<GoRouter>((ref) {
 
           if (isAuthRoute || isVerifyEmailRoute) return AppRoutes.homePath;
 
-          // Allow deep link routes for authenticated users
           if (isDeepLinkRoute) return null;
           return null;
         },
@@ -103,7 +102,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const SplashScreen(),
       ),
 
-      // Deep link route for shared recipes
       GoRoute(
         path: '/recipe/:recipeId',
         name: 'recipe_deeplink',
@@ -211,6 +209,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                   '${AppRoutes.profilePath}/${AppRoutes.profileConnectionsPath}';
 
           return Scaffold(
+            backgroundColor: Colors.white,
             body: navigationShell,
             bottomNavigationBar: hideBottomNav
                 ? null
@@ -223,7 +222,13 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.recipesPath,
                 name: AppRoutes.recipesName,
-                builder: (context, state) => const RecipeMainScreen(),
+                builder: (context, state) => PopScope(
+                  canPop: false,
+                  onPopInvokedWithResult: (didPop, result) {
+                    if (!didPop) context.go(AppRoutes.homePath);
+                  },
+                  child: const RecipeMainScreen(),
+                ),
                 routes: [
                   GoRoute(
                     path: 'create',
@@ -281,7 +286,13 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.plannerPath,
                 name: AppRoutes.plannerName,
-                builder: (context, state) => const PlannerScreen(),
+                builder: (context, state) => PopScope(
+                  canPop: false,
+                  onPopInvokedWithResult: (didPop, result) {
+                    if (!didPop) context.go(AppRoutes.homePath);
+                  },
+                  child: const PlannerScreen(),
+                ),
               ),
             ],
           ),
@@ -291,7 +302,13 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.homePath,
                 name: AppRoutes.homeName,
-                builder: (context, state) => const HomeScreen(),
+                builder: (context, state) => PopScope(
+                  canPop: false,
+                  onPopInvokedWithResult: (didPop, result) {
+                    if (!didPop) return;
+                  },
+                  child: const HomeScreen(),
+                ),
                 routes: [
                   GoRoute(
                     path: 'notifications',
@@ -316,7 +333,13 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.libraryPath,
                 name: AppRoutes.libraryName,
-                builder: (context, state) => const LibraryMainScreen(),
+                builder: (context, state) => PopScope(
+                  canPop: false,
+                  onPopInvokedWithResult: (didPop, result) {
+                    if (!didPop) context.go(AppRoutes.homePath);
+                  },
+                  child: const LibraryMainScreen(),
+                ),
                 routes: [
                   GoRoute(
                     path: ':categoryId',
@@ -352,7 +375,13 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.profilePath,
                 name: AppRoutes.profileName,
-                builder: (context, state) => const ProfilePage(),
+                builder: (context, state) => PopScope(
+                  canPop: false,
+                  onPopInvokedWithResult: (didPop, result) {
+                    if (!didPop) context.go(AppRoutes.homePath);
+                  },
+                  child: const ProfilePage(),
+                ),
                 routes: [
                   GoRoute(
                     path: AppRoutes.profileConnectionsPath,

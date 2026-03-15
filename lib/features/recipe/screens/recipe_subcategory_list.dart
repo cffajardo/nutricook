@@ -113,7 +113,6 @@ class _RecipeCategoryListScreenState
                   filled: true,
                   fillColor: AppColors.cardRose.withValues(alpha: 0.3),
                   contentPadding: EdgeInsets.zero,
-                  // 1.5 width border to match your aesthetic
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(30),
                     borderSide: BorderSide(
@@ -175,7 +174,27 @@ class _RecipeCategoryListScreenState
 
   Widget _buildRecipeGrid(WidgetRef ref) {
     final advancedFilters = ref.watch(recipeAdvancedFiltersProvider);
+    if (widget.subCategoryName == 'Custom') {
+      final customAsync = ref.watch(userCustomRecipesProvider);
 
+      return customAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(child: Text('Failed to load recipes: $error')),
+        data: (recipes) {
+          var filtered = recipes
+              .where((recipe) => _matchesQuery(recipe, _searchController.text))
+              .toList();
+
+          filtered = applyAdvancedRecipeFilters(filtered, advancedFilters);
+
+          if (filtered.isEmpty) {
+            return const Center(child: Text('No recipes found in this category.'));
+          }
+
+          return _buildGrid(filtered);
+        },
+      );
+    }
     if (widget.category == 'My Recipes') {
       final userRecipesAsync = ref.watch(userRecipesProvider);
       return userRecipesAsync.when(

@@ -167,7 +167,7 @@ class PlannerItemModal extends ConsumerWidget {
                 const Divider(height: 24),
                 _buildDetailRow(
                   'Recipe servings',
-                  '${_formatServingMultiplier(item.servingMultiplier)}',
+                  _formatServingMultiplier(item.servingMultiplier),
                 ),
                 const Divider(height: 24),
                 _buildDetailRow(

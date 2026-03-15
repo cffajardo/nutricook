@@ -264,7 +264,7 @@ class _LibraryItemDetailScreenState
           width: 50,
           height: 50,
           fit: BoxFit.cover,
-          errorBuilder: (context, _, __) {
+          errorBuilder: (context, _, _) {
             return _buildFallbackIcon();
           },
         ),

@@ -48,6 +48,9 @@ class _PlannerRecipeFilterModalState
       _sodiumComparisonMode = false;
   Set<String> _includeTags = <String>{};
   Set<String> _excludeTags = <String>{};
+  bool _userCreatedOnly = false;
+  bool _createdByOthersOnly = false;
+  bool _followingOnly = false;
 
   @override
   void initState() {
@@ -77,6 +80,9 @@ class _PlannerRecipeFilterModalState
     _cookTime = filters.maxCookTimeMinutes;
     _includeTags = filters.includeTags.toSet();
     _excludeTags = filters.excludeTags.toSet();
+    _userCreatedOnly = filters.userCreatedOnly;
+    _createdByOthersOnly = filters.createdByOthersOnly;
+    _followingOnly = filters.followingOnly;
 
     _calController = TextEditingController(text: _calories.round().toString());
     _carbController = TextEditingController(text: _carbs.round().toString());
@@ -288,6 +294,52 @@ class _PlannerRecipeFilterModalState
                         ),
                       ],
                     ),
+                    _buildExpansionCategory(
+                      title: 'Source',
+                      icon: Icons.person_outlined,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          child: Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text('My Recipes'),
+                                  Checkbox(
+                                    value: _userCreatedOnly,
+                                    onChanged: (value) => setState(() => _userCreatedOnly = value ?? false),
+                                    activeColor: AppColors.rosePink,
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text('Created by Users'),
+                                  Checkbox(
+                                    value: _createdByOthersOnly,
+                                    onChanged: (value) => setState(() => _createdByOthersOnly = value ?? false),
+                                    activeColor: AppColors.rosePink,
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text('Following'),
+                                  Checkbox(
+                                    value: _followingOnly,
+                                    onChanged: (value) => setState(() => _followingOnly = value ?? false),
+                                    activeColor: AppColors.rosePink,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -472,8 +524,9 @@ class _PlannerRecipeFilterModalState
                       onChanged: isEnabled
                           ? (text) {
                               final val = double.tryParse(text) ?? 0;
-                              if (val <= max)
+                              if (val <= max) {
                                 setState(() => _updateMetric(label, val));
+                              }
                             }
                           : null,
                     ),
@@ -636,6 +689,9 @@ class _PlannerRecipeFilterModalState
                         maxCookTimeMinutes: _cookTime,
                         includeTags: _includeTags.toList(),
                         excludeTags: _excludeTags.toList(),
+                        userCreatedOnly: _userCreatedOnly,
+                        createdByOthersOnly: _createdByOthersOnly,
+                        followingOnly: _followingOnly,
                       ),
                     );
                 Navigator.pop(context);

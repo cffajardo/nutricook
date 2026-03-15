@@ -579,7 +579,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                 if (isOwnProfile) ...[
                   const SizedBox(height: 24),
                   FilledButton.icon(
-                    onPressed: () => _showCreateCollectionDialog(),
+                    onPressed: () => _showCreateCollectionModal(),
                     icon: const Icon(Icons.add_rounded),
                     label: const Text('Create Collection'),
                     style: FilledButton.styleFrom(
@@ -601,7 +601,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                 child: SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
-                    onPressed: () => _showCreateCollectionDialog(),
+                    onPressed: () => _showCreateCollectionModal(),
                     icon: const Icon(Icons.add_rounded),
                     label: const Text('New Collection'),
                     style: FilledButton.styleFrom(
@@ -794,15 +794,18 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     );
   }
 
-  Future<void> _showCreateCollectionDialog() async {
+  Future<void> _showCreateCollectionModal() async {
     if (!mounted) return;
+    
     await showModalBottomSheet<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      isScrollControlled: true, 
+      useRootNavigator: true,  
+      backgroundColor: Colors.transparent, 
+      useSafeArea: true,      
       builder: (ctx) => CreateCollectionModal(
         onCollectionCreated: () {
-          // Modal will close automatically, Riverpod will refresh the data
+          Navigator.of(ctx).pop();
         },
       ),
     );
@@ -811,15 +814,17 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
   void _showCollectionDetail(Collection collection, bool isOwnProfile) {
     showModalBottomSheet<void>(
       context: context,
-      isScrollControlled: true,
+      isScrollControlled: true, 
       backgroundColor: Colors.transparent,
+      useRootNavigator: true,
+      useSafeArea: true, 
       builder: (ctx) => CollectionDetailModal(
         collection: collection,
         isOwner: isOwnProfile,
         onEdit: () => _showEditCollectionModal(collection),
         onDelete: () => _showDeleteCollectionDialog(collection),
         onViewRecipes: () {
-          Navigator.pop(context);
+          Navigator.of(ctx).pop();
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -833,24 +838,25 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
 
   Future<void> _showEditCollectionModal(Collection collection) async {
     if (!mounted) return;
-    await showModalBottomSheet<void>(
+    await showDialog<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => CreateCollectionModal(
-        isEditMode: true,
-        collectionId: collection.id,
-        initialName: collection.name,
-        initialDescription: collection.description,
-        initialIsPublic: collection.isPublic,
-        onCollectionCreated: () {
-          // Modal will close automatically
-        },
+      barrierDismissible: true,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.zero,
+        child: CreateCollectionModal(
+          isEditMode: true,
+          collectionId: collection.id,
+          initialName: collection.name,
+          initialDescription: collection.description,
+          initialIsPublic: collection.isPublic,
+          onCollectionCreated: () {
+            Navigator.of(ctx).pop();
+          },
+        ),
       ),
     );
   }
-
-
 
   Future<void> _showDeleteCollectionDialog(Collection collection) async {
     return showDialog(

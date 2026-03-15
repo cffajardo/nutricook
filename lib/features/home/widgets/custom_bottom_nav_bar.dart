@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
@@ -28,7 +27,6 @@ class CustomBottomNavBar extends StatelessWidget {
   }
 
   void _onItemTapped(int index, BuildContext context) {
-    // Always navigate to the root of each branch to reset nested navigation state
     switch (index) {
       case 0:
         context.go(AppRoutes.recipesPath);
@@ -52,43 +50,32 @@ class CustomBottomNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final currentIndex = _calculateSelectedIndex(context);
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(32),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.85),
-                borderRadius: BorderRadius.circular(32),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.3),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: List.generate(_icons.length, (index) {
-                  final isSelected = index == currentIndex;
-                  final isCenter = index == 2;
-
-                  if (isCenter)
-                    return _buildCenterItem(index, isSelected, context);
-                  return _buildSideItem(index, isSelected, context);
-                }),
-              ),
-            ),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 24,
+            spreadRadius: 2,
+            offset: const Offset(0, -4), // top shadow
           ),
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: List.generate(_icons.length, (index) {
+            final isSelected = index == currentIndex;
+            final isCenter = index == 2;
+
+            if (isCenter) {
+              return _buildCenterItem(index, isSelected, context);
+            }
+            return _buildSideItem(index, isSelected, context);
+          }),
         ),
       ),
     );

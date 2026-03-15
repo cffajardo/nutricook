@@ -164,12 +164,8 @@ class AuthService {
     try {
       await _initializeGoogleSignIn();
 
-      final GoogleSignInAccount? googleUser = await _googleSignIn
+      final GoogleSignInAccount googleUser = await _googleSignIn
           .authenticate();
-
-      if (googleUser == null) {
-        throw Exception('Google sign-in was cancelled.');
-      }
 
       final GoogleSignInAuthentication googleAuth =
           googleUser.authentication;
@@ -229,8 +225,9 @@ class AuthService {
 
   Future<void> sendEmailVerification() async {
     final user = _auth.currentUser;
-    if (user == null)
+    if (user == null) {
       throw Exception('You must be signed in to verify your email.');
+    }
     if (user.email == null || user.email!.isEmpty) {
       throw Exception('No email address to verify.');
     }
