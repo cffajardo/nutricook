@@ -558,6 +558,8 @@ class RecipeCreationState {
     this.ingredients = const <RecipeIngredient>[],
     this.steps = const <RecipeStep>[],
     this.imageUrl = '',
+    this.editingRecipeId = '',
+    this.pendingIngredients = const <dynamic>[],
   });
 
   final String name;
@@ -570,6 +572,8 @@ class RecipeCreationState {
   final List<RecipeIngredient> ingredients;
   final List<RecipeStep> steps;
   final String imageUrl;
+  final String editingRecipeId;
+  final List<dynamic> pendingIngredients;
 
   RecipeCreationState copyWith({
     String? name,
@@ -582,6 +586,8 @@ class RecipeCreationState {
     List<RecipeIngredient>? ingredients,
     List<RecipeStep>? steps,
     String? imageUrl,
+    String? editingRecipeId,
+    List<dynamic>? pendingIngredients,
   }) {
     return RecipeCreationState(
       name: name ?? this.name,
@@ -594,17 +600,25 @@ class RecipeCreationState {
       ingredients: ingredients ?? this.ingredients,
       steps: steps ?? this.steps,
       imageUrl: imageUrl ?? this.imageUrl,
+      editingRecipeId: editingRecipeId ?? this.editingRecipeId,
+      pendingIngredients: pendingIngredients ?? this.pendingIngredients,
     );
   }
 
   bool get canProceedFromAbout =>
       name.trim().isNotEmpty && description.trim().isNotEmpty;
+  
+  bool get isEditing => editingRecipeId.isNotEmpty;
 }
 
 class RecipeCreationNotifier extends Notifier<RecipeCreationState> {
   @override
   RecipeCreationState build() {
     return const RecipeCreationState();
+  }
+
+  void setEditingRecipeId(String recipeId) {
+    state = state.copyWith(editingRecipeId: recipeId);
   }
 
   void updateAbout({
@@ -665,6 +679,16 @@ class RecipeCreationNotifier extends Notifier<RecipeCreationState> {
 
   void setImageUrl(String imageUrl) {
     state = state.copyWith(imageUrl: imageUrl);
+  }
+
+  void addPendingIngredient(dynamic ingredient) {
+    state = state.copyWith(
+      pendingIngredients: <dynamic>[...state.pendingIngredients, ingredient],
+    );
+  }
+
+  void clearPendingIngredients() {
+    state = state.copyWith(pendingIngredients: const <dynamic>[]);
   }
 
   void clear() {

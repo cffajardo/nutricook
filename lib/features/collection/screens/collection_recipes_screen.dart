@@ -6,7 +6,7 @@ import 'package:nutricook/models/collection/collection.dart';
 import 'package:nutricook/models/collection_item/collection_item.dart';
 import 'package:nutricook/services/collection_service.dart';
 
-class CollectionRecipesScreen extends ConsumerWidget {
+class CollectionRecipesScreen extends ConsumerStatefulWidget {
   final Collection collection;
 
   const CollectionRecipesScreen({
@@ -15,12 +15,20 @@ class CollectionRecipesScreen extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CollectionRecipesScreen> createState() =>
+      _CollectionRecipesScreenState();
+}
+
+class _CollectionRecipesScreenState extends ConsumerState<CollectionRecipesScreen> {
+  bool _isGridView = true;
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFFF9FA), // System background
       appBar: AppBar(
         title: Text(
-          collection.name, // Removed toUpperCase()
+          widget.collection.name, // Removed toUpperCase()
           style: const TextStyle(
             color: Colors.black,
             fontWeight: FontWeight.bold, // Softened from w900
@@ -38,14 +46,44 @@ class CollectionRecipesScreen extends ConsumerWidget {
           ),
           onPressed: () => context.pop(),
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: _buildViewToggleButton(),
+          ),
+        ],
       ),
       body: _buildRecipesList(),
     );
   }
 
+  Widget _buildViewToggleButton() {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.rosePink.withValues(alpha: 0.2),
+          width: 1.5,
+        ),
+      ),
+      child: IconButton(
+        onPressed: () {
+          setState(() {
+            _isGridView = !_isGridView;
+          });
+        },
+        icon: Icon(
+          _isGridView ? Icons.list : Icons.grid_3x3,
+          color: AppColors.rosePink,
+          size: 24,
+        ),
+      ),
+    );
+  }
+
   Widget _buildRecipesList() {
     return StreamBuilder<List<CollectionItem>>(
-      stream: CollectionService().getCollectionItems(collection.id),
+      stream: CollectionService().getCollectionItems(widget.collection.id),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
@@ -99,7 +137,7 @@ class CollectionRecipesScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Start adding to ${collection.name}',
+                  'Start adding to ${widget.collection.name}',
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -111,24 +149,127 @@ class CollectionRecipesScreen extends ConsumerWidget {
           );
         }
 
-        return ListView.separated(
-          padding: const EdgeInsets.all(20),
-          itemCount: items.length,
-          physics: const BouncingScrollPhysics(),
-          separatorBuilder: (context, index) => const SizedBox(height: 16),
-          itemBuilder: (context, index) {
-            return _buildRecipeCard(context, items[index]);
-          },
-        );
+        if (_isGridView) {
+          return GridView.builder(
+            padding: const EdgeInsets.all(20),
+            physics: const BouncingScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 0.75,
+            ),
+            itemCount: items.length,
+            itemBuilder: (context, index) {
+              return _buildRecipeGridCard(context, items[index]);
+            },
+          );
+        } else {
+          return ListView.separated(
+            padding: const EdgeInsets.all(20),
+            itemCount: items.length,
+            physics: const BouncingScrollPhysics(),
+            separatorBuilder: (context, index) => const SizedBox(height: 16),
+            itemBuilder: (context, index) {
+              return _buildRecipeListCard(context, items[index]);
+            },
+          );
+        }
       },
     );
   }
 
-  Widget _buildRecipeCard(BuildContext context, CollectionItem item) {
+  Widget _buildRecipeGridCard(BuildContext context, CollectionItem item) {
+    return GestureDetector(
+      onTap: () {
+        context.go('/recipe/${item.recipeId}');
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: AppColors.rosePink.withValues(alpha: 0.14),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image
+            Expanded(
+              flex: 3,
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: AppColors.cardRose.withValues(alpha: 0.3),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+                  image: item.thumbnailUrl != null
+                      ? DecorationImage(
+                          image: NetworkImage(item.thumbnailUrl!),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
+                ),
+                child: item.thumbnailUrl == null
+                    ? const Center(
+                        child: Icon(
+                          Icons.restaurant_rounded,
+                          color: AppColors.rosePink,
+                          size: 40,
+                        ),
+                      )
+                    : null,
+              ),
+            ),
+            // Content
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      item.recipeName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _buildBadge(Icons.timer_outlined, '${item.prepTime + item.cookTime}m'),
+                        _buildBadge(Icons.bolt_rounded, '350 cal'),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecipeListCard(BuildContext context, CollectionItem item) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20), // Standardized to 20px
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: AppColors.rosePink.withValues(alpha: 0.14),
           width: 1.5,
@@ -142,7 +283,7 @@ class CollectionRecipesScreen extends ConsumerWidget {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(18), // Slightly smaller than outer radius
+        borderRadius: BorderRadius.circular(18),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
@@ -187,7 +328,7 @@ class CollectionRecipesScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          item.recipeName, // Removed toUpperCase()
+                          item.recipeName,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -203,7 +344,7 @@ class CollectionRecipesScreen extends ConsumerWidget {
                           runSpacing: 8,
                           children: [
                             _buildBadge(Icons.timer_outlined, '${item.prepTime + item.cookTime}m'),
-                            _buildBadge(Icons.bolt_rounded, '350 cal'), // Mock data for calories
+                            _buildBadge(Icons.bolt_rounded, '350 cal'),
                           ],
                         ),
                       ],
@@ -212,7 +353,7 @@ class CollectionRecipesScreen extends ConsumerWidget {
                   const SizedBox(width: 8),
                   const Icon(
                     Icons.chevron_right_rounded,
-                    color: AppColors.rosePink, // Changed to rose pink to match the other chevrons
+                    color: AppColors.rosePink,
                     size: 28,
                   ),
                 ],

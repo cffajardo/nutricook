@@ -169,8 +169,14 @@ class SettingsPage extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           title: const Text('About Us'),
-                          content: const Text(
-                            'NutriCook is built and maintained by the NutriCook development team.\n\nThanks for using the app.',
+                          content: const SingleChildScrollView(
+                            child: Text(
+                              'NutriCook is a comprehensive nutrition and recipe management application developed as our finals project by:\n\n'
+                              'Fajardo, Cill Froilan R.\n'
+                              'Desamero, Rae Celine C.\n'
+                              'Trinidad, Angelica Karyle D.\n\n'
+                              'This application was created to fulfill the requirements of our finals project, integrating modern software development practices with Dart and Flutter.',
+                            ),
                           ),
                           actions: [
                             TextButton(
@@ -563,14 +569,11 @@ class _MealHourRow extends StatelessWidget {
           top: false,
           child: StatefulBuilder(
             builder: (context, setState) {
-              // Calculate what the result would be
               final isPm = selectedPeriodIndex == 1;
               final nextHour =
                   isPm ? (selectedHour12 % 12) + 12 : (selectedHour12 % 12);
               final selectedMinutes = nextHour * 60 + selectedMinute;
-              
-              // Check if this would violate meal time ordering
-              // "Other" can be at any time, so no validation for it
+
               final mealIndex = orderedMealTypes.indexOf(mealType);
               var warning = '';
               
@@ -1049,8 +1052,6 @@ class _AllergensSectionContent extends ConsumerWidget {
     );
   }
 }
-
-// ─── Ingredient picker bottom sheet ───────────────────────────────────────────
 
 class _IngredientAllergenPickerSheet extends ConsumerStatefulWidget {
   const _IngredientAllergenPickerSheet({

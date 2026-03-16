@@ -16,7 +16,12 @@ class NotificationService {
         .snapshots()
         .map(
           (snapshot) => snapshot.docs
-              .map((doc) => AppNotification.fromJson(doc.data()))
+              .map((doc) {
+                final data = doc.data();
+                // Use the document ID from the reference, not from the data
+                data['id'] = doc.id;
+                return AppNotification.fromJson(data);
+              })
               .toList(),
         );
   }
@@ -44,6 +49,20 @@ class NotificationService {
     final batch = _db.batch();
     for (final doc in snapshot.docs) {
       batch.update(doc.reference, {'isRead': true});
+    }
+    await batch.commit();
+  }
+
+  Future<void> clearAllNotifications(String userId) async {
+    final snapshot = await _notifications
+        .where('recipientId', isEqualTo: userId)
+        .get();
+
+    if (snapshot.docs.isEmpty) return;
+
+    final batch = _db.batch();
+    for (final doc in snapshot.docs) {
+      batch.delete(doc.reference);
     }
     await batch.commit();
   }

@@ -5,6 +5,7 @@ import 'package:nutricook/core/theme/app_theme.dart';
 import 'package:nutricook/features/planner/widgets/planner_item_recipe_filter.dart';
 import 'package:nutricook/features/recipe/providers/recipe_provider.dart';
 import 'package:nutricook/features/recipe/widgets/recipe_card.dart';
+import 'package:nutricook/features/recipe/widgets/recipe_list_item.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
 
 class RecipeCategoryListScreen extends ConsumerStatefulWidget {
@@ -25,6 +26,7 @@ class RecipeCategoryListScreen extends ConsumerStatefulWidget {
 class _RecipeCategoryListScreenState
     extends ConsumerState<RecipeCategoryListScreen> {
   late TextEditingController _searchController;
+  bool _isGridView = true;
 
   @override
   void initState() {
@@ -132,8 +134,34 @@ class _RecipeCategoryListScreenState
             ),
           ),
           const SizedBox(width: 12),
+          _buildViewToggleButton(),
+          const SizedBox(width: 8),
           _buildFilterButton(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildViewToggleButton() {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.rosePink.withValues(alpha: 0.2),
+          width: 1.5,
+        ),
+      ),
+      child: IconButton(
+        onPressed: () {
+          setState(() {
+            _isGridView = !_isGridView;
+          });
+        },
+        icon: Icon(
+          _isGridView ? Icons.list : Icons.grid_3x3,
+          color: AppColors.rosePink,
+          size: 24,
+        ),
       ),
     );
   }
@@ -233,21 +261,34 @@ class _RecipeCategoryListScreenState
       return const Center(child: Text('No recipes found in this category.'));
     }
 
-    return GridView.builder(
-      padding: const EdgeInsets.all(20),
-      physics: const BouncingScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: 0.75,
-      ),
-      itemCount: recipes.length,
-      itemBuilder: (context, index) {
-        final recipe = recipes[index];
-        return RecipeCard(recipe: recipe);
-      },
-    );
+    if (_isGridView) {
+      return GridView.builder(
+        padding: const EdgeInsets.all(20),
+        physics: const BouncingScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: 0.75,
+        ),
+        itemCount: recipes.length,
+        itemBuilder: (context, index) {
+          final recipe = recipes[index];
+          return RecipeCard(recipe: recipe);
+        },
+      );
+    } else {
+      return ListView.separated(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+        physics: const BouncingScrollPhysics(),
+        itemCount: recipes.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 12),
+        itemBuilder: (context, index) {
+          final recipe = recipes[index];
+          return RecipeListItem(recipe: recipe);
+        },
+      );
+    }
   }
 
   bool _matchesQuery(Recipe recipe, String query) {

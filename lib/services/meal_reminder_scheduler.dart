@@ -91,6 +91,80 @@ class MealReminderScheduler {
     }
   }
 
+  /// Schedule a meal window ending reminder (30 mins before meal window ends)
+  /// This provides a second reminder when the meal time window is about to close
+  Future<int?> scheduleMealWindowEndingReminder({
+    required String mealType,
+    required DateTime mealWindowEndTime,
+    required String userId,
+  }) async {
+    try {
+      debugPrint(
+          'Scheduling meal window ending reminder for $mealType at $mealWindowEndTime');
+
+      // Schedule reminder 30 minutes before the window ends
+      final reminderTime = mealWindowEndTime.subtract(const Duration(minutes: 30));
+
+      final delayDuration = reminderTime.difference(DateTime.now());
+
+      if (delayDuration.isNegative) {
+        debugPrint('Reminder time is in the past, skipping scheduling');
+        return null;
+      }
+
+      final notificationId = ('${mealType}_ending_$userId').hashCode.abs();
+
+      const AndroidNotificationDetails androidDetails =
+          AndroidNotificationDetails(
+        'meal_reminder_notification_channel',
+        'Meal Reminders',
+        channelDescription: 'Channel for meal reminder notifications',
+        importance: Importance.high,
+        priority: Priority.high,
+        enableVibration: true,
+        enableLights: true,
+        playSound: true,
+      );
+
+      const DarwinNotificationDetails iOSDetails =
+          DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+
+      final NotificationDetails platformChannelSpecifics =
+          NotificationDetails(
+        android: androidDetails,
+        iOS: iOSDetails,
+      );
+
+      final payload = _createPayload(
+        type: NotificationType.mealReminder,
+        plannerId: mealType,
+        userId: userId,
+      );
+
+      await _flutterLocalNotificationsPlugin.zonedSchedule(
+        notificationId,
+        '$mealType ending soon',
+        'Your $mealType window is closing in 30 minutes',
+        _getZonedDateTime(reminderTime),
+        platformChannelSpecifics,
+        androidScheduleMode: AndroidScheduleMode.inexact,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        payload: payload,
+      );
+
+      debugPrint('Meal window ending reminder scheduled with ID: $notificationId');
+      return notificationId;
+    } catch (e) {
+      debugPrint('Error scheduling meal window ending reminder: $e');
+      return null;
+    }
+  }
+
   /// Get a TZDateTime using the simple approach
   /// This is a workaround for demo purposes without timezone package
   dynamic _getZonedDateTime(DateTime dateTime) {

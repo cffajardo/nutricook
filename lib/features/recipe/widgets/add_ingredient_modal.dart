@@ -7,6 +7,8 @@ import 'package:nutricook/features/library/units/unit_provider.dart';
 import 'package:nutricook/models/recipe_ingredient/recipe_ingredient.dart';
 import 'package:nutricook/models/unit/unit.dart';
 import 'package:nutricook/models/ingredient/ingredient.dart';
+import 'package:nutricook/features/recipe/providers/recipe_provider.dart';
+import 'package:nutricook/features/admin/providers/create_ingredient_provider.dart';
 
 class AddIngredientModal extends ConsumerStatefulWidget {
   final ValueChanged<RecipeIngredient>? onIngredientAdded;
@@ -150,6 +152,8 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
         return _buildIngredientSelectionStep();
       case 2:
         return _buildDetailForm();
+      case 3:
+        return _buildCreateCustomIngredientStep();
       default:
         return const SizedBox.shrink();
     }
@@ -171,25 +175,66 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
       IngredientCategory.beverages,
     ];
 
-    return GridView.builder(
-      key: const ValueKey(0),
-      padding: const EdgeInsets.all(24),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-      ),
-      itemCount: categories.length,
-      itemBuilder: (context, index) {
-        final category = categories[index];
-        return _buildSelectionTile(
-          label: category,
-          onTap: () => setState(() {
-            _selectedCategory = category;
-            _stage = 1;
-          }),
-        );
-      },
+    return Column(
+      children: [
+        Expanded(
+          child: GridView.builder(
+            key: const ValueKey(0),
+            padding: const EdgeInsets.all(24),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+            ),
+            itemCount: categories.length,
+            itemBuilder: (context, index) {
+              final category = categories[index];
+              return _buildSelectionTile(
+                label: category,
+                onTap: () => setState(() {
+                  _selectedCategory = category;
+                  _stage = 1;
+                }),
+              );
+            },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
+          child: OutlinedButton(
+            onPressed: () => setState(() => _stage = 3),
+            style: OutlinedButton.styleFrom(
+              backgroundColor: Colors.white,
+              side: const BorderSide(
+                color: AppColors.rosePink,
+                width: 2,
+              ),
+              minimumSize: const Size(double.infinity, 50),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.add_circle_outline, color: AppColors.rosePink, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Create Custom Ingredient',
+                    style: TextStyle(
+                      color: AppColors.rosePink,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -257,6 +302,281 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
         );
       },
     );
+  }
+
+  Widget _buildCreateCustomIngredientStep() {
+    return Padding(
+      key: const ValueKey(3),
+      padding: const EdgeInsets.all(24),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Quick Custom Ingredient',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Create and add a custom ingredient. It will be saved when you save your recipe.',
+              style: TextStyle(fontSize: 13, color: Colors.black54),
+            ),
+            const SizedBox(height: 24),
+            _buildSimpleIngredientForm(),
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSimpleIngredientForm() {
+    final ingredientState = ref.watch(createIngredientProvider);
+    final nameController = TextEditingController(text: ingredientState.name);
+    final caloriesController = TextEditingController(
+      text: ingredientState.calories > 0 ? ingredientState.calories.toString() : '',
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSimpleTextField(
+          label: 'Ingredient Name *',
+          hint: 'e.g., Atlantic Salmon',
+          controller: nameController,
+          onChanged: (val) => ref.read(createIngredientProvider.notifier).setName(val),
+        ),
+        const SizedBox(height: 16),
+        _buildSimpleTextField(
+          label: 'Category',
+          hint: 'Select a category',
+          controller: TextEditingController(text: ingredientState.category),
+          isReadOnly: true,
+          onTap: () => _showCategoryPicker(),
+        ),
+        const SizedBox(height: 16),
+        _buildSimpleTextField(
+          label: 'Calories (per 100g) *',
+          hint: '150',
+          controller: caloriesController,
+          keyboardType: TextInputType.number,
+          onChanged: (val) {
+            final cal = int.tryParse(val) ?? 0;
+            ref.read(createIngredientProvider.notifier).setNutritionValue(
+              calories: cal,
+              carbohydrates: ingredientState.carbohydrates,
+              protein: ingredientState.protein,
+              fat: ingredientState.fat,
+              fiber: ingredientState.fiber,
+              sugar: ingredientState.sugar,
+              sodium: ingredientState.sodium,
+            );
+          },
+        ),
+        const SizedBox(height: 24),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () => setState(() => _stage = 1),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(0, 50),
+                  side: const BorderSide(color: AppColors.rosePink, width: 1.5),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: const Text(
+                  'Back',
+                  style: TextStyle(color: AppColors.rosePink, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: () => _submitCustomIngredient(nameController),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.rosePink,
+                  minimumSize: const Size(0, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: const Text(
+                  'Create & Add',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSimpleTextField({
+    required String label,
+    required String hint,
+    required TextEditingController controller,
+    TextInputType keyboardType = TextInputType.text,
+    bool isReadOnly = false,
+    VoidCallback? onTap,
+    ValueChanged<String>? onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          keyboardType: keyboardType,
+          readOnly: isReadOnly,
+          onTap: onTap,
+          onChanged: onChanged,
+          decoration: InputDecoration(
+            hintText: hint,
+            filled: true,
+            fillColor: AppColors.cardRose.withValues(alpha: 0.2),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: AppColors.rosePink.withValues(alpha: 0.1),
+                width: 1,
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: AppColors.rosePink.withValues(alpha: 0.1),
+                width: 1,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.rosePink, width: 1.5),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showCategoryPicker() {
+    final categories = <String>[
+      IngredientCategory.proteins,
+      IngredientCategory.vegetables,
+      IngredientCategory.fruits,
+      IngredientCategory.dairy,
+      IngredientCategory.grains,
+      IngredientCategory.spices,
+      IngredientCategory.herbs,
+      IngredientCategory.sauces,
+      IngredientCategory.seafood,
+      IngredientCategory.nutsAndSeeds,
+      IngredientCategory.fatsAndOils,
+      IngredientCategory.beverages,
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: GridView.builder(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+          ),
+          itemCount: categories.length,
+          itemBuilder: (context, index) {
+            final cat = categories[index];
+            return GestureDetector(
+              onTap: () {
+                ref.read(createIngredientProvider.notifier).setCategory(cat);
+                Navigator.pop(context);
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.cardRose.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.rosePink.withValues(alpha: 0.2)),
+                ),
+                child: Center(
+                  child: Text(
+                    cat,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _submitCustomIngredient(TextEditingController nameController) async {
+    final ingredientState = ref.read(createIngredientProvider);
+
+    if (nameController.text.trim().isEmpty) {
+      _showSnack('Please enter an ingredient name');
+      return;
+    }
+
+    if (ingredientState.calories == 0) {
+      _showSnack('Please enter calories');
+      return;
+    }
+
+    if (ingredientState.category.isEmpty) {
+      _showSnack('Please select a category');
+      return;
+    }
+
+    // Convert ingredient state to map for storage in pending ingredients
+    final ingredientMap = {
+      'name': ingredientState.name,
+      'description': ingredientState.description,
+      'category': ingredientState.category,
+      'isLiquid': ingredientState.isLiquid,
+      'calories': ingredientState.calories,
+      'carbohydrates': ingredientState.carbohydrates,
+      'protein': ingredientState.protein,
+      'fat': ingredientState.fat,
+      'fiber': ingredientState.fiber,
+      'sugar': ingredientState.sugar,
+      'sodium': ingredientState.sodium,
+      'imageUrl': ingredientState.imageUrl,
+    };
+
+    // Store in pending ingredients instead of saving immediately
+    ref.read(recipeCreationProvider.notifier).addPendingIngredient(ingredientMap);
+
+    // Add to recipe with a temporary ID
+    final tempId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
+    if (widget.onIngredientAdded != null) {
+      widget.onIngredientAdded!(
+        RecipeIngredient(
+          ingredientID: tempId,
+          name: ingredientState.name,
+          quantity: 100,
+          unitID: 'g',
+          unitName: 'g',
+          preparation: null,
+        ),
+      );
+    }
+
+    _showSnack('Ingredient added! Will be saved when you save the recipe.');
+    ref.read(createIngredientProvider.notifier).reset();
+    Navigator.pop(context);
   }
 
   Widget _buildDetailForm() {
@@ -660,6 +980,7 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
   Widget _buildSelectionTile({
     required String label,
     required VoidCallback onTap,
+    IconData? icon,
   }) {
     return InkWell(
       onTap: onTap,
@@ -676,8 +997,8 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
                 width: 1.5,
               ),
             ),
-            child: const Icon(
-              Icons.restaurant_outlined,
+            child: Icon(
+              icon ?? Icons.restaurant_outlined,
               color: AppColors.rosePink,
             ),
           ),
@@ -686,7 +1007,7 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
             label,
             textAlign: TextAlign.center,
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
         ],

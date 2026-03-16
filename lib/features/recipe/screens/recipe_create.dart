@@ -8,6 +8,7 @@ import 'package:nutricook/features/recipe/screens/recipe_create_select_ingredien
 import 'package:nutricook/features/recipe/screens/recipe_create_about_page.dart';
 import 'package:nutricook/features/recipe/screens/recipe_create_instructions.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
+import 'package:nutricook/features/admin/providers/create_ingredient_provider.dart';
 
 class CreateRecipeScreen extends ConsumerStatefulWidget {
   const CreateRecipeScreen({super.key});
@@ -67,30 +68,104 @@ class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
       return;
     }
 
-    final baseRecipe = Recipe(
-      id: '',
-      name: creation.name.trim(),
-      description: creation.description.trim(),
-      ingredients: creation.ingredients,
-      steps: creation.steps,
-      isPublic: creation.isPublic,
-      servings: creation.servings,
-      cookTime: creation.cookTimeMinutes,
-      prepTime: creation.prepTimeMinutes,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      tags: creation.tags,
-    );
-
     try {
       setState(() => _isFinishing = true);
-      await ref
-          .read(recipeServiceProvider)
-          .createRecipe(
-            recipe: baseRecipe,
-            ingredientsMap: ingredientsMap,
-            unitsMap: unitsMap,
-          );
+
+      // Step 1: Create pending custom ingredients and get their IDs
+      final ingredientIdMap = <String, String>{}; // name -> realId mapping
+      if (creation.pendingIngredients.isNotEmpty) {
+        for (final pendingIngData in creation.pendingIngredients) {
+          try {
+            if (pendingIngData is Map<String, dynamic>) {
+              final name = pendingIngData['name'] as String? ?? '';
+              final category = pendingIngData['category'] as String? ?? 'proteins';
+              final description = pendingIngData['description'] as String? ?? name;
+              final calories = (pendingIngData['calories'] as num?)?.toInt() ?? 0;
+              final carbs = (pendingIngData['carbohydrates'] as num?)?.toDouble() ?? 0.0;
+              final protein = (pendingIngData['protein'] as num?)?.toDouble() ?? 0.0;
+              final fat = (pendingIngData['fat'] as num?)?.toDouble() ?? 0.0;
+              final fiber = (pendingIngData['fiber'] as num?)?.toDouble() ?? 0.0;
+              final sugar = (pendingIngData['sugar'] as num?)?.toDouble() ?? 0.0;
+              final sodium = (pendingIngData['sodium'] as num?)?.toDouble() ?? 0.0;
+
+              // Set provider state from the pending ingredient data
+              ref.read(createIngredientProvider.notifier).setName(name);
+              ref.read(createIngredientProvider.notifier).setCategory(category);
+              ref.read(createIngredientProvider.notifier).setDescription(description);
+              ref.read(createIngredientProvider.notifier).setNutritionValue(
+                calories: calories,
+                carbohydrates: carbs,
+                protein: protein,
+                fat: fat,
+                fiber: fiber,
+                sugar: sugar,
+                sodium: sodium,
+              );
+
+              // Generate physical property (avgWeight for solids)
+              await ref.read(createIngredientProvider.notifier).generatePhysicalProperty(name);
+
+              final createdIng = await ref
+                  .read(createIngredientProvider.notifier)
+                  .createIngredient();
+
+              if (createdIng != null) {
+                // Map ingredient name to real ingredient ID
+                ingredientIdMap[name] = createdIng.id;
+              }
+            }
+          } catch (e) {
+            _showMessage('Failed to create custom ingredient: $e');
+            return;
+          }
+        }
+      }
+
+      // Step 2: Update recipe ingredients with real IDs
+      var finalIngredients = creation.ingredients;
+      if (ingredientIdMap.isNotEmpty) {
+        finalIngredients = creation.ingredients.map((ing) {
+          final realId = ingredientIdMap[ing.name];
+          if (realId != null && ing.ingredientID.startsWith('temp_')) {
+            return ing.copyWith(ingredientID: realId);
+          }
+          return ing;
+        }).toList();
+      }
+
+      final baseRecipe = Recipe(
+        id: creation.isEditing ? creation.editingRecipeId : '',
+        name: creation.name.trim(),
+        description: creation.description.trim(),
+        ingredients: finalIngredients,
+        steps: creation.steps,
+        isPublic: creation.isPublic,
+        servings: creation.servings,
+        cookTime: creation.cookTimeMinutes,
+        prepTime: creation.prepTimeMinutes,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        tags: creation.tags,
+      );
+
+      // Step 3: Save the recipe
+      if (creation.isEditing) {
+        await ref
+            .read(recipeServiceProvider)
+            .updateRecipe(
+              recipe: baseRecipe,
+              ingredientsMap: ingredientsMap,
+              unitsMap: unitsMap,
+            );
+      } else {
+        await ref
+            .read(recipeServiceProvider)
+            .createRecipe(
+              recipe: baseRecipe,
+              ingredientsMap: ingredientsMap,
+              unitsMap: unitsMap,
+            );
+      }
 
       ref.read(recipeCreationProvider.notifier).clear();
       if (!mounted) return;
@@ -101,13 +176,21 @@ class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
       rootMessenger
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(
-            content: Text('Recipe created successfully.'),
+          SnackBar(
+            content: Text(
+              creation.isEditing 
+                ? 'Recipe updated successfully.' 
+                : 'Recipe created successfully.',
+            ),
             behavior: SnackBarBehavior.floating,
           ),
         );
     } catch (error) {
-      _showMessage('Failed to create recipe: $error');
+      _showMessage(
+        creation.isEditing 
+          ? 'Failed to update recipe: $error'
+          : 'Failed to create recipe: $error',
+      );
     } finally {
       if (mounted) {
         setState(() => _isFinishing = false);
@@ -159,13 +242,18 @@ class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
           },
           icon: const Icon(Icons.close, color: Colors.black87),
         ),
-        title: Text(
-          'Step ${_currentPage + 1} of 3',
-          style: const TextStyle(
-            color: AppColors.rosePink,
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-          ),
+        title: Builder(
+          builder: (context) {
+            final creation = ref.watch(recipeCreationProvider);
+            return Text(
+              '${creation.isEditing ? 'Edit' : 'Create'} Recipe - Step ${_currentPage + 1} of 3',
+              style: const TextStyle(
+                color: AppColors.rosePink,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            );
+          },
         ),
         centerTitle: true,
       ),

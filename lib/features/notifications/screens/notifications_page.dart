@@ -33,6 +33,39 @@ class NotificationsPage extends ConsumerWidget {
               },
               child: const Text('Mark all read'),
             ),
+          if (userId != null)
+            TextButton(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Clear All Notifications?'),
+                    content: const Text(
+                      'This will permanently delete all your notifications.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          ref
+                              .read(notificationServiceProvider)
+                              .clearAllNotifications(userId);
+                          Navigator.pop(context);
+                        },
+                        child: const Text(
+                          'Clear',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              child: const Text('Clear all'),
+            ),
         ],
       ),
       body: notificationsAsync.when(
@@ -69,54 +102,98 @@ class NotificationsPage extends ConsumerWidget {
                 onTap: () async {
                   // Mark notification as read
                   if (!item.isRead) {
-                    await ref
-                        .read(notificationServiceProvider)
-                        .markNotificationAsRead(item.id);
+                    try {
+                      await ref
+                          .read(notificationServiceProvider)
+                          .markNotificationAsRead(item.id);
+                      // The Firestore stream will automatically update the UI
+                    } catch (e) {
+                      debugPrint('Error marking notification as read: $e');
+                    }
                   }
 
-                  // Route based on notification type
-                  if (context.mounted && item.type != null) {
+                  // For recipe deleted notifications, only mark as read (no navigation)
+                  if (item.type != null) {
+                    final notificationType = NotificationType.fromString(item.type);
+                    if (notificationType == NotificationType.recipeDeleted) {
+                      debugPrint('Recipe deleted notification - marked as read only');
+                      return;
+                    }
+                  }
+
+                  // Route based on notification type (for other notification types)
+                  if (!context.mounted) return;
+                  
+                  if (item.type != null) {
                     final notificationType = NotificationType.fromString(item.type);
                     if (notificationType != null) {
-                      switch (notificationType) {
-                        case NotificationType.recipeLike:
-                          if (item.entityId != null) {
-                            try {
-                              debugPrint(
-                                  'Fetching recipe: ${item.entityId}');
-                              // Fetch the recipe first
+                      try {
+                        switch (notificationType) {
+                          case NotificationType.recipeLike:
+                            if (item.entityId != null) {
+                              debugPrint('Fetching recipe: ${item.entityId}');
                               final recipeService = RecipeService();
                               final recipe = await recipeService
                                   .getRecipeById(item.entityId!)
                                   .first;
                               
                               if (recipe != null && context.mounted) {
-                                debugPrint(
-                                    'Navigating to recipe: ${recipe.id}');
-                                context.pushNamed(
+                                debugPrint('Navigating to recipe: ${recipe.id}');
+                                await context.pushNamed(
                                   AppRoutes.recipeDetailsName,
                                   extra: recipe,
                                 );
+                              } else if (!context.mounted) {
+                                return;
+                              } else {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Recipe not found')),
+                                  );
+                                }
                               }
-                            } catch (e) {
-                              debugPrint('Error fetching recipe: $e');
+                            } else {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Recipe ID not found in notification')),
+                                );
+                              }
                             }
-                          }
-                          break;
-                        case NotificationType.follow:
-                          if (item.senderId != null) {
-                            debugPrint(
-                                'Navigating to profile: ${item.senderId}');
-                            context.pushNamed(
-                              AppRoutes.profileUserName,
-                              pathParameters: {'userId': item.senderId!},
-                            );
-                          }
-                          break;
-                        case NotificationType.mealReminder:
-                          debugPrint('Navigating to meal planner');
-                          context.pushNamed(AppRoutes.plannerName);
-                          break;
+                            break;
+                          case NotificationType.follow:
+                            if (item.senderId != null) {
+                              debugPrint('Navigating to profile: ${item.senderId}');
+                              if (context.mounted) {
+                                await context.pushNamed(
+                                  AppRoutes.profileUserName,
+                                  pathParameters: {'userId': item.senderId!},
+                                );
+                              }
+                            } else {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('User ID not found in notification')),
+                                );
+                              }
+                            }
+                            break;
+                          case NotificationType.mealReminder:
+                            debugPrint('Navigating to meal planner');
+                            if (context.mounted) {
+                              await context.pushNamed(AppRoutes.plannerName);
+                            }
+                            break;
+                          case NotificationType.recipeDeleted:
+                            // This case is handled above with early return
+                            break;
+                        }
+                      } catch (e) {
+                        debugPrint('Error navigating from notification: $e');
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Navigation error: $e')),
+                          );
+                        }
                       }
                     }
                   }

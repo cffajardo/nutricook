@@ -2,7 +2,8 @@
 enum NotificationType {
   recipeLike('recipe_like'),
   follow('follow'),
-  mealReminder('meal_reminder');
+  mealReminder('meal_reminder'),
+  recipeDeleted('recipe_deleted');
 
   final String value;
 
@@ -21,7 +22,7 @@ enum NotificationType {
   }
 
   /// Check if this is a recipe-related notification
-  bool get isRecipeRelated => this == NotificationType.recipeLike;
+  bool get isRecipeRelated => this == NotificationType.recipeLike || this == NotificationType.recipeDeleted;
 
   /// Check if this is a social notification
   bool get isSocial => this == NotificationType.follow;

@@ -3,48 +3,114 @@ import 'package:flutter/foundation.dart';
 import 'package:nutricook/models/planner_item/planner_item.dart';
 import 'package:nutricook/core/constants.dart';
 import 'package:nutricook/services/meal_reminder_scheduler.dart';
+import 'package:nutricook/services/meal_window_helper.dart';
 
 class PlannerService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  Future<void> addPlannerItem(PlannerItem item) async {
+  /// Add a planner item with meal reminders
+  /// Optional: pass mealStartHours to schedule meal window ending reminder
+  Future<void> addPlannerItem(
+    PlannerItem item, {
+    Map<String, int>? mealStartHours,
+  }) async {
     await _firestore
         .collection(FirestoreConstants.plannerItems)
         .doc(item.id)
         .set(_toFirestoreData(item));
 
-    // Schedule a meal reminder for this item
+    // Schedule meal reminders
     try {
+      // Schedule reminder at meal start time
       await MealReminderScheduler().scheduleMealReminder(
         plannerId: item.id,
         mealTime: item.date,
         mealName: item.recipeName,
         userId: item.ownerId,
       );
+
+      // Schedule reminder 30 mins before meal window ends
+      if (mealStartHours != null) {
+        final windowEndTime = MealWindowHelper.getMealWindowEndDateTime(
+          mealType: item.mealType,
+          mealStartHours: mealStartHours,
+        );
+
+        // Adjust to same day as meal or next day if needed
+        DateTime adjustedEndTime = DateTime(
+          item.date.year,
+          item.date.month,
+          item.date.day,
+          windowEndTime.hour,
+          windowEndTime.minute,
+        );
+
+        // If end time is before meal time (past midnight), use next day
+        if (adjustedEndTime.isBefore(item.date)) {
+          adjustedEndTime = adjustedEndTime.add(const Duration(days: 1));
+        }
+
+        await MealReminderScheduler().scheduleMealWindowEndingReminder(
+          mealType: item.mealType,
+          mealWindowEndTime: adjustedEndTime,
+          userId: item.ownerId,
+        );
+      }
     } catch (e) {
-      // Log error but don't fail the planner item creation
-      debugPrint('Error scheduling meal reminder: $e');
+      debugPrint('Error scheduling meal reminders: $e');
     }
   }
 
-  Future<void> updatePlannerItem(PlannerItem item) async {
+  /// Update a planner item with meal reminders
+  /// Optional: pass mealStartHours to schedule meal window ending reminder
+  Future<void> updatePlannerItem(
+    PlannerItem item, {
+    Map<String, int>? mealStartHours,
+  }) async {
     await _firestore
         .collection(FirestoreConstants.plannerItems)
         .doc(item.id)
         .update(_toFirestoreData(item));
 
-    // Reschedule the meal reminder for this item
+    // Reschedule meal reminders
     try {
       await MealReminderScheduler().cancelMealReminder(item.id);
+
+      // Reschedule reminder at meal start time
       await MealReminderScheduler().scheduleMealReminder(
         plannerId: item.id,
         mealTime: item.date,
         mealName: item.recipeName,
         userId: item.ownerId,
       );
+
+      // Reschedule reminder 30 mins before meal window ends
+      if (mealStartHours != null) {
+        final windowEndTime = MealWindowHelper.getMealWindowEndDateTime(
+          mealType: item.mealType,
+          mealStartHours: mealStartHours,
+        );
+
+        DateTime adjustedEndTime = DateTime(
+          item.date.year,
+          item.date.month,
+          item.date.day,
+          windowEndTime.hour,
+          windowEndTime.minute,
+        );
+
+        if (adjustedEndTime.isBefore(item.date)) {
+          adjustedEndTime = adjustedEndTime.add(const Duration(days: 1));
+        }
+
+        await MealReminderScheduler().scheduleMealWindowEndingReminder(
+          mealType: item.mealType,
+          mealWindowEndTime: adjustedEndTime,
+          userId: item.ownerId,
+        );
+      }
     } catch (e) {
-      // Log error but don't fail the planner item update
-      debugPrint('Error rescheduling meal reminder: $e');
+      debugPrint('Error rescheduling meal reminders: $e');
     }
   }
 

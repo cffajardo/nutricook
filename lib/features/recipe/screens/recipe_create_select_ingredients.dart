@@ -111,7 +111,7 @@ class CreateRecipeIngredientsPage extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                      if (process.isNotEmpty) // Only show if not "None"
+                      if (process.isNotEmpty) 
                         Text(process, style: const TextStyle(fontSize: 12, color: Colors.black38)),
                     ],
                   ),

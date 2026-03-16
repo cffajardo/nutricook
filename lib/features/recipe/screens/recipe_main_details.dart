@@ -146,6 +146,7 @@ class _RecipeDetailsScreenState extends ConsumerState<RecipeDetailsScreen> {
   Future<void> _editRecipe() async {
     final notifier = ref.read(recipeCreationProvider.notifier);
     notifier.clear();
+    notifier.setEditingRecipeId(widget.recipe.id);
     notifier.updateAbout(
       name: widget.recipe.name,
       description: widget.recipe.description,
@@ -229,17 +230,18 @@ class _RecipeDetailsScreenState extends ConsumerState<RecipeDetailsScreen> {
       return;
     }
 
+    const reasons = <String>[
+      'Spam',
+      'Inappropriate content',
+      'Unsafe instructions',
+      'Plagiarism',
+    ];
+
     final reason = await showModalBottomSheet<String>(
       context: context,
       useSafeArea: true,
       backgroundColor: Colors.white,
       builder: (context) {
-        const reasons = <String>[
-          'Spam',
-          'Inappropriate content',
-          'Unsafe instructions',
-          'Plagiarism',
-        ];
         return Padding(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
           child: Column(
@@ -277,10 +279,90 @@ class _RecipeDetailsScreenState extends ConsumerState<RecipeDetailsScreen> {
 
     if (reason == null) return;
 
+    final description = await showModalBottomSheet<String>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      builder: (context) {
+        final controller = TextEditingController();
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            12,
+            20,
+            20 + MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.black12,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(height: 14),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Describe the problem (optional)',
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: controller,
+                maxLines: 4,
+                minLines: 3,
+                decoration: InputDecoration(
+                  hintText: 'Please explain what the issue is...',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.rosePink),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context, controller.text),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.rosePink,
+                  ),
+                  child: const Text('Submit Report'),
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context, null),
+                  child: const Text('Cancel'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (!mounted) return;
+
     try {
       await ref
           .read(recipeReportServiceProvider)
-          .submitReport(recipeId: widget.recipe.id, reason: reason);
+          .submitReport(
+            recipeId: widget.recipe.id,
+            reason: reason,
+            details: description?.isNotEmpty == true ? description : null,
+          );
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,

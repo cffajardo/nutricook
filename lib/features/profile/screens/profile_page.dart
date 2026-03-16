@@ -37,34 +37,27 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
 
   @override
   void deactivate() {
-    // Close any open modals when page loses focus (navigation away)
     _closeOpenModals();
     super.deactivate();
   }
 
   @override
   void dispose() {
-    // Close any open modals before disposing
     _closeOpenModals();
     tabController.dispose();
     super.dispose();
   }
 
   void _closeOpenModals() {
-    // Close all open modals (Collection Detail, Edit Collection, etc.)
-    // by repeatedly popping until modals are closed
     try {
       final navigator = Navigator.of(context, rootNavigator: true);
-      // Keep popping modals - modal bottom sheets are MaterialPageRoute with ModalRoute
-      // We'll pop them off the stack
       int popCount = 0;
       while (navigator.canPop() && popCount < 10) {
-        // Safety limit to avoid infinite loops
         navigator.maybePop();
         popCount++;
       }
     } catch (e) {
-      // Silently ignore if navigator is not available
+      // Ignore if nothing to pop
     }
   }
 
@@ -220,8 +213,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
           }
 
           final recipeCount = userRecipesAsync.asData?.value.length ?? 0;
-          final collectionCount =
-              userCollectionsAsync.asData?.value.length ?? 0;
           final followersCount = followersUsersAsync.asData?.value.length ?? 0;
           final followingCount = followingUsersAsync.asData?.value.length ?? 0;
 
@@ -231,7 +222,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                 userData: resolvedUserData,
                 viewedUserId: viewedUserId,
                 recipeCount: recipeCount,
-                collectionCount: collectionCount,
                 followersCount: followersCount,
                 followingCount: followingCount,
                 isOwnProfile: isOwnProfile,
@@ -282,7 +272,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     required Map<String, dynamic> userData,
     required String viewedUserId,
     required int recipeCount,
-    required int collectionCount,
     required int followersCount,
     required int followingCount,
     required bool isOwnProfile,
@@ -349,14 +338,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '$collectionCount collections',
-                      style: TextStyle(
-                        color: colorScheme.onSurface.withValues(alpha: 0.65),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
                   ],
                 ),
               ),

@@ -161,6 +161,30 @@ class RecipeReportService {
     });
   }
 
+  Future<void> deleteRecipe({required String recipeId}) async {
+    final recipeRef = _db.collection(FirestoreConstants.recipes).doc(recipeId);
+    final snapshot = await recipeRef.get();
+    if (!snapshot.exists) {
+      throw StateError('Recipe not found.');
+    }
+
+    // Delete the recipe and all related reports
+    await _db.runTransaction((transaction) async {
+      // Delete the recipe
+      transaction.delete(recipeRef);
+
+      // Delete all reports for this recipe
+      final reportsQuery = _db
+          .collection(FirestoreConstants.recipeReports)
+          .where('recipeId', isEqualTo: recipeId);
+
+      final reportSnapshot = await reportsQuery.get();
+      for (final reportDoc in reportSnapshot.docs) {
+        transaction.delete(reportDoc.reference);
+      }
+    });
+  }
+
   String _reportDocId(String recipeId, String userId) {
     return '${recipeId}_$userId';
   }

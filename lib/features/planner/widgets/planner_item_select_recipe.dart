@@ -7,6 +7,7 @@ import 'package:nutricook/features/library/ingredients/provider/ingredient_provi
 import 'package:nutricook/features/profile/provider/user_provider.dart';
 import 'package:nutricook/features/planner/widgets/planner_item_recipe_filter.dart';
 import 'package:nutricook/features/recipe/providers/recipe_provider.dart';
+import 'package:nutricook/features/recipe/widgets/recipe_list_item.dart';
 import 'package:nutricook/features/utils/nutrition_calculator.dart';
 import 'package:nutricook/models/ingredient/ingredient.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
@@ -22,6 +23,7 @@ class PlannerRecipeSelectModal extends ConsumerStatefulWidget {
 class _PlannerRecipeSelectModalState
     extends ConsumerState<PlannerRecipeSelectModal> {
   final TextEditingController _searchController = TextEditingController();
+  bool _isGridView = true;
 
   @override
   void initState() {
@@ -140,6 +142,8 @@ class _PlannerRecipeSelectModalState
                     ),
                   ),
                   const SizedBox(width: 12),
+                  _buildViewToggleButton(),
+                  const SizedBox(width: 8),
                   _buildFilterButton(),
                 ],
               ),
@@ -167,6 +171,30 @@ class _PlannerRecipeSelectModalState
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildViewToggleButton() {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.rosePink.withValues(alpha: 0.2),
+          width: 1.5,
+        ),
+      ),
+      child: IconButton(
+        onPressed: () {
+          setState(() {
+            _isGridView = !_isGridView;
+          });
+        },
+        icon: Icon(
+          _isGridView ? Icons.list : Icons.grid_3x3,
+          color: AppColors.rosePink,
+          size: 24,
         ),
       ),
     );
@@ -219,20 +247,155 @@ class _PlannerRecipeSelectModalState
     List<String> allergenEntries,
     Map<String, Ingredient>? ingredientsMap,
   ) {
-    return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-      physics: const BouncingScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: 0.76,
-      ),
-      itemCount: recipes.length,
-      itemBuilder: (context, index) => _buildRecipeCard(
-        recipe: recipes[index],
-        allergenEntries: allergenEntries,
-        ingredientsMap: ingredientsMap,
+    if (_isGridView) {
+      return GridView.builder(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        physics: const BouncingScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: 0.76,
+        ),
+        itemCount: recipes.length,
+        itemBuilder: (context, index) => _buildRecipeCard(
+          recipe: recipes[index],
+          allergenEntries: allergenEntries,
+          ingredientsMap: ingredientsMap,
+        ),
+      );
+    } else {
+      return ListView.separated(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+        physics: const BouncingScrollPhysics(),
+        itemCount: recipes.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 12),
+        itemBuilder: (context, index) => _buildListItem(
+          recipe: recipes[index],
+          allergenEntries: allergenEntries,
+          ingredientsMap: ingredientsMap,
+        ),
+      );
+    }
+  }
+
+  Widget _buildListItem({
+    required Recipe recipe,
+    required List<String> allergenEntries,
+    required Map<String, Ingredient>? ingredientsMap,
+  }) {
+    final allergenLabels = matchedRecipeAllergenLabels(
+      recipe: recipe,
+      allergenEntries: allergenEntries,
+      ingredientsMap: ingredientsMap,
+    );
+
+    final nutritionPerServing =
+        recipe.nutritionPerServing ??
+        (recipe.nutritionTotal != null && recipe.servings > 0
+            ? NutritionCalculator.calculateNutritionPerServing(
+                totalNutrition: recipe.nutritionTotal!,
+                servings: recipe.servings,
+              )
+            : null);
+
+    return GestureDetector(
+      onTap: () => Navigator.pop(context, <String, dynamic>{
+        'id': recipe.id,
+        'name': recipe.name,
+        'servings': recipe.servings,
+        'prepTime': recipe.prepTime,
+        'cookTime': recipe.cookTime,
+        'thumbnailUrl': recipe.imageURL.isNotEmpty
+            ? recipe.imageURL.first
+            : null,
+        'nutritionPerServing': nutritionPerServing,
+        'allergenWarnings': allergenLabels,
+      }),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppColors.rosePink.withValues(alpha: 0.14),
+            width: 1.5,
+          ),
+        ),
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: AppColors.cardRose,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Center(
+                child: Icon(
+                  Icons.restaurant,
+                  color: AppColors.rosePink,
+                  size: 30,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    recipe.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    recipe.description,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.black54,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.schedule, size: 14, color: Colors.black54),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${recipe.prepTime + recipe.cookTime} min',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.black54,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Icon(Icons.restaurant, size: 14, color: Colors.black54),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${recipe.servings} servings',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.black54,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (allergenLabels.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    AllergenWarningBadge(allergenLabels: allergenLabels),
+                  ]
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

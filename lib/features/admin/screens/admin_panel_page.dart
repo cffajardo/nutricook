@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
 import 'package:nutricook/features/admin/providers/admin_provider.dart';
 import 'package:nutricook/features/admin/screens/edit_recipe_modal.dart';
@@ -10,6 +11,7 @@ import 'package:nutricook/features/profile/provider/user_provider.dart';
 import 'package:nutricook/features/recipe/providers/recipe_report_provider.dart';
 import 'package:nutricook/models/recipe_report/recipe_report.dart';
 import 'package:nutricook/routing/app_routes.dart';
+import 'package:nutricook/services/notification_trigger.dart';
 
 class AdminPanelPage extends ConsumerStatefulWidget {
   const AdminPanelPage({super.key});
@@ -25,10 +27,15 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
   final TextEditingController _ingredientSearchController =
       TextEditingController();
   final TextEditingController _recipeSearchController = TextEditingController();
+  
   String _query = '';
   String _ingredientQuery = '';
   String _recipeQuery = '';
   String _reportStatusFilter = '';
+  String _ingredientSortBy = 'name_asc'; // name_asc, name_desc
+  String _ingredientFilterCategory = ''; // '', or specific category name
+  String _recipeSortBy = 'name_asc'; // name_asc, name_desc, reports, favorites
+  String _recipeFilterVisibility = ''; // '', 'public', 'private'
   int _openReportsCachedCount = 0;
 
   @override
@@ -53,11 +60,20 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
 
     if (!isAdmin) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Admin Panel')),
+        backgroundColor: const Color(0xFFFFF9FA),
+        appBar: AppBar(
+          backgroundColor: const Color(0xFFFFF9FA),
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.chevron_left, color: AppColors.rosePink, size: 32),
+            onPressed: () => context.pop(),
+          ),
+          title: const Text('Admin Console', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        ),
         body: const Center(
           child: Text(
-            'Access denied. Admin credentials are required.',
-            style: TextStyle(fontWeight: FontWeight.w700),
+            'Access denied. Admin credentials required.',
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
         ),
       );
@@ -68,10 +84,12 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
     final recipesAsync = ref.watch(adminRecipesProvider(_recipeQuery));
     final reportsAsync = ref.watch(adminReportsProvider(_reportStatusFilter));
     final openReportsAsync = ref.watch(adminReportsProvider('open'));
+    
     final latestOpenReports = openReportsAsync.asData?.value.length;
     if (latestOpenReports != null) {
       _openReportsCachedCount = latestOpenReports;
     }
+    
     final totalUsers = ref.watch(adminUsersCountProvider);
     final bannedUsers = ref.watch(adminBannedUsersCountProvider);
     final totalIngredients = ref.watch(adminIngredientsCountProvider);
@@ -79,16 +97,24 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
     final openReports = latestOpenReports ?? _openReportsCachedCount;
 
     return Scaffold(
-      backgroundColor: AppColors.cream,
+      backgroundColor: const Color(0xFFFFF9FA),
       appBar: AppBar(
-        title: const Text('Admin Panel'),
-        backgroundColor: AppColors.blushPink,
-        foregroundColor: Colors.black87,
+        title: const Text('Admin Console', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        backgroundColor: const Color(0xFFFFF9FA),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.chevron_left, color: AppColors.rosePink, size: 32),
+          onPressed: () => context.pop(),
+        ),
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
           labelColor: AppColors.rosePink,
+          unselectedLabelColor: Colors.black45,
           indicatorColor: AppColors.rosePink,
+          indicatorWeight: 3,
+          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
           tabs: const [
             Tab(text: 'Overview'),
             Tab(text: 'Users'),
@@ -101,6 +127,7 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
       body: TabBarView(
         controller: _tabController,
         children: [
+          // 1. OVERVIEW TAB
           _OverviewTab(
             totalUsers: totalUsers,
             bannedUsers: bannedUsers,
@@ -108,26 +135,27 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
             totalIngredients: totalIngredients,
             totalRecipes: totalRecipes,
           ),
+          
+          // 2. USERS TAB
           Column(
             children: [
               _buildSearchField(
                 controller: _userSearchController,
-                hintText: 'Search users by username/email',
+                hintText: 'Search username or email...',
                 onChanged: (value) => setState(() => _query = value.trim()),
               ),
               Expanded(
                 child: usersAsync.when(
-                  loading: () => const Center(child: CircularProgressIndicator()),
+                  loading: () => const Center(child: CircularProgressIndicator(color: AppColors.rosePink)),
                   error: (error, _) => Center(child: Text('Failed to load users: $error')),
                   data: (users) {
-                    if (users.isEmpty) {
-                      return const Center(child: Text('No users found.'));
-                    }
+                    if (users.isEmpty) return const Center(child: Text('No users found.'));
 
                     return ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(16, 6, 16, 20),
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                      physics: const BouncingScrollPhysics(),
                       itemCount: users.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
                       itemBuilder: (context, index) {
                         final user = users[index];
                         final userId = (user['id'] ?? '').toString();
@@ -141,38 +169,39 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
                           child: Row(
                             children: [
                               CircleAvatar(
-                                backgroundColor: AppColors.inputRose,
-                                radius: 18,
-                                child: Text(username.isNotEmpty ? username[0].toUpperCase() : '?'),
+                                backgroundColor: AppColors.cardRose,
+                                radius: 24,
+                                child: Text(
+                                  username.isNotEmpty ? username[0].toUpperCase() : '?',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.rosePink, fontSize: 18),
+                                ),
                               ),
-                              const SizedBox(width: 12),
+                              const SizedBox(width: 16),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       username,
-                                      style: const TextStyle(fontWeight: FontWeight.w800),
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                     ),
                                     if (email.isNotEmpty)
                                       Text(
                                         email,
-                                        style: const TextStyle(color: Colors.black54),
+                                        style: const TextStyle(color: Colors.black54, fontSize: 13, fontWeight: FontWeight.w600),
                                       ),
-                                    const SizedBox(height: 4),
+                                    const SizedBox(height: 8),
                                     Wrap(
                                       spacing: 8,
                                       children: [
                                         _ChipLabel(
                                           label: role.toUpperCase(),
-                                          color: role.toLowerCase() == 'admin'
-                                              ? AppColors.rosePink
-                                              : Colors.grey.shade700,
+                                          color: role.toLowerCase() == 'admin' ? AppColors.rosePink : Colors.blueGrey,
                                         ),
-                                        _ChipLabel(
-                                          label: isBanned ? 'BANNED' : 'ACTIVE',
-                                          color: isBanned ? Colors.red : Colors.green,
-                                        ),
+                                        if (isBanned)
+                                          const _ChipLabel(label: 'BANNED', color: Colors.redAccent)
+                                        else
+                                          const _ChipLabel(label: 'ACTIVE', color: Colors.green),
                                       ],
                                     ),
                                   ],
@@ -180,6 +209,8 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
                               ),
                               PopupMenuButton<String>(
                                 enabled: !isSelf,
+                                icon: const Icon(Icons.more_vert, color: Colors.black45),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                                 onSelected: (value) async {
                                   if (isSelf) return;
                                   final service = ref.read(userServiceProvider);
@@ -188,27 +219,33 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
                                     String reason = '';
                                     final confirmed = await showDialog<bool>(
                                       context: context,
-                                      builder: (ctx) {
-                                        return AlertDialog(
-                                          title: const Text('Ban user'),
-                                          content: TextField(
-                                            decoration: const InputDecoration(
-                                              hintText: 'Reason (optional)',
+                                      builder: (ctx) => AlertDialog(
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                        title: const Text('Ban user', style: TextStyle(fontWeight: FontWeight.bold)),
+                                        content: TextField(
+                                          decoration: InputDecoration(
+                                            hintText: 'Reason (optional)',
+                                            filled: true,
+                                            fillColor: AppColors.cardRose.withValues(alpha: 0.3),
+                                            border: OutlineInputBorder(
+                                              borderRadius: BorderRadius.circular(16),
+                                              borderSide: BorderSide.none,
                                             ),
-                                            onChanged: (v) => reason = v,
                                           ),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () => Navigator.pop(ctx, false),
-                                              child: const Text('Cancel'),
-                                            ),
-                                            TextButton(
-                                              onPressed: () => Navigator.pop(ctx, true),
-                                              child: const Text('Ban'),
-                                            ),
-                                          ],
-                                        );
-                                      },
+                                          onChanged: (v) => reason = v,
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(ctx, false),
+                                            child: const Text('Cancel', style: TextStyle(color: Colors.black54)),
+                                          ),
+                                          FilledButton(
+                                            onPressed: () => Navigator.pop(ctx, true),
+                                            style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),
+                                            child: const Text('Ban'),
+                                          ),
+                                        ],
+                                      ),
                                     );
 
                                     if (confirmed == true) {
@@ -222,48 +259,26 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
                                   }
 
                                   if (value == 'unban') {
-                                    await service.setUserBanStatus(
-                                      targetUserId: userId,
-                                      isBanned: false,
-                                      actionBy: currentUserId,
-                                    );
+                                    await service.setUserBanStatus(targetUserId: userId, isBanned: false, actionBy: currentUserId);
                                   }
 
                                   if (value == 'promote') {
-                                    await service.setUserRole(
-                                      targetUserId: userId,
-                                      role: 'admin',
-                                    );
+                                    await service.setUserRole(targetUserId: userId, role: 'admin');
                                   }
 
                                   if (value == 'demote') {
-                                    await service.setUserRole(
-                                      targetUserId: userId,
-                                      role: 'user',
-                                    );
+                                    await service.setUserRole(targetUserId: userId, role: 'user');
                                   }
                                 },
                                 itemBuilder: (_) => [
                                   if (!isBanned)
-                                    const PopupMenuItem(
-                                      value: 'ban',
-                                      child: Text('Ban User'),
-                                    ),
+                                    const PopupMenuItem(value: 'ban', child: Text('Ban User', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold))),
                                   if (isBanned)
-                                    const PopupMenuItem(
-                                      value: 'unban',
-                                      child: Text('Unban User'),
-                                    ),
+                                    const PopupMenuItem(value: 'unban', child: Text('Unban User', style: TextStyle(fontWeight: FontWeight.bold))),
                                   if (role.toLowerCase() != 'admin')
-                                    const PopupMenuItem(
-                                      value: 'promote',
-                                      child: Text('Promote to Admin'),
-                                    ),
+                                    const PopupMenuItem(value: 'promote', child: Text('Promote to Admin')),
                                   if (role.toLowerCase() == 'admin')
-                                    const PopupMenuItem(
-                                      value: 'demote',
-                                      child: Text('Demote to User'),
-                                    ),
+                                    const PopupMenuItem(value: 'demote', child: Text('Demote to User')),
                                 ],
                               ),
                             ],
@@ -276,12 +291,15 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
               ),
             ],
           ),
+          
+          // 3. REPORTS TAB
           Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
                   child: Row(
                     children: [
                       _statusFilterChip('All', ''),
@@ -297,23 +315,21 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
               ),
               Expanded(
                 child: reportsAsync.when(
-                  loading: () => const Center(child: CircularProgressIndicator()),
+                  loading: () => const Center(child: CircularProgressIndicator(color: AppColors.rosePink)),
                   error: (error, _) => Center(child: Text('Failed to load reports: $error')),
                   data: (reports) {
-                    if (reports.isEmpty) {
-                      return const Center(child: Text('No reports yet.'));
-                    }
+                    if (reports.isEmpty) return const Center(child: Text('No reports found.'));
 
                     return ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(16, 6, 16, 20),
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                      physics: const BouncingScrollPhysics(),
                       itemCount: reports.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
                       itemBuilder: (context, index) {
-                        final report = reports[index];
                         return _ReportCard(
-                          report: report,
+                          report: reports[index],
                           onStatusChanged: _setReportStatus,
-                          onRecipeVisibilityChanged: _setRecipeVisibility,
+                          onRecipeDeleted: _deleteRecipe,
                           statusColor: _statusColor,
                         );
                       },
@@ -323,159 +339,291 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
               ),
             ],
           ),
+          
+          // 4. INGREDIENTS TAB
           Column(
             children: [
               _buildSearchField(
                 controller: _ingredientSearchController,
-                hintText: 'Search ingredients by name/category',
-                onChanged: (value) =>
-                    setState(() => _ingredientQuery = value.trim()),
+                hintText: 'Search ingredients...',
+                onChanged: (value) => setState(() => _ingredientQuery = value.trim()),
               ),
               Expanded(
                 child: ingredientsAsync.when(
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (error, _) =>
-                      Center(child: Text('Failed to load ingredients: $error')),
+                  loading: () => const Center(child: CircularProgressIndicator(color: AppColors.rosePink)),
+                  error: (error, _) => Center(child: Text('Failed to load ingredients: $error')),
                   data: (ingredients) {
-                    if (ingredients.isEmpty) {
-                      return const Center(child: Text('No ingredients found.'));
-                    }
+                    // Get unique categories for dynamic filter dropdown
+                    final categories = ingredients
+                        .map((i) => ((i['category'] ?? 'Uncategorized').toString()))
+                        .toSet()
+                        .toList()
+                        .cast<String>()
+                        ..sort();
 
-                    return ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(16, 6, 16, 20),
-                      itemCount: ingredients.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 10),
-                      itemBuilder: (context, index) {
-                        final ingredient = ingredients[index];
-                        final ingredientId =
-                            (ingredient['id'] ?? '').toString();
-                        final name =
-                            (ingredient['name'] ?? 'Unnamed').toString();
-                        final category =
-                            (ingredient['category'] ?? 'Uncategorized')
-                                .toString();
-                        final description =
-                            (ingredient['description'] ?? '').toString();
-                        final ownerId = (ingredient['ownerId'] ?? '').toString();
+                    // Apply filtering
+                    var filtered = ingredients.where((ingredient) {
+                      final category = (ingredient['category'] ?? 'Uncategorized').toString();
+                      if (_ingredientFilterCategory.isEmpty) return true;
+                      return category == _ingredientFilterCategory;
+                    }).toList();
 
-                        return _AdminCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                    // Apply sorting
+                    filtered.sort((a, b) {
+                      switch (_ingredientSortBy) {
+                        case 'name_desc':
+                          return ((b['name'] ?? '').toString())
+                              .compareTo(((a['name'] ?? '').toString()));
+                        case 'name_asc':
+                        default:
+                          return ((a['name'] ?? '').toString())
+                              .compareTo(((b['name'] ?? '').toString()));
+                      }
+                    });
+
+                    if (filtered.isEmpty) return const Center(child: Text('No ingredients found.'));
+
+                    return Column(
+                      children: [
+                        // Sort and Filter Controls
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                          child: Row(
                             children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      name,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w900,
-                                      ),
-                                    ),
-                                  ),
-                                  _ChipLabel(
-                                    label: ownerId.isEmpty
-                                        ? 'SYSTEM'
-                                        : 'CUSTOM',
-                                    color: ownerId.isEmpty
-                                        ? Colors.blueGrey
-                                        : AppColors.rosePink,
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Text('Category: $category'),
-                              if (description.isNotEmpty) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  description,
-                                  style: const TextStyle(color: Colors.black54),
-                                ),
-                              ],
-                              const SizedBox(height: 10),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: FilledButton.tonalIcon(
-                                  onPressed: () {
-                                    context.pushNamed(
-                                      AppRoutes.adminEditIngredientName,
-                                      pathParameters: {
-                                        'ingredientId': ingredientId,
-                                      },
-                                    );
+                              Expanded(
+                                child: DropdownButton<String>(
+                                  value: _ingredientSortBy,
+                                  isExpanded: true,
+                                  hint: const Text('Sort by'),
+                                  items: const [
+                                    DropdownMenuItem(value: 'name_asc', child: Text('Name A-Z')),
+                                    DropdownMenuItem(value: 'name_desc', child: Text('Name Z-A')),
+                                  ],
+                                  onChanged: (value) {
+                                    if (value != null) {
+                                      setState(() => _ingredientSortBy = value);
+                                    }
                                   },
-                                  icon: const Icon(Icons.edit_rounded),
-                                  label: const Text('Edit Ingredient'),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: DropdownButton<String>(
+                                  value: _ingredientFilterCategory,
+                                  isExpanded: true,
+                                  hint: const Text('Filter by Category'),
+                                  items: [
+                                    const DropdownMenuItem(value: '', child: Text('All')),
+                                    ...categories.map((cat) => 
+                                      DropdownMenuItem(value: cat, child: Text(cat)),
+                                    ),
+                                  ],
+                                  onChanged: (value) {
+                                    if (value != null) {
+                                      setState(() => _ingredientFilterCategory = value);
+                                    }
+                                  },
                                 ),
                               ),
                             ],
                           ),
-                        );
-                      },
+                        ),
+                        Expanded(
+                          child: ListView.separated(
+                            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                            physics: const BouncingScrollPhysics(),
+                            itemCount: filtered.length,
+                            separatorBuilder: (_, _) => const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              final ingredient = filtered[index];
+                              final ingredientId = (ingredient['id'] ?? '').toString();
+                              final name = (ingredient['name'] ?? 'Unnamed').toString();
+                              final category = (ingredient['category'] ?? 'Uncategorized').toString();
+                              final description = (ingredient['description'] ?? '').toString();
+                              final ownerId = (ingredient['ownerId'] ?? '').toString();
+
+                              return _AdminCard(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            name,
+                                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                          ),
+                                        ),
+                                        _ChipLabel(
+                                          label: ownerId.isEmpty ? 'SYSTEM' : 'CUSTOM',
+                                          color: ownerId.isEmpty ? Colors.blueGrey : AppColors.rosePink,
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text('Category: $category', style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black54)),
+                                    if (description.isNotEmpty) ...[
+                                      const SizedBox(height: 4),
+                                      Text(description, style: const TextStyle(color: Colors.black54)),
+                                    ],
+                                    const SizedBox(height: 16),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: OutlinedButton.icon(
+                                        onPressed: () {
+                                          context.pushNamed(
+                                            AppRoutes.adminEditIngredientName,
+                                            pathParameters: {'ingredientId': ingredientId},
+                                          );
+                                        },
+                                        icon: const Icon(Icons.edit_rounded, size: 18),
+                                        label: const Text('Edit Ingredient'),
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: AppColors.rosePink,
+                                          side: BorderSide(color: AppColors.rosePink.withValues(alpha: 0.3), width: 1.5),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
                     );
                   },
                 ),
               ),
             ],
           ),
+          
+          // 5. RECIPES TAB
           Column(
             children: [
               _buildSearchField(
                 controller: _recipeSearchController,
-                hintText: 'Search recipes by name/description',
-                onChanged: (value) =>
-                    setState(() => _recipeQuery = value.trim()),
+                hintText: 'Search recipes...',
+                onChanged: (value) => setState(() => _recipeQuery = value.trim()),
+              ),
+              // Sort and Filter Controls
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButton<String>(
+                        value: _recipeSortBy,
+                        isExpanded: true,
+                        hint: const Text('Sort by'),
+                        items: const [
+                          DropdownMenuItem(value: 'name_asc', child: Text('Name A-Z')),
+                          DropdownMenuItem(value: 'name_desc', child: Text('Name Z-A')),
+                          DropdownMenuItem(value: 'reports', child: Text('Reports')),
+                          DropdownMenuItem(value: 'favorites', child: Text('Favorites')),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() => _recipeSortBy = value);
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DropdownButton<String>(
+                        value: _recipeFilterVisibility,
+                        isExpanded: true,
+                        hint: const Text('Filter'),
+                        items: const [
+                          DropdownMenuItem(value: '', child: Text('All')),
+                          DropdownMenuItem(value: 'public', child: Text('Public')),
+                          DropdownMenuItem(value: 'private', child: Text('Private')),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() => _recipeFilterVisibility = value);
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               ),
               Expanded(
                 child: recipesAsync.when(
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (error, _) =>
-                      Center(child: Text('Failed to load recipes: $error')),
+                  loading: () => const Center(child: CircularProgressIndicator(color: AppColors.rosePink)),
+                  error: (error, _) => Center(child: Text('Failed to load recipes: $error')),
                   data: (recipes) {
-                    if (recipes.isEmpty) {
-                      return const Center(child: Text('No recipes found.'));
-                    }
+                    // Apply filtering
+                    var filtered = recipes.where((recipe) {
+                      final isPublic = recipe['isPublic'] == true;
+                      if (_recipeFilterVisibility.isEmpty) return true;
+                      if (_recipeFilterVisibility == 'public') return isPublic;
+                      if (_recipeFilterVisibility == 'private') return !isPublic;
+                      return true;
+                    }).toList();
+
+                    // Apply sorting
+                    filtered.sort((a, b) {
+                      switch (_recipeSortBy) {
+                        case 'name_desc':
+                          return ((b['name'] ?? '').toString())
+                              .compareTo(((a['name'] ?? '').toString()));
+                        case 'reports':
+                          final aReports = (a['reportCount'] as num?)?.toInt() ?? 0;
+                          final bReports = (b['reportCount'] as num?)?.toInt() ?? 0;
+                          return bReports.compareTo(aReports); // Descending
+                        case 'favorites':
+                          final aFavorite = (a['isFavorite'] ?? false) == true ? 1 : 0;
+                          final bFavorite = (b['isFavorite'] ?? false) == true ? 1 : 0;
+                          return bFavorite.compareTo(aFavorite); // Favorites first
+                        case 'name_asc':
+                        default:
+                          return ((a['name'] ?? '').toString())
+                              .compareTo(((b['name'] ?? '').toString()));
+                      }
+                    });
+
+                    if (filtered.isEmpty) return const Center(child: Text('No recipes found.'));
 
                     return ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(16, 6, 16, 20),
-                      itemCount: recipes.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: filtered.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
                       itemBuilder: (context, index) {
-                        final recipe = recipes[index];
+                        final recipe = filtered[index];
                         final recipeId = (recipe['id'] ?? '').toString();
                         final name = (recipe['name'] ?? 'Untitled').toString();
-                        final description =
-                            (recipe['description'] ?? '').toString();
+                        final description = (recipe['description'] ?? '').toString();
                         final isPublic = recipe['isPublic'] == true;
-                        final reportCount =
-                            (recipe['reportCount'] as num?)?.toInt() ?? 0;
-                        final prepTime =
-                            (recipe['prepTime'] as num?)?.toInt() ?? 0;
-                        final cookTime =
-                            (recipe['cookTime'] as num?)?.toInt() ?? 0;
-                        final servings =
-                            (recipe['servings'] as num?)?.toInt() ?? 1;
+                        final reportCount = (recipe['reportCount'] as num?)?.toInt() ?? 0;
+                        final prepTime = (recipe['prepTime'] as num?)?.toInt() ?? 0;
+                        final cookTime = (recipe['cookTime'] as num?)?.toInt() ?? 0;
+                        final servings = (recipe['servings'] as num?)?.toInt() ?? 1;
 
                         return _AdminCard(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Expanded(
                                     child: Text(
                                       name,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w900,
-                                      ),
+                                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                                     ),
                                   ),
                                   _ChipLabel(
                                     label: isPublic ? 'PUBLIC' : 'PRIVATE',
-                                    color: isPublic ? Colors.green : Colors.grey,
+                                    color: isPublic ? Colors.green : Colors.blueGrey,
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 6),
+                              const SizedBox(height: 8),
                               if (description.isNotEmpty)
                                 Text(
                                   description,
@@ -483,14 +631,21 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(color: Colors.black54),
                                 ),
-                              const SizedBox(height: 6),
-                              Text(
-                                'Prep: ${prepTime}m  |  Cook: ${cookTime}m  |  Servings: $servings  |  Reports: $reportCount',
+                              const SizedBox(height: 12),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  _ChipLabel(label: '${prepTime + cookTime}m total', color: Colors.black54),
+                                  _ChipLabel(label: '$servings servings', color: Colors.black54),
+                                  if (reportCount > 0)
+                                    _ChipLabel(label: '$reportCount Reports', color: Colors.orange),
+                                ],
                               ),
-                              const SizedBox(height: 10),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: FilledButton.tonalIcon(
+                              const SizedBox(height: 16),
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton.icon(
                                   onPressed: () => _showEditRecipeDialog(
                                     recipeId: recipeId,
                                     initialName: name,
@@ -500,8 +655,13 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
                                     initialServings: servings,
                                     initialIsPublic: isPublic,
                                   ),
-                                  icon: const Icon(Icons.edit_note_rounded),
+                                  icon: const Icon(Icons.edit_note_rounded, size: 20),
                                   label: const Text('Edit Recipe'),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppColors.rosePink,
+                                    side: BorderSide(color: AppColors.rosePink.withValues(alpha: 0.3), width: 1.5),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  ),
                                 ),
                               ),
                             ],
@@ -525,23 +685,24 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
     required ValueChanged<String> onChanged,
   }) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
       child: TextField(
         controller: controller,
+        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
         decoration: InputDecoration(
           prefixIcon: const Icon(Icons.search, color: AppColors.rosePink),
           hintText: hintText,
+          hintStyle: const TextStyle(color: Colors.black38),
           filled: true,
-          fillColor: Colors.white,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide.none,
-          ),
+          fillColor: AppColors.cardRose.withValues(alpha: 0.3),
+          contentPadding: const EdgeInsets.all(16),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide(
-              color: AppColors.rosePink.withValues(alpha: 0.15),
-            ),
+            borderRadius: BorderRadius.circular(20),
+            borderSide: BorderSide(color: AppColors.rosePink.withValues(alpha: 0.15), width: 1.5),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(20),
+            borderSide: const BorderSide(color: AppColors.rosePink, width: 1.5),
           ),
         ),
         onChanged: onChanged,
@@ -554,19 +715,26 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
     return ChoiceChip(
       label: Text(label),
       selected: selected,
-      selectedColor: AppColors.inputRose,
-      onSelected: (_) {
-        setState(() {
-          _reportStatusFilter = statusValue;
-        });
-      },
+      showCheckmark: false,
+      selectedColor: AppColors.rosePink,
+      backgroundColor: Colors.white,
+      side: BorderSide(
+        color: selected ? AppColors.rosePink : Colors.black12,
+        width: 1.5,
+      ),
+      labelStyle: TextStyle(
+        color: selected ? Colors.white : Colors.black54,
+        fontWeight: FontWeight.bold,
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      onSelected: (_) => setState(() => _reportStatusFilter = statusValue),
     );
   }
 
   Color _statusColor(String status) {
     switch (status.trim().toLowerCase()) {
       case 'reviewed':
-        return AppColors.rosePink;
+        return Colors.green;
       case 'dismissed':
         return Colors.grey;
       case 'open':
@@ -575,51 +743,54 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
     }
   }
 
-  Future<void> _setReportStatus({
-    required String reportId,
-    required String status,
-  }) async {
+  Future<void> _setReportStatus({required String reportId, required String status}) async {
     final currentUserId = ref.read(currentUserIdProvider);
     try {
-      await ref.read(recipeReportServiceProvider).updateReportStatus(
-            reportId: reportId,
-            status: status,
-            reviewedBy: currentUserId,
-          );
+      await ref.read(recipeReportServiceProvider).updateReportStatus(reportId: reportId, status: status, reviewedBy: currentUserId);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Report marked as $status.')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Report marked as $status.')));
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update report: $error')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update report: $error')));
     }
   }
 
-  Future<void> _setRecipeVisibility({
+  Future<void> _deleteRecipe({
     required String recipeId,
-    required bool isPublic,
+    required String recipeName,
+    required String recipeOwnerId,
+    required String reason,
   }) async {
-    final action = isPublic ? 'unhide' : 'hide';
     try {
-      await ref.read(recipeReportServiceProvider).setRecipeVisibility(
-            recipeId: recipeId,
-            isPublic: isPublic,
-          );
+      // Fetch owner's FCM token
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(recipeOwnerId)
+          .get();
+      
+      final ownerFcmToken = userDoc.data()?['fcmToken'] as String?;
+
+      // Delete the recipe
+      await ref.read(recipeReportServiceProvider).deleteRecipe(recipeId: recipeId);
+      
+  
+      if (ownerFcmToken != null && ownerFcmToken.isNotEmpty) {
+        await NotificationTrigger.sendRecipeDeletedNotification(
+          recipeId: recipeId,
+          recipeName: recipeName,
+          recipeOwnerId: recipeOwnerId,
+          ownerFcmToken: ownerFcmToken,
+          reason: reason,
+        );
+      }
+      
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Recipe ${action}d successfully.')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Recipe deleted successfully.')));
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to $action recipe: $error')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to delete recipe: $error')));
     }
   }
-
 
   Future<void> _showEditRecipeDialog({
     required String recipeId,
@@ -646,7 +817,6 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
       ),
     );
   }
-
 }
 
 class _OverviewTab extends StatelessWidget {
@@ -666,19 +836,40 @@ class _OverviewTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        _MetricCard(title: 'Total Users', value: '$totalUsers'),
-        const SizedBox(height: 10),
-        _MetricCard(title: 'Banned Users', value: '$bannedUsers'),
-        const SizedBox(height: 10),
-        _MetricCard(title: 'Open Reports', value: '$openReports'),
-        const SizedBox(height: 10),
-        _MetricCard(title: 'Ingredients', value: '$totalIngredients'),
-        const SizedBox(height: 10),
-        _MetricCard(title: 'Recipes', value: '$totalRecipes'),
-      ],
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'System Status',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.rosePink),
+          ),
+          const SizedBox(height: 16),
+          GridView.count(
+            crossAxisCount: 2,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            childAspectRatio: 1.2, // Makes them nice square-ish dashboard cards
+            children: [
+              _MetricCard(title: 'Total Users', value: '$totalUsers', icon: Icons.people_alt_rounded),
+              _MetricCard(title: 'Banned Users', value: '$bannedUsers', icon: Icons.gavel_rounded, isAlert: bannedUsers > 0),
+              _MetricCard(title: 'Open Reports', value: '$openReports', icon: Icons.flag_rounded, isAlert: openReports > 0),
+              _MetricCard(title: 'Total Recipes', value: '$totalRecipes', icon: Icons.restaurant_menu_rounded),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Span the last metric across the full width
+          SizedBox(
+            width: double.infinity,
+            height: 120,
+            child: _MetricCard(title: 'Total Ingredients', value: '$totalIngredients', icon: Icons.eco_rounded),
+          )
+        ],
+      ),
     );
   }
 }
@@ -691,11 +882,18 @@ class _AdminCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.rosePink.withValues(alpha: 0.14)),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.rosePink.withValues(alpha: 0.14), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: child,
     );
@@ -703,25 +901,49 @@ class _AdminCard extends StatelessWidget {
 }
 
 class _MetricCard extends StatelessWidget {
-  const _MetricCard({required this.title, required this.value});
+  const _MetricCard({required this.title, required this.value, required this.icon, this.isAlert = false});
 
   final String title;
   final String value;
+  final IconData icon;
+  final bool isAlert;
 
   @override
   Widget build(BuildContext context) {
-    return _AdminCard(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    final color = isAlert ? Colors.orange : AppColors.rosePink;
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.14), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Icon(icon, color: color.withValues(alpha: 0.5), size: 28),
+              Text(
+                value,
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: color),
+              ),
+            ],
+          ),
+          const Spacer(),
           Text(
-            value,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
-              color: AppColors.rosePink,
-            ),
+            title,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black54),
           ),
         ],
       ),
@@ -740,16 +962,13 @@ class _ChipLabel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
       ),
       child: Text(
         label,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
-          color: color,
-        ),
+        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color),
       ),
     );
   }
@@ -759,24 +978,23 @@ class _ReportCard extends ConsumerWidget {
   const _ReportCard({
     required this.report,
     required this.onStatusChanged,
-    required this.onRecipeVisibilityChanged,
+    required this.onRecipeDeleted,
     required this.statusColor,
   });
 
   final RecipeReport report;
-  final Function(
-      {required String reportId,
-      required String status}) onStatusChanged;
-  final Function({required String recipeId, required bool isPublic})
-      onRecipeVisibilityChanged;
+  final Function({required String reportId, required String status}) onStatusChanged;
+  final Function({
+    required String recipeId,
+    required String recipeName,
+    required String recipeOwnerId,
+    required String reason,
+  }) onRecipeDeleted;
   final Color Function(String) statusColor;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Fetch recipe name using the stable provider
-    final recipeAsync = ref.watch(adminRecipeNameProvider(report.recipeId));
-
-    // Fetch reporter name
+    final recipeDataAsync = ref.watch(adminRecipeDataProvider(report.recipeId));
     final reporterNameAsync = ref.watch(userDataByIdProvider(report.reporterId));
 
     return _AdminCard(
@@ -785,227 +1003,181 @@ class _ReportCard extends ConsumerWidget {
         children: [
           // Header: Report Reason and Status
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Report Reason',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black54,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
+                    const Text('REASON', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black45)),
+                    const SizedBox(height: 2),
                     Text(
                       report.reason,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 16,
-                      ),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
               _ChipLabel(
                 label: report.status.toUpperCase(),
                 color: statusColor(report.status),
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          Divider(height: 1, color: Colors.black.withValues(alpha: 0.08)),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
+          
+          // Details Box (if provided)
+          if ((report.details ?? '').isNotEmpty) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.cardRose.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                report.details!,
+                style: const TextStyle(color: Colors.black87, fontSize: 13, height: 1.4),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
 
-          // Recipe Info
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Recipe',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black54,
-                ),
-              ),
-              const SizedBox(height: 6),
-              recipeAsync.when(
-                loading: () => Text(
-                  'Loading...',
-                  style: TextStyle(color: Colors.black54),
-                ),
-                error: (_, _) => Text(
-                  'Error loading recipe',
-                  style: TextStyle(color: Colors.black54),
-                ),
-                data: (recipeName) {
-                  final displayName =
-                      recipeName ?? 'Unknown Recipe (${report.recipeId})';
-                  return Text(
-                    displayName,
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  );
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Reporter Info
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Reporter',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black54,
-                ),
-              ),
-              const SizedBox(height: 6),
-              reporterNameAsync.when(
-                loading: () => Text(
-                  'Loading...',
-                  style: TextStyle(color: Colors.black54),
-                ),
-                error: (_, _) => Text(
-                  'Unknown User (${report.reporterId})',
-                  style: TextStyle(color: Colors.black54),
-                ),
-                data: (reporterData) {
-                  final reporterName =
-                      reporterData?['username'] ?? 'Unknown User';
-                  return Text(
-                    reporterName.toString(),
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  );
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Submission Details
+          // Meta Info Grid
           Row(
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Submitted',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black54,
+                    const Text('RECIPE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black45)),
+                    const SizedBox(height: 2),
+                    recipeDataAsync.when(
+                      loading: () => const Text('Loading...', style: TextStyle(color: Colors.black54, fontSize: 13)),
+                      error: (_, _) => const Text('Error', style: TextStyle(color: Colors.red, fontSize: 13)),
+                      data: (data) => Text(
+                        data.name ?? 'Unknown (${report.recipeId})',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                       ),
                     ),
-                    const SizedBox(height: 3),
-                    Text(
-                      DateFormat('MMM dd, yyyy HH:mm').format(
-                        report.createdAt.toLocal(),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('REPORTER', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black45)),
+                    const SizedBox(height: 2),
+                    reporterNameAsync.when(
+                      loading: () => const Text('Loading...', style: TextStyle(color: Colors.black54, fontSize: 13)),
+                      error: (_, _) => const Text('Unknown User', style: TextStyle(color: Colors.black54, fontSize: 13)),
+                      data: (data) => Text(
+                        (data?['username'] ?? 'Unknown User').toString(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                       ),
-                      style: const TextStyle(fontSize: 13),
                     ),
                   ],
                 ),
               ),
             ],
           ),
-
-          // Details if available
-          if ((report.details ?? '').isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Divider(height: 1, color: Colors.black.withValues(alpha: 0.08)),
-            const SizedBox(height: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Additional Details',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black54,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  report.details!,
-                  style: const TextStyle(
-                    color: Colors.black87,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ],
-
-          const SizedBox(height: 14),
-          Divider(height: 1, color: Colors.black.withValues(alpha: 0.08)),
           const SizedBox(height: 12),
+          Text(
+            'Submitted: ${DateFormat('MMM dd, yyyy HH:mm').format(report.createdAt.toLocal())}',
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.black45),
+          ),
+          
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Divider(height: 1),
+          ),
 
           // Action Buttons
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
-              OutlinedButton.icon(
-                onPressed: report.status == 'open'
-                    ? null
-                    : () => onStatusChanged(
-                          reportId: report.id,
-                          status: 'open',
-                        ),
-                icon: const Icon(Icons.refresh),
-                label: const Text('Reopen'),
-              ),
-              OutlinedButton.icon(
-                onPressed: report.status == 'reviewed'
-                    ? null
-                    : () => onStatusChanged(
-                          reportId: report.id,
-                          status: 'reviewed',
-                        ),
-                icon: const Icon(Icons.task_alt),
-                label: const Text('Mark Reviewed'),
-              ),
-              OutlinedButton.icon(
-                onPressed: report.status == 'dismissed'
-                    ? null
-                    : () => onStatusChanged(
-                          reportId: report.id,
-                          status: 'dismissed',
-                        ),
-                icon: const Icon(Icons.gpp_good),
-                label: const Text('Dismiss'),
-              ),
-              FilledButton.tonalIcon(
-                onPressed: () => onRecipeVisibilityChanged(
-                  recipeId: report.recipeId,
-                  isPublic: false,
+              if (report.status != 'open')
+                OutlinedButton(
+                  onPressed: () => onStatusChanged(reportId: report.id, status: 'open'),
+                  style: OutlinedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Reopen', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
-                icon: const Icon(Icons.visibility_off),
-                label: const Text('Hide Recipe'),
-              ),
-              FilledButton.tonalIcon(
-                onPressed: () => onRecipeVisibilityChanged(
-                  recipeId: report.recipeId,
-                  isPublic: true,
+              if (report.status != 'reviewed')
+                FilledButton.tonal(
+                  onPressed: () => onStatusChanged(reportId: report.id, status: 'reviewed'),
+                  style: FilledButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    backgroundColor: Colors.green.withValues(alpha: 0.1),
+                    foregroundColor: Colors.green,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Mark Reviewed', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
-                icon: const Icon(Icons.visibility),
-                label: const Text('Unhide Recipe'),
-              ),
+              if (report.status != 'dismissed')
+                FilledButton.tonal(
+                  onPressed: () => onStatusChanged(reportId: report.id, status: 'dismissed'),
+                  style: FilledButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    backgroundColor: Colors.grey.shade200,
+                    foregroundColor: Colors.black87,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Dismiss', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
             ],
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: recipeDataAsync.when(
+              loading: () => FilledButton.tonal(
+                onPressed: null,
+                style: FilledButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  backgroundColor: Colors.red.withValues(alpha: 0.1),
+                  foregroundColor: Colors.red,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Delete Recipe', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+              error: (_, _) => FilledButton.tonal(
+                onPressed: null,
+                style: FilledButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  backgroundColor: Colors.red.withValues(alpha: 0.1),
+                  foregroundColor: Colors.red,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Delete Recipe', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+              data: (recipeData) => FilledButton.tonal(
+                onPressed: () => onRecipeDeleted(
+                  recipeId: report.recipeId,
+                  recipeName: recipeData.name ?? 'Unknown Recipe',
+                  recipeOwnerId: recipeData.ownerId ?? 'unknown',
+                  reason: report.reason,
+                ),
+                style: FilledButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  backgroundColor: Colors.red.withValues(alpha: 0.1),
+                  foregroundColor: Colors.red,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Delete Recipe', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 }
-

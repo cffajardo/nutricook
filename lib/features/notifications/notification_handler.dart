@@ -24,6 +24,9 @@ class NotificationHandler {
         case NotificationType.mealReminder:
           _handleMealReminderNotification(context, payload);
           break;
+        case NotificationType.recipeDeleted:
+          // No navigation needed for recipe deleted notification
+          break;
       }
     } catch (e) {
       debugPrint('Error handling notification tap: $e');

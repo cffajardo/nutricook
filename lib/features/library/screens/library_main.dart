@@ -8,42 +8,46 @@ class LibraryMainScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: Colors.black,
-            size: 22,
-          ),
-        ),
-        title: const Text(
-          'Library',
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.w900,
-            fontSize: 22,
-          ),
+    return Container(
+      color: const Color(0xFFFFF9FA),
+      child: SafeArea(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(),
+            Expanded(
+              child: GridView.builder(
+                padding: const EdgeInsets.all(24),
+                itemCount: kLibraryCategories.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 20,
+                  mainAxisSpacing: 32,
+                  childAspectRatio: 0.85,
+                ),
+                itemBuilder: (context, index) {
+                  final category = kLibraryCategories[index];
+                  return _buildCategoryCard(context, category: category);
+                },
+              ),
+            ),
+          ],
         ),
       ),
-      body: GridView.builder(
-        padding: const EdgeInsets.all(24),
-        itemCount: kLibraryCategories.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 20,
-          mainAxisSpacing: 32,
-          childAspectRatio: 0.85,
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+      child: const Text(
+        'Library',
+        style: TextStyle(
+          fontSize: 34,
+          fontWeight: FontWeight.w900,
+          color: Colors.black87,
         ),
-        itemBuilder: (context, index) {
-          final category = kLibraryCategories[index];
-          return _buildCategoryCard(context, category: category);
-        },
       ),
     );
   }

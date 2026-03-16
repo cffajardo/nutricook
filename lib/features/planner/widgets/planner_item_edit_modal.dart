@@ -6,6 +6,7 @@ import 'package:nutricook/features/auth/providers/auth_provider.dart';
 import 'package:nutricook/features/planner/provider/planner_provider.dart';
 import 'package:nutricook/features/planner/widgets/planner_item_datepicker_modal.dart';
 import 'package:nutricook/features/planner/widgets/planner_item_select_recipe.dart';
+import 'package:nutricook/features/profile/provider/user_preferences_provider.dart';
 import 'package:nutricook/models/nutrition_info/nutrition_info.dart';
 import 'package:nutricook/models/planner_item/planner_item.dart';
 
@@ -156,10 +157,14 @@ class _PlannerItemEditModalState extends ConsumerState<PlannerItemEditModal> {
       );
 
       final service = ref.read(plannerServiceProvider);
+      final preferences =
+          ref.read(userPreferencesProvider).asData?.value;
+      final mealStartHours = preferences?.mealStartHours;
+
       if (existing == null) {
-        await service.addPlannerItem(item);
+        await service.addPlannerItem(item, mealStartHours: mealStartHours);
       } else {
-        await service.updatePlannerItem(item);
+        await service.updatePlannerItem(item, mealStartHours: mealStartHours);
       }
 
       if (!mounted) return;

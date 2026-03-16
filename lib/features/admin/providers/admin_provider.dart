@@ -91,3 +91,21 @@ final adminRecipeNameProvider =
     return null;
   }
 });
+
+final adminRecipeDataProvider = FutureProvider.family<
+    ({String? name, String? ownerId}),
+    String>((ref, recipeId) async {
+  try {
+    final doc = await FirebaseFirestore.instance
+        .collection(FirestoreConstants.recipes)
+        .doc(recipeId)
+        .get();
+    final data = doc.data();
+    return (
+      name: data?['name'] as String?,
+      ownerId: data?['ownerId'] as String?,
+    );
+  } catch (_) {
+    return (name: null, ownerId: null);
+  }
+});

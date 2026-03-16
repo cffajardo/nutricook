@@ -93,6 +93,35 @@ class NotificationTrigger {
     }
   }
 
+  /// Send a recipe deleted notification
+  static Future<bool> sendRecipeDeletedNotification({
+    required String recipeId,
+    required String recipeName,
+    required String recipeOwnerId,
+    required String ownerFcmToken,
+    required String reason,
+  }) async {
+    try {
+      debugPrint('Sending recipe deleted notification for recipe: $recipeName');
+
+      final title = 'Recipe Removed';
+      final body = 'Your recipe "$recipeName" was removed due to: $reason';
+
+      return await _sendNotification(
+        title: title,
+        body: body,
+        fcmToken: ownerFcmToken,
+        type: NotificationType.recipeDeleted,
+        senderId: 'system',
+        recipientId: recipeOwnerId,
+        entityId: recipeId,
+      );
+    } catch (e) {
+      debugPrint('Error sending recipe deleted notification: $e');
+      return false;
+    }
+  }
+
   /// Internal method to send notification via FCM REST API and store in Firestore
   static Future<bool> _sendNotification({
     required String title,
