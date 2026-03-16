@@ -9,6 +9,7 @@ import 'package:nutricook/models/unit/unit.dart';
 import 'package:nutricook/models/ingredient/ingredient.dart';
 import 'package:nutricook/features/recipe/providers/recipe_provider.dart';
 import 'package:nutricook/features/admin/providers/create_ingredient_provider.dart';
+import 'package:nutricook/widgets/image_upload_field.dart';
 
 class AddIngredientModal extends ConsumerStatefulWidget {
   final ValueChanged<RecipeIngredient>? onIngredientAdded;
@@ -41,6 +42,7 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
   String? _selectedUnitId;
   late TextEditingController _amountController;
   final TextEditingController _searchController = TextEditingController();
+  final GlobalKey<State<ImageUploadField>> _ingredientImageUploadKey = GlobalKey();
 
   final List<String> _processes = const <String>[
     'None',
@@ -374,6 +376,18 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
           },
         ),
         const SizedBox(height: 24),
+        ImageUploadField(
+          key: _ingredientImageUploadKey,
+          folder: 'ingredients',
+          label: 'Ingredient Image (Optional)',
+          height: 160,
+          autoUpload: false,
+          initialImageUrl: ingredientState.imageUrl.isEmpty ? null : ingredientState.imageUrl,
+          onSuccess: (imageUrl) {
+            ref.read(createIngredientProvider.notifier).setImageUrl(imageUrl);
+          },
+        ),
+        const SizedBox(height: 24),
         Row(
           children: [
             Expanded(
@@ -540,6 +554,23 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
       return;
     }
 
+    // Upload image if one was selected
+    String imageUrl = ingredientState.imageUrl;
+    if (_ingredientImageUploadKey.currentState != null) {
+      try {
+        final uploadedUrl = await (_ingredientImageUploadKey.currentState as dynamic)?.uploadImage();
+        if (uploadedUrl != null && uploadedUrl is String) {
+          imageUrl = uploadedUrl;
+          ref.read(createIngredientProvider.notifier).setImageUrl(imageUrl);
+        }
+      } catch (e) {
+        if (mounted) {
+          _showSnack('Failed to upload image: $e');
+        }
+        return;
+      }
+    }
+
     // Convert ingredient state to map for storage in pending ingredients
     final ingredientMap = {
       'name': ingredientState.name,
@@ -553,7 +584,7 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
       'fiber': ingredientState.fiber,
       'sugar': ingredientState.sugar,
       'sodium': ingredientState.sodium,
-      'imageUrl': ingredientState.imageUrl,
+      'imageUrl': imageUrl,
     };
 
     // Store in pending ingredients instead of saving immediately
@@ -576,7 +607,9 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
 
     _showSnack('Ingredient added! Will be saved when you save the recipe.');
     ref.read(createIngredientProvider.notifier).reset();
-    Navigator.pop(context);
+    if (mounted) {
+      Navigator.pop(context);
+    }
   }
 
   Widget _buildDetailForm() {
