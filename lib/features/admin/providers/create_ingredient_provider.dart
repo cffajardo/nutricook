@@ -108,6 +108,32 @@ class CreateIngredientState {
       createdInRecipeId: createdInRecipeId ?? this.createdInRecipeId,
     );
   }
+
+  Ingredient toIngredient({String? id, String? ownerId}) {
+    final nutritionInfo = NutritionInfo(
+      calories: calories,
+      carbohydrates: carbohydrates,
+      protein: protein,
+      fat: fat,
+      fiber: fiber,
+      sugar: sugar,
+      sodium: sodium,
+    );
+
+    return Ingredient(
+      id: id ?? '',
+      ownerId: ownerId,
+      name: name.trim(),
+      category: category,
+      description: description.trim().isNotEmpty
+          ? description.trim()
+          : name.trim(),
+      nutritionPer100g: nutritionInfo,
+      densityGPerMl: isLiquid ? density : null,
+      avgWeightG: !isLiquid ? avgWeight : null,
+      imageURL: imageUrl.isNotEmpty ? imageUrl : null,
+    );
+  }
 }
 
 class CreateIngredientNotifier extends Notifier<CreateIngredientState> {

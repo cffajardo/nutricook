@@ -94,7 +94,7 @@ class IngredientService {
     debugPrint('  nutritionPer100g in JSON: ${json['nutritionPer100g']}');
     debugPrint('  nutritionPer100g type: ${json['nutritionPer100g'].runtimeType}');
 
-    await ingredientRef.set(json);
+    ingredientRef.set(json);
     return ingredientRef.id;
   }
 
@@ -118,7 +118,7 @@ class IngredientService {
         'createdInRecipeId': FieldValue.delete(),
       });
     }
-    await batch.commit();
+    batch.commit();
   }
 
   Future<void> cleanupTemporaryIngredients(String recipeId) async {
@@ -138,7 +138,7 @@ class IngredientService {
     for (final doc in snapshot.docs) {
       batch.delete(doc.reference);
     }
-    await batch.commit();
+    batch.commit();
   }
 
   Future<void> updateIngredient(Ingredient ingredient) async {
@@ -148,7 +148,7 @@ class IngredientService {
       throw Exception('You can only update your own custom ingredients');
     }
 
-    await _db
+    _db
         .collection(FirestoreConstants.ingredients)
         .doc(ingredient.id)
         .update(ingredient.toJson());
@@ -167,7 +167,7 @@ class IngredientService {
       throw Exception('You can only delete your own custom ingredients');
     }
 
-    await _db
+    _db
         .collection(FirestoreConstants.ingredients)
         .doc(ingredientId)
         .delete();

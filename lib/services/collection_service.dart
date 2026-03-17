@@ -33,7 +33,7 @@ class CollectionService {
       updatedAt: DateTime.now(),
     );
 
-    await collectionRef.set(collection.toJson());
+    _db.collection('collections').doc(collection.id).set(collection.toJson());
     return collection.id;
   }
 
@@ -50,7 +50,7 @@ class CollectionService {
       updatedAt: DateTime.now(),
     );
 
-    await collectionRef.set(collection.toJson());
+    _db.collection('collections').doc(collection.id).set(collection.toJson());
   }
 
   Future<void> updateCollection({
@@ -83,7 +83,7 @@ class CollectionService {
     if (thumbnailUrl != null) updates['thumbnailUrl'] = thumbnailUrl;
     if (isPublic != null) updates['isPublic'] = isPublic;
 
-    await collectionRef.update(updates);
+    collectionRef.update(updates);
   }
 
   Future<void> deleteCollection(String collectionId) async {
@@ -108,12 +108,14 @@ class CollectionService {
       throw Exception('The Favorites collection cannot be deleted');
     }
 
-    final itemsSnapshot = await collectionRef.collection('items').get();
-    for (final doc in itemsSnapshot.docs) {
-      await doc.reference.delete();
-    }
+    // Delete items incrementally without blocking the main deletion
+    collectionRef.collection('items').get(const GetOptions(source: Source.serverAndCache)).then((itemsSnapshot) {
+      for (final doc in itemsSnapshot.docs) {
+        doc.reference.delete();
+      }
+    });
 
-    await collectionRef.delete();
+    collectionRef.delete();
   }
 
   Stream<List<Collection>> getUserCollections() {
@@ -235,7 +237,7 @@ class CollectionService {
       updatedAt: DateTime.now(),
     );
 
-    await collectionRef.set(favoritesCollection.toJson());
+    collectionRef.set(favoritesCollection.toJson());
     return favoritesCollection;
   }
 
@@ -279,9 +281,9 @@ class CollectionService {
         order: 0,
       );
 
-      await itemRef.set(collectionItem.toJson());
+      itemRef.set(collectionItem.toJson());
 
-      await _db
+      _db
           .collection('collections')
           .doc(favoritesCollection.id)
           .update({
@@ -306,11 +308,11 @@ class CollectionService {
           .get();
 
       for (final doc in query.docs) {
-        await doc.reference.delete();
+        doc.reference.delete();
       }
 
       if (query.docs.isNotEmpty) {
-        await _db
+        _db
             .collection('collections')
             .doc(favoritesCollection.id)
             .update({

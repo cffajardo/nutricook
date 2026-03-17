@@ -164,7 +164,7 @@ class RecipeService {
     final data =
         _sanitizeForFirestore(_recipeToFirestoreData(recipeWithId))
             as Map<String, dynamic>;
-    await recipeRef.set(data);
+    recipeRef.set(data);
     return recipeRef.id;
   }
 
@@ -212,14 +212,14 @@ class RecipeService {
     final data =
         _sanitizeForFirestore(_recipeToFirestoreData(updatedRecipe))
             as Map<String, dynamic>;
-    await _db
+    _db
         .collection(FirestoreConstants.recipes)
         .doc(recipe.id)
         .update(data);
   }
 
   Future<void> deleteRecipe(String recipeId) async {
-    await _db.collection(FirestoreConstants.recipes).doc(recipeId).delete();
+    _db.collection(FirestoreConstants.recipes).doc(recipeId).delete();
   }
 
   Future<void> addFavorite(String recipeId, String userId) async {

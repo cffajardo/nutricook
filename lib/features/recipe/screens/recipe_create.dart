@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
-import 'package:nutricook/features/library/ingredients/provider/ingredient_provider.dart';
+import 'package:nutricook/features/library/ingredients/provider/ingredient_provider.dart' hide ingredientServiceProvider;
 import 'package:nutricook/features/library/units/unit_provider.dart';
 import 'package:nutricook/features/recipe/providers/recipe_provider.dart';
 import 'package:nutricook/features/recipe/screens/recipe_create_select_ingredients.dart';
@@ -100,7 +100,7 @@ class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
 
 
       if (creation.isEditing) {
-        await ref
+        ref
             .read(recipeServiceProvider)
             .updateRecipe(
               recipe: baseRecipe,
@@ -108,7 +108,7 @@ class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
               unitsMap: unitsMap,
             );
       } else {
-        await ref
+        ref
             .read(recipeServiceProvider)
             .createRecipe(
               recipe: baseRecipe,
@@ -117,10 +117,8 @@ class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
             );
       }
 
-      await ref.read(recipeCreationProvider.notifier).finalizeTempIngredients(creation.creationId);
+      ref.read(recipeCreationProvider.notifier).finalizeTempIngredients(creation.creationId);
 
-      if (!mounted) return;
-  
       ref.read(recipeCreationProvider.notifier).clear();
 
       navigator.pop();

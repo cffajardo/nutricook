@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nutricook/core/constants.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
-import 'package:nutricook/features/library/ingredients/provider/ingredient_provider.dart';
+import 'package:nutricook/features/library/ingredients/provider/ingredient_provider.dart' hide ingredientServiceProvider;
 import 'package:nutricook/features/library/units/unit_provider.dart';
+import 'package:nutricook/features/auth/providers/auth_provider.dart';
 import 'package:nutricook/models/recipe_ingredient/recipe_ingredient.dart';
 import 'package:nutricook/models/unit/unit.dart';
 import 'package:nutricook/models/ingredient/ingredient.dart';
@@ -917,15 +918,16 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
 
     try {
       String? imageUrl;
-      if (_ingredientImageUploadKey.currentState != null) {
-        final uploadedUrl = await (_ingredientImageUploadKey.currentState as dynamic)?.uploadImage();
-        if (uploadedUrl != null && uploadedUrl is String) {
-          imageUrl = uploadedUrl;
-          ref.read(createIngredientProvider.notifier).setImageUrl(imageUrl);
-        }
-      }
+      // We start the upload but don't wait for it to block the main creation
+      // Firestore will sync the item first, and we can update the image URL later if needed.
+      // However, for immediate offline support, we'll try to get the local path if possible,
+      // but the requirement was "be able to create even without image".
+      
+      final uploadFuture = _ingredientImageUploadKey.currentState != null 
+          ? (_ingredientImageUploadKey.currentState as dynamic)?.uploadImage()
+          : Future.value(null);
 
-      await ref.read(createIngredientProvider.notifier).generatePhysicalProperty(_nameController.text);
+      ref.read(createIngredientProvider.notifier).generatePhysicalProperty(_nameController.text);
       final recipeCreationState = ref.read(recipeCreationProvider);
       final recipeId = recipeCreationState.creationId;
           
@@ -934,39 +936,53 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
         recipeId: recipeId,
       );
 
-      final createdIng = await ref.read(createIngredientProvider.notifier).createIngredient();
+      // We call createIngredient but don't await the result to block the UI.
+      // We need the created object to add to the recipe list though.
+      // To keep it simple and responsive, we generate the ID locally or use the one in state.
+      
+      final currentIng = state.toIngredient(
+        id: 'ing_${DateTime.now().millisecondsSinceEpoch}',
+        ownerId: ref.read(currentUserIdProvider),
+      );
 
-      if (createdIng != null) {
-        ref.read(recipeCreationProvider.notifier).addTempIngredient(createdIng);
-
-        if (widget.onIngredientAdded != null) {
-          widget.onIngredientAdded!(
-            RecipeIngredient(
-              ingredientID: createdIng.id,
-              name: createdIng.name,
-              quantity: 100,
-              unitID: 'g',
-              unitName: 'g',
-              preparation: null,
-            ),
-          );
+      ref.read(createIngredientProvider.notifier).createIngredient();
+      
+      // Update with image URL whenever it's ready (non-blocking)
+      uploadFuture.then((url) {
+        if (url != null && url is String) {
+          ref.read(ingredientServiceProvider).updateIngredient(currentIng.copyWith(imageURL: url));
         }
+      });
 
-        _showSnack('Ingredient "${createdIng.name}" created and added.');
-        ref.read(createIngredientProvider.notifier).reset();
-        
-        _nameController.clear();
-        _descriptionController.clear();
-        _caloriesController.clear();
-        _carbsController.clear();
-        _proteinController.clear();
-        _fatController.clear();
-        _fiberController.clear();
-        _sugarController.clear();
-        _sodiumController.clear();
+      ref.read(recipeCreationProvider.notifier).addTempIngredient(currentIng);
 
-        navigator.pop();
+      if (widget.onIngredientAdded != null) {
+        widget.onIngredientAdded!(
+          RecipeIngredient(
+            ingredientID: currentIng.id,
+            name: currentIng.name,
+            quantity: 100,
+            unitID: 'g',
+            unitName: 'g',
+            preparation: null,
+          ),
+        );
       }
+
+      _showSnack('Ingredient "${currentIng.name}" created and added.');
+      ref.read(createIngredientProvider.notifier).reset();
+      
+      _nameController.clear();
+      _descriptionController.clear();
+      _caloriesController.clear();
+      _carbsController.clear();
+      _proteinController.clear();
+      _fatController.clear();
+      _fiberController.clear();
+      _sugarController.clear();
+      _sodiumController.clear();
+
+      navigator.pop();
     } catch (e) {
       _showSnack('Failed to create ingredient: $e');
     }

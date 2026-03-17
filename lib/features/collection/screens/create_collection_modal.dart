@@ -66,7 +66,7 @@ class _CreateCollectionModalState extends State<CreateCollectionModal> {
       setState(() => _isSaving = true);
 
       if (widget.isEditMode && widget.collectionId != null) {
-        await CollectionService().updateCollection(
+        CollectionService().updateCollection(
           collectionId: widget.collectionId!,
           name: name,
           description: description,
@@ -74,7 +74,7 @@ class _CreateCollectionModalState extends State<CreateCollectionModal> {
           thumbnailUrl: _thumbnailUrl.isNotEmpty ? _thumbnailUrl : null,
         );
       } else {
-        await CollectionService().createCollection(
+        CollectionService().createCollection(
           name: name,
           description: description,
           isPublic: _isPublic,
@@ -82,9 +82,14 @@ class _CreateCollectionModalState extends State<CreateCollectionModal> {
         );
       }
 
-      if (!mounted) return;
       widget.onCollectionCreated?.call();
       context.pop();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
