@@ -68,7 +68,7 @@ class IngredientService {
         .toList();
   }
 
-  Future<String> createIngredient(Ingredient ingredient) async {
+  Future<String> createIngredient(Ingredient ingredient, {bool isTemporary = false, String? createdInRecipeId}) async {
     final ingredientRef = ingredient.id.isEmpty
         ? _db.collection(FirestoreConstants.ingredients).doc()
         : _db.collection(FirestoreConstants.ingredients).doc(ingredient.id);
@@ -85,12 +85,64 @@ class IngredientService {
     debugPrint('  Name: ${ingredientWithId.name}');
     debugPrint('  NutritionInfo object: ${ingredientWithId.nutritionPer100g}');
     final json = ingredientWithId.toJson();
-    debugPrint('  Serialized JSON: $json');
+    
+    // Add temporary metadata that is not part of the model
+    if (isTemporary) {
+      json['isTemporary'] = true;
+      if (createdInRecipeId != null) {
+        json['createdInRecipeId'] = createdInRecipeId;
+      }
+    }
+
+    debugPrint('  Serialized JSON with metadata: $json');
     debugPrint('  nutritionPer100g in JSON: ${json['nutritionPer100g']}');
     debugPrint('  nutritionPer100g type: ${json['nutritionPer100g'].runtimeType}');
 
     await ingredientRef.set(json);
     return ingredientRef.id;
+  }
+
+  Future<void> promoteTemporaryIngredients(String recipeId) async {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) return;
+
+    final snapshot = await _db
+        .collection(FirestoreConstants.ingredients)
+        .where('ownerId', isEqualTo: userId)
+        .where('isTemporary', isEqualTo: true)
+        .where('createdInRecipeId', isEqualTo: recipeId)
+        .get();
+
+    if (snapshot.docs.isEmpty) return;
+
+    final batch = _db.batch();
+    for (final doc in snapshot.docs) {
+      batch.update(doc.reference, {
+        'isTemporary': false,
+        'createdInRecipeId': FieldValue.delete(),
+      });
+    }
+    await batch.commit();
+  }
+
+  Future<void> cleanupTemporaryIngredients(String recipeId) async {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) return;
+
+    final snapshot = await _db
+        .collection(FirestoreConstants.ingredients)
+        .where('ownerId', isEqualTo: userId)
+        .where('isTemporary', isEqualTo: true)
+        .where('createdInRecipeId', isEqualTo: recipeId)
+        .get();
+
+    if (snapshot.docs.isEmpty) return;
+
+    final batch = _db.batch();
+    for (final doc in snapshot.docs) {
+      batch.delete(doc.reference);
+    }
+    await batch.commit();
   }
 
   Future<void> updateIngredient(Ingredient ingredient) async {

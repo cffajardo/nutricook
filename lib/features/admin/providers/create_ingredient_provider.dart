@@ -36,6 +36,8 @@ class CreateIngredientState {
     this.isLoadingPhysicalProperty = false,
     this.error = '',
     this.success = false,
+    this.isTemporary = false,
+    this.createdInRecipeId,
   });
 
   final String name;
@@ -57,6 +59,8 @@ class CreateIngredientState {
   final bool isLoadingPhysicalProperty;
   final String error;
   final bool success;
+  final bool isTemporary;
+  final String? createdInRecipeId;
 
   CreateIngredientState copyWith({
     String? name,
@@ -78,6 +82,8 @@ class CreateIngredientState {
     bool? isLoadingPhysicalProperty,
     String? error,
     bool? success,
+    bool? isTemporary,
+    String? createdInRecipeId,
   }) {
     return CreateIngredientState(
       name: name ?? this.name,
@@ -100,6 +106,8 @@ class CreateIngredientState {
           isLoadingPhysicalProperty ?? this.isLoadingPhysicalProperty,
       error: error ?? this.error,
       success: success ?? this.success,
+      isTemporary: isTemporary ?? this.isTemporary,
+      createdInRecipeId: createdInRecipeId ?? this.createdInRecipeId,
     );
   }
 }
@@ -138,6 +146,14 @@ class CreateIngredientNotifier extends Notifier<CreateIngredientState> {
 
   void setImageUrl(String imageUrl) {
     state = state.copyWith(imageUrl: imageUrl, error: '');
+  }
+
+  void setTemporaryStatus({required bool isTemporary, String? recipeId}) {
+    state = state.copyWith(
+      isTemporary: isTemporary,
+      createdInRecipeId: recipeId,
+      error: '',
+    );
   }
 
   void setNutritionValue({
@@ -313,7 +329,11 @@ class CreateIngredientNotifier extends Notifier<CreateIngredientState> {
       debugPrint('  NutritionInfo field: ${ingredient.nutritionPer100g}');
 
       final ingredientService = ref.read(ingredientServiceProvider);
-      final ingredientId = await ingredientService.createIngredient(ingredient);
+      final ingredientId = await ingredientService.createIngredient(
+        ingredient,
+        isTemporary: state.isTemporary,
+        createdInRecipeId: state.createdInRecipeId,
+      );
 
       state = state.copyWith(success: true);
 

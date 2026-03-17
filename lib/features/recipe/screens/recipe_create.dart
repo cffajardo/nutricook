@@ -8,6 +8,7 @@ import 'package:nutricook/features/recipe/screens/recipe_create_select_ingredien
 import 'package:nutricook/features/recipe/screens/recipe_create_about_page.dart';
 import 'package:nutricook/features/recipe/screens/recipe_create_instructions.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
+import 'package:nutricook/models/ingredient/ingredient.dart';
 import 'package:nutricook/features/admin/providers/create_ingredient_provider.dart';
 
 class CreateRecipeScreen extends ConsumerStatefulWidget {
@@ -59,14 +60,21 @@ class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
       return;
     }
 
-    final ingredientsMap = ref.read(ingredientsMapProvider).asData?.value;
+    final baseIngredientsMap = ref.read(ingredientsMapProvider).asData?.value;
     final unitsMap = ref.read(unitsMapProvider).asData?.value;
-    if (ingredientsMap == null || unitsMap == null) {
+    if (baseIngredientsMap == null || unitsMap == null) {
       _showMessage(
         'Ingredient and unit data is still loading. Please try again.',
       );
       return;
     }
+
+    // Merge in any temporary ingredients created in this session that might not 
+    // be in the streamed map yet.
+    final ingredientsMap = <String, Ingredient>{
+      ...baseIngredientsMap,
+      ...creation.tempIngredients,
+    };
 
     // Capture the Navigator and ScaffoldMessenger before any async operations
     final navigator = Navigator.of(context);
@@ -75,77 +83,15 @@ class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
     try {
       setState(() => _isFinishing = true);
 
-      // Step 1: Create pending custom ingredients and get their IDs
-      final ingredientIdMap = <String, String>{}; // name -> realId mapping
-      if (creation.pendingIngredients.isNotEmpty) {
-        for (final pendingIngData in creation.pendingIngredients) {
-          try {
-            if (pendingIngData is Map<String, dynamic>) {
-              final name = pendingIngData['name'] as String? ?? '';
-              final category = pendingIngData['category'] as String? ?? 'proteins';
-              final description = pendingIngData['description'] as String? ?? name;
-              final calories = (pendingIngData['calories'] as num?)?.toInt() ?? 0;
-              final carbs = (pendingIngData['carbohydrates'] as num?)?.toDouble() ?? 0.0;
-              final protein = (pendingIngData['protein'] as num?)?.toDouble() ?? 0.0;
-              final fat = (pendingIngData['fat'] as num?)?.toDouble() ?? 0.0;
-              final fiber = (pendingIngData['fiber'] as num?)?.toDouble() ?? 0.0;
-              final sugar = (pendingIngData['sugar'] as num?)?.toDouble() ?? 0.0;
-              final sodium = (pendingIngData['sodium'] as num?)?.toDouble() ?? 0.0;
-
-              // Set provider state from the pending ingredient data
-              ref.read(createIngredientProvider.notifier).setName(name);
-              ref.read(createIngredientProvider.notifier).setCategory(category);
-              ref.read(createIngredientProvider.notifier).setDescription(description);
-              ref.read(createIngredientProvider.notifier).setNutritionValue(
-                calories: calories,
-                carbohydrates: carbs,
-                protein: protein,
-                fat: fat,
-                fiber: fiber,
-                sugar: sugar,
-                sodium: sodium,
-              );
-
-              // Generate physical property (avgWeight for solids)
-              await ref.read(createIngredientProvider.notifier).generatePhysicalProperty(name);
-
-              final createdIng = await ref
-                  .read(createIngredientProvider.notifier)
-                  .createIngredient();
-
-              if (createdIng != null) {
-                // Map ingredient name to real ingredient ID
-                ingredientIdMap[name] = createdIng.id;
-              }
-            }
-          } catch (e) {
-            if (mounted) {
-              _showMessage('Failed to create custom ingredient: $e');
-            }
-            return;
-          }
-        }
-        // Reset the ingredient creation provider once all pending ingredients are handled
-        ref.read(createIngredientProvider.notifier).reset();
-      }
-
-      // Step 2: Update recipe ingredients with real IDs
-      var finalIngredients = creation.ingredients;
-      if (ingredientIdMap.isNotEmpty) {
-        finalIngredients = creation.ingredients.map((ing) {
-          final realId = ingredientIdMap[ing.name];
-          if (realId != null && ing.ingredientID.startsWith('temp_')) {
-            return ing.copyWith(ingredientID: realId);
-          }
-          return ing;
-        }).toList();
-      }
+      final recipeId = creation.isEditing 
+          ? creation.editingRecipeId 
+          : 'recipe_${DateTime.now().millisecondsSinceEpoch}';
 
       final baseRecipe = Recipe(
-        id: creation.isEditing ? creation.editingRecipeId : '',
+        id: recipeId,
         name: creation.name.trim(),
         description: creation.description.trim(),
-        ingredients: finalIngredients,
+        ingredients: creation.ingredients,
         steps: creation.steps,
         isPublic: creation.isPublic,
         servings: creation.servings,
@@ -175,6 +121,9 @@ class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
             );
       }
 
+      // Step 4: Finalize temporary ingredients
+      await ref.read(recipeCreationProvider.notifier).finalizeTempIngredients(creation.creationId);
+
       if (!mounted) return;
       
       ref.read(recipeCreationProvider.notifier).clear();
@@ -194,11 +143,14 @@ class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
           ),
         );
     } catch (error) {
+      // Step 5: Rollback temporary ingredients on failure
+      await ref.read(recipeCreationProvider.notifier).cleanupTempIngredients(creation.creationId);
+
       if (mounted) {
         _showMessage(
           creation.isEditing 
-            ? 'Failed to update recipe: $error'
-            : 'Failed to create recipe: $error',
+            ? 'Failed to update recipe: $error (Ingredients rolled back)'
+            : 'Failed to create recipe: $error (Ingredients rolled back)',
         );
       }
     } finally {
@@ -246,9 +198,34 @@ class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          onPressed: () {
+          onPressed: () async {
+            final creation = ref.read(recipeCreationProvider);
+            final cleanupId = creation.creationId;
+            
+            // Show confirmation dialog if there are temporary ingredients
+            if (creation.tempIngredientIds.isNotEmpty) {
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Cancel Creation?'),
+                  content: const Text('Closing will delete any custom ingredients you just created for this recipe.'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Keep Working')),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true), 
+                      child: const Text('Discard', style: TextStyle(color: Colors.red)),
+                    ),
+                  ],
+                ),
+              );
+              if (confirmed != true) return;
+              
+              // Cleanup
+              await ref.read(recipeCreationProvider.notifier).cleanupTempIngredients(cleanupId);
+            }
+
             ref.read(recipeCreationProvider.notifier).clear();
-            Navigator.pop(context);
+            if (mounted) Navigator.pop(context);
           },
           icon: const Icon(Icons.close, color: Colors.black87),
         ),

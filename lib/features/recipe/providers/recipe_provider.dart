@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nutricook/services/recipe_service.dart';
 import 'package:nutricook/services/collection_service.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
+import 'package:nutricook/models/ingredient/ingredient.dart';
 import 'package:nutricook/models/nutrition_info/nutrition_info.dart';
 import 'package:nutricook/models/recipe_ingredient/recipe_ingredient.dart';
 import 'package:nutricook/models/recipe_step/recipe_step.dart';
@@ -559,7 +561,9 @@ class RecipeCreationState {
     this.steps = const <RecipeStep>[],
     this.imageUrl = '',
     this.editingRecipeId = '',
-    this.pendingIngredients = const <dynamic>[],
+    this.tempIngredientIds = const <String>[],
+    this.creationId = '',
+    this.tempIngredients = const <String, Ingredient>{},
   });
 
   final String name;
@@ -573,7 +577,9 @@ class RecipeCreationState {
   final List<RecipeStep> steps;
   final String imageUrl;
   final String editingRecipeId;
-  final List<dynamic> pendingIngredients;
+  final List<String> tempIngredientIds;
+  final String creationId;
+  final Map<String, Ingredient> tempIngredients;
 
   RecipeCreationState copyWith({
     String? name,
@@ -587,7 +593,9 @@ class RecipeCreationState {
     List<RecipeStep>? steps,
     String? imageUrl,
     String? editingRecipeId,
-    List<dynamic>? pendingIngredients,
+    List<String>? tempIngredientIds,
+    String? creationId,
+    Map<String, Ingredient>? tempIngredients,
   }) {
     return RecipeCreationState(
       name: name ?? this.name,
@@ -601,7 +609,9 @@ class RecipeCreationState {
       steps: steps ?? this.steps,
       imageUrl: imageUrl ?? this.imageUrl,
       editingRecipeId: editingRecipeId ?? this.editingRecipeId,
-      pendingIngredients: pendingIngredients ?? this.pendingIngredients,
+      tempIngredientIds: tempIngredientIds ?? this.tempIngredientIds,
+      creationId: creationId ?? this.creationId,
+      tempIngredients: tempIngredients ?? this.tempIngredients,
     );
   }
 
@@ -614,7 +624,9 @@ class RecipeCreationState {
 class RecipeCreationNotifier extends Notifier<RecipeCreationState> {
   @override
   RecipeCreationState build() {
-    return const RecipeCreationState();
+    return RecipeCreationState(
+      creationId: 'creation_${DateTime.now().millisecondsSinceEpoch}',
+    );
   }
 
   void setEditingRecipeId(String recipeId) {
@@ -681,14 +693,42 @@ class RecipeCreationNotifier extends Notifier<RecipeCreationState> {
     state = state.copyWith(imageUrl: imageUrl);
   }
 
-  void addPendingIngredient(dynamic ingredient) {
+  void addTempIngredient(Ingredient ingredient) {
     state = state.copyWith(
-      pendingIngredients: <dynamic>[...state.pendingIngredients, ingredient],
+      tempIngredientIds: <String>[...state.tempIngredientIds, ingredient.id],
+      tempIngredients: <String, Ingredient>{
+        ...state.tempIngredients,
+        ingredient.id: ingredient,
+      },
     );
   }
 
-  void clearPendingIngredients() {
-    state = state.copyWith(pendingIngredients: const <dynamic>[]);
+  Future<void> cleanupTempIngredients(String recipeId) async {
+    if (state.tempIngredientIds.isEmpty) return;
+    try {
+      final ingredientService = ref.read(ingredientServiceProvider);
+      await ingredientService.cleanupTemporaryIngredients(recipeId);
+      state = state.copyWith(
+        tempIngredientIds: const <String>[],
+        tempIngredients: const <String, Ingredient>{},
+      );
+    } catch (e) {
+      debugPrint('Error cleaning up temporary ingredients: $e');
+    }
+  }
+
+  Future<void> finalizeTempIngredients(String recipeId) async {
+    if (state.tempIngredientIds.isEmpty) return;
+    try {
+      final ingredientService = ref.read(ingredientServiceProvider);
+      await ingredientService.promoteTemporaryIngredients(recipeId);
+      state = state.copyWith(
+        tempIngredientIds: const <String>[],
+        tempIngredients: const <String, Ingredient>{},
+      );
+    } catch (e) {
+      debugPrint('Error finalizing temporary ingredients: $e');
+    }
   }
 
   void clear() {

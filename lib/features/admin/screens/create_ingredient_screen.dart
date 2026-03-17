@@ -145,7 +145,7 @@ class _CreateIngredientScreenState extends ConsumerState<CreateIngredientScreen>
               ),
             ),
             const SizedBox(height: 24),
-
+                                
             _buildSectionHeader('Categorization'),
             const SizedBox(height: 12),
             _buildThemedDropdown(state),

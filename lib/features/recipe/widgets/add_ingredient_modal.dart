@@ -44,6 +44,22 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
   final TextEditingController _searchController = TextEditingController();
   final GlobalKey<State<ImageUploadField>> _ingredientImageUploadKey = GlobalKey();
 
+  // Create Ingredient controllers
+  late TextEditingController _nameController;
+  late TextEditingController _descriptionController;
+  late TextEditingController _caloriesController;
+  late TextEditingController _carbsController;
+  late TextEditingController _proteinController;
+  late TextEditingController _fatController;
+  late TextEditingController _fiberController;
+  late TextEditingController _sugarController;
+  late TextEditingController _sodiumController;
+
+  final List<String> categories = [
+    'Proteins', 'Vegetables', 'Fruits', 'Dairy', 'Grains', 'Spices',
+    'Herbs', 'Sauces', 'Seafood', 'Nuts and Seeds', 'Fats and Oils', 'Beverages',
+  ];
+
   final List<String> _processes = const <String>[
     'None',
     'Raw',
@@ -72,16 +88,39 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
       _selectedProcess = 'None';
       _amountController = TextEditingController(text: '100');
     }
+
+    _nameController = TextEditingController();
+    _descriptionController = TextEditingController();
+    _caloriesController = TextEditingController();
+    _carbsController = TextEditingController();
+    _proteinController = TextEditingController();
+    _fatController = TextEditingController();
+    _fiberController = TextEditingController();
+    _sugarController = TextEditingController();
+    _sodiumController = TextEditingController();
   }
 
   @override
   void dispose() {
     _amountController.dispose();
     _searchController.dispose();
+    _nameController.dispose();
+    _descriptionController.dispose();
+    _caloriesController.dispose();
+    _carbsController.dispose();
+    _proteinController.dispose();
+    _fatController.dispose();
+    _fiberController.dispose();
+    _sugarController.dispose();
+    _sodiumController.dispose();
     super.dispose();
   }
 
   void _handleBack() {
+    if (_stage == 3) {
+      setState(() => _stage = 0);
+      return;
+    }
     if (_stage > 0) {
       setState(() => _stage--);
       return;
@@ -306,28 +345,347 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
     );
   }
 
+  void _updateNutritionFromControllers() {
+    ref.read(createIngredientProvider.notifier).setNutritionValue(
+      calories: int.tryParse(_caloriesController.text) ?? 0,
+      carbohydrates: double.tryParse(_carbsController.text) ?? 0.0,
+      protein: double.tryParse(_proteinController.text) ?? 0.0,
+      fat: double.tryParse(_fatController.text) ?? 0.0,
+      fiber: double.tryParse(_fiberController.text) ?? 0.0,
+      sugar: double.tryParse(_sugarController.text) ?? 0.0,
+      sodium: double.tryParse(_sodiumController.text) ?? 0.0,
+    );
+  }
+
   Widget _buildCreateCustomIngredientStep() {
-    return Padding(
+    final state = ref.watch(createIngredientProvider);
+
+    return SingleChildScrollView(
       key: const ValueKey(3),
       padding: const EdgeInsets.all(24),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Quick Custom Ingredient',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      physics: const BouncingScrollPhysics(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('Ingredient Name'),
+          const SizedBox(height: 12),
+          _buildThemedTextField(
+            controller: _nameController,
+            hint: 'e.g., Atlantic Salmon, Avocado',
+            onChanged: (val) => ref.read(createIngredientProvider.notifier).setName(val),
+          ),
+          const SizedBox(height: 20),
+          
+          _buildSectionHeader('Description'),
+          const SizedBox(height: 12),
+          _buildThemedTextField(
+            controller: _descriptionController,
+            hint: 'e.g., Fresh Atlantic salmon, rich in omega-3',
+            maxLines: 3,
+            onChanged: (val) => ref.read(createIngredientProvider.notifier).setDescription(val),
+          ),
+          const SizedBox(height: 20),
+          
+          _buildSectionHeader('Image'),
+          const SizedBox(height: 12),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: AppColors.rosePink.withValues(alpha: 0.1), width: 1.5),
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'Create and add a custom ingredient. It will be saved when you save your recipe.',
-              style: TextStyle(fontSize: 13, color: Colors.black54),
+            clipBehavior: Clip.antiAlias,
+            child: ImageUploadField(
+              key: _ingredientImageUploadKey,
+              folder: 'ingredients',
+              height: 160,
+              showLabel: false,
+              autoUpload: false,
             ),
-            const SizedBox(height: 24),
-            _buildSimpleIngredientForm(),
-            const SizedBox(height: 32),
-          ],
+          ),
+          const SizedBox(height: 24),
+                              
+          _buildSectionHeader('Categorization'),
+          const SizedBox(height: 12),
+          _buildThemedDropdown(state),
+          const SizedBox(height: 24),
+
+          _buildSectionHeader('Nutrition (per 100g)'),
+          const SizedBox(height: 12),
+          _buildNutritionToggle(state),
+          const SizedBox(height: 20),
+
+          if (state.nutritionMethod == 'manual')
+            _buildManualNutritionGrid()
+          else
+            _buildAIStatusCard(state),
+
+          const SizedBox(height: 32),
+          
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => setState(() => _stage = 0),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 56),
+                    side: const BorderSide(color: AppColors.rosePink, width: 1.5),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: const Text('Back', style: TextStyle(color: AppColors.rosePink, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: SizedBox(
+                  height: 56,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.rosePink,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      elevation: 0,
+                    ),
+                    onPressed: state.isLoadingNutrition || state.isLoadingPhysicalProperty
+                        ? null
+                        : () => _submitCustomIngredient(),
+                    child: state.isLoadingNutrition || state.isLoadingPhysicalProperty
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          )
+                        : const Text('Create & Add',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 40),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.black87));
+  }
+
+  Widget _buildThemedTextField({required TextEditingController controller, required String hint, Function(String)? onChanged, int? maxLines}) {
+    return TextField(
+      controller: controller,
+      onChanged: onChanged,
+      maxLines: maxLines ?? 1,
+      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+      decoration: InputDecoration(
+        hintText: hint,
+        filled: true,
+        fillColor: AppColors.cardRose.withValues(alpha: 0.1),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppColors.rosePink.withValues(alpha: 0.1), width: 1),
         ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.rosePink, width: 1.5),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThemedDropdown(dynamic state) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: AppColors.cardRose.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.rosePink.withValues(alpha: 0.1), width: 1),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: state.category,
+          isExpanded: true,
+          style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 14),
+          items: categories.map((c) {
+            final displayText = c
+                .split(' ')
+                .map((word) => word[0].toUpperCase() + word.substring(1))
+                .join(' ')
+                .replaceAll('And', '&');
+            return DropdownMenuItem(value: c, child: Text(displayText));
+          }).toList(),
+          onChanged: (val) {
+            if (val != null) ref.read(createIngredientProvider.notifier).setCategory(val);
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNutritionToggle(dynamic state) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Input Method', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black38)),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: SegmentedButton<String>(
+            segments: const [
+              ButtonSegment(value: 'manual', label: Text('Manual')),
+              ButtonSegment(value: 'ai', label: Text('AI SmartFill')),
+            ],
+            selected: {state.nutritionMethod},
+            showSelectedIcon: false,
+            style: SegmentedButton.styleFrom(
+              backgroundColor: Colors.white,
+              selectedBackgroundColor: AppColors.rosePink,
+              selectedForegroundColor: Colors.white,
+              side: BorderSide(color: AppColors.rosePink.withValues(alpha: 0.1), width: 1.5),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onSelectionChanged: (set) => ref.read(createIngredientProvider.notifier).setNutritionMethod(set.first),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildManualNutritionGrid() {
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 2.2,
+      children: [
+        _buildSmallNutritionField('Calories', _caloriesController, 'kcal'),
+        _buildSmallNutritionField('Protein', _proteinController, 'g'),
+        _buildSmallNutritionField('Carbs', _carbsController, 'g'),
+        _buildSmallNutritionField('Fat', _fatController, 'g'),
+        _buildSmallNutritionField('Fiber', _fiberController, 'g'),
+        _buildSmallNutritionField('Sugar', _sugarController, 'g'),
+        _buildSmallNutritionField('Sodium', _sodiumController, 'g'),
+      ],
+    );
+  }
+
+  Widget _buildSmallNutritionField(String label, TextEditingController controller, String unit) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('$label ($unit)', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black45)),
+        const SizedBox(height: 4),
+        Expanded(
+          child: TextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
+            decoration: InputDecoration(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+              filled: true,
+              fillColor: AppColors.cardRose.withValues(alpha: 0.1),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Colors.black12, width: 1),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: AppColors.rosePink, width: 1),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAIStatusCard(dynamic state) {
+    final hasGeneratedValues = state.calories > 0 || 
+        state.carbohydrates > 0 || 
+        state.protein > 0 || 
+        state.fat > 0;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.cardRose.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.rosePink.withValues(alpha: 0.1), width: 1.5),
+      ),
+      child: Column(
+        children: [
+          if (state.isLoadingNutrition) ...[
+            const CircularProgressIndicator(color: AppColors.rosePink),
+            const SizedBox(height: 12),
+            const Text('Generating nutrition data...', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.rosePink)),
+          ] else if (hasGeneratedValues) ...[
+            const Icon(Icons.check_circle, color: Colors.green, size: 32),
+            const SizedBox(height: 12),
+            const Text('AI Generated Values', style: TextStyle(fontWeight: FontWeight.w900)),
+            const SizedBox(height: 16),
+            _buildGeneratedValueDisplay(state),
+            const SizedBox(height: 16),
+            OutlinedButton(
+              onPressed: () {
+                _updateNutritionFromControllers();
+                ref.read(createIngredientProvider.notifier).generateNutritionFromAI(_nameController.text);
+              },
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: AppColors.rosePink),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Regenerate', style: TextStyle(color: AppColors.rosePink, fontWeight: FontWeight.bold)),
+            ),
+          ] else ...[
+            const Icon(Icons.auto_awesome, color: AppColors.rosePink, size: 32),
+            const SizedBox(height: 12),
+            const Text('AI Prediction Ready', style: TextStyle(fontWeight: FontWeight.w900)),
+            const SizedBox(height: 16),
+            OutlinedButton(
+              onPressed: () {
+                _updateNutritionFromControllers();
+                ref.read(createIngredientProvider.notifier).generateNutritionFromAI(_nameController.text);
+              },
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: AppColors.rosePink),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Generate with AI', style: TextStyle(color: AppColors.rosePink, fontWeight: FontWeight.bold)),
+            ),
+          ]
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGeneratedValueDisplay(dynamic state) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildValueRow('Calories', '${state.calories} kcal'),
+        _buildValueRow('Protein', '${state.protein.toStringAsFixed(1)} g'),
+        _buildValueRow('Carbs', '${state.carbohydrates.toStringAsFixed(1)} g'),
+        _buildValueRow('Fat', '${state.fat.toStringAsFixed(1)} g'),
+        _buildValueRow('Fiber', '${state.fiber.toStringAsFixed(1)} g'),
+        _buildValueRow('Sugar', '${state.sugar.toStringAsFixed(1)} g'),
+        _buildValueRow('Sodium', '${state.sodium.toStringAsFixed(2)} g'),
+      ],
+    );
+  }
+
+  Widget _buildValueRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 13, color: Colors.black54)),
+          Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+        ],
       ),
     );
   }
@@ -411,7 +769,7 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
               child: ElevatedButton(
                 onPressed: ingredientState.isLoadingNutrition || ingredientState.isLoadingPhysicalProperty
                     ? null
-                    : () => _submitCustomIngredient(nameController),
+                    : () => _submitCustomIngredient(),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.rosePink,
                   minimumSize: const Size(0, 50),
@@ -544,79 +902,83 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
     );
   }
 
-  Future<void> _submitCustomIngredient(TextEditingController nameController) async {
-    final ingredientState = ref.read(createIngredientProvider);
+  Future<void> _submitCustomIngredient() async {
+    final state = ref.read(createIngredientProvider);
 
-    if (nameController.text.trim().isEmpty) {
-      _showSnack('Please enter an ingredient name');
+    if (_nameController.text.trim().isEmpty) {
+      _showSnack('Please enter an ingredient name.');
       return;
     }
 
-    if (ingredientState.calories == 0) {
-      _showSnack('Please enter calories');
-      return;
+    if (state.nutritionMethod == 'manual') {
+      _updateNutritionFromControllers();
     }
 
-    if (ingredientState.category.isEmpty) {
-      _showSnack('Please select a category');
-      return;
-    }
+    // Capture context and navigator before async
+    final navigator = Navigator.of(context);
 
-    // Upload image if one was selected
-    String imageUrl = ingredientState.imageUrl;
-    if (_ingredientImageUploadKey.currentState != null) {
-      try {
+    try {
+      // Upload image if one was selected
+      String? imageUrl;
+      if (_ingredientImageUploadKey.currentState != null) {
         final uploadedUrl = await (_ingredientImageUploadKey.currentState as dynamic)?.uploadImage();
         if (uploadedUrl != null && uploadedUrl is String) {
           imageUrl = uploadedUrl;
           ref.read(createIngredientProvider.notifier).setImageUrl(imageUrl);
         }
-      } catch (e) {
-        if (mounted) {
-          _showSnack('Failed to upload image: $e');
-        }
-        return;
       }
-    }
 
-    // Convert ingredient state to map for storage in pending ingredients
-    final ingredientMap = {
-      'name': ingredientState.name,
-      'description': ingredientState.description,
-      'category': ingredientState.category,
-      'isLiquid': ingredientState.isLiquid,
-      'calories': ingredientState.calories,
-      'carbohydrates': ingredientState.carbohydrates,
-      'protein': ingredientState.protein,
-      'fat': ingredientState.fat,
-      'fiber': ingredientState.fiber,
-      'sugar': ingredientState.sugar,
-      'sodium': ingredientState.sodium,
-      'imageUrl': imageUrl,
-    };
-
-    // Store in pending ingredients instead of saving immediately
-    ref.read(recipeCreationProvider.notifier).addPendingIngredient(ingredientMap);
-
-    // Add to recipe with a temporary ID
-    final tempId = 'temp_${DateTime.now().millisecondsSinceEpoch}';
-    if (widget.onIngredientAdded != null) {
-      widget.onIngredientAdded!(
-        RecipeIngredient(
-          ingredientID: tempId,
-          name: ingredientState.name,
-          quantity: 100,
-          unitID: 'g',
-          unitName: 'g',
-          preparation: null,
-        ),
+      // Generate physical properties automatically
+      await ref.read(createIngredientProvider.notifier).generatePhysicalProperty(_nameController.text);
+      
+      // Set temporary status
+      final recipeCreationState = ref.read(recipeCreationProvider);
+      final recipeId = recipeCreationState.creationId;
+          
+      ref.read(createIngredientProvider.notifier).setTemporaryStatus(
+        isTemporary: true,
+        recipeId: recipeId,
       );
-    }
 
-    _showSnack('Ingredient added! Will be saved when you save the recipe.');
-    ref.read(createIngredientProvider.notifier).reset();
-    if (mounted) {
-      Navigator.pop(context);
+      // Create in Firestore immediately
+      final createdIng = await ref.read(createIngredientProvider.notifier).createIngredient();
+
+      if (createdIng != null) {
+        // Track the temporary ID and object for cleanup/map enrichment
+        ref.read(recipeCreationProvider.notifier).addTempIngredient(createdIng);
+
+        // Add to recipe
+        if (widget.onIngredientAdded != null) {
+          widget.onIngredientAdded!(
+            RecipeIngredient(
+              ingredientID: createdIng.id,
+              name: createdIng.name,
+              quantity: 100,
+              unitID: 'g',
+              unitName: 'g',
+              preparation: null,
+            ),
+          );
+        }
+
+        _showSnack('Ingredient "${createdIng.name}" created and added.');
+        ref.read(createIngredientProvider.notifier).reset();
+        
+        // Clear local controllers for next time
+        _nameController.clear();
+        _descriptionController.clear();
+        _caloriesController.clear();
+        _carbsController.clear();
+        _proteinController.clear();
+        _fatController.clear();
+        _fiberController.clear();
+        _sugarController.clear();
+        _sodiumController.clear();
+
+        navigator.pop();
+      }
+    } catch (e) {
+      _showSnack('Failed to create ingredient: $e');
     }
   }
 
