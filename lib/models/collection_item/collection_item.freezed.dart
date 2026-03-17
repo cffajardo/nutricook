@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$CollectionItem {
 
- String get id; String get collectionId; String get recipeId; String get recipeName; String? get thumbnailUrl; List<String> get tags; int get prepTime; int get cookTime; int get favoriteCount;@TimestampConverter() DateTime get addedAt; String? get notes; double get order;
+ String get id; String get collectionId; String get recipeId; String get recipeName; String? get thumbnailUrl; List<String> get tags; int get prepTime; int get cookTime; int get favoriteCount;@TimestampConverter() DateTime get addedAt; String? get notes; int get totalCalories; double get order;
 /// Create a copy of CollectionItem
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $CollectionItemCopyWith<CollectionItem> get copyWith => _$CollectionItemCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CollectionItem&&(identical(other.id, id) || other.id == id)&&(identical(other.collectionId, collectionId) || other.collectionId == collectionId)&&(identical(other.recipeId, recipeId) || other.recipeId == recipeId)&&(identical(other.recipeName, recipeName) || other.recipeName == recipeName)&&(identical(other.thumbnailUrl, thumbnailUrl) || other.thumbnailUrl == thumbnailUrl)&&const DeepCollectionEquality().equals(other.tags, tags)&&(identical(other.prepTime, prepTime) || other.prepTime == prepTime)&&(identical(other.cookTime, cookTime) || other.cookTime == cookTime)&&(identical(other.favoriteCount, favoriteCount) || other.favoriteCount == favoriteCount)&&(identical(other.addedAt, addedAt) || other.addedAt == addedAt)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.order, order) || other.order == order));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CollectionItem&&(identical(other.id, id) || other.id == id)&&(identical(other.collectionId, collectionId) || other.collectionId == collectionId)&&(identical(other.recipeId, recipeId) || other.recipeId == recipeId)&&(identical(other.recipeName, recipeName) || other.recipeName == recipeName)&&(identical(other.thumbnailUrl, thumbnailUrl) || other.thumbnailUrl == thumbnailUrl)&&const DeepCollectionEquality().equals(other.tags, tags)&&(identical(other.prepTime, prepTime) || other.prepTime == prepTime)&&(identical(other.cookTime, cookTime) || other.cookTime == cookTime)&&(identical(other.favoriteCount, favoriteCount) || other.favoriteCount == favoriteCount)&&(identical(other.addedAt, addedAt) || other.addedAt == addedAt)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.totalCalories, totalCalories) || other.totalCalories == totalCalories)&&(identical(other.order, order) || other.order == order));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,collectionId,recipeId,recipeName,thumbnailUrl,const DeepCollectionEquality().hash(tags),prepTime,cookTime,favoriteCount,addedAt,notes,order);
+int get hashCode => Object.hash(runtimeType,id,collectionId,recipeId,recipeName,thumbnailUrl,const DeepCollectionEquality().hash(tags),prepTime,cookTime,favoriteCount,addedAt,notes,totalCalories,order);
 
 @override
 String toString() {
-  return 'CollectionItem(id: $id, collectionId: $collectionId, recipeId: $recipeId, recipeName: $recipeName, thumbnailUrl: $thumbnailUrl, tags: $tags, prepTime: $prepTime, cookTime: $cookTime, favoriteCount: $favoriteCount, addedAt: $addedAt, notes: $notes, order: $order)';
+  return 'CollectionItem(id: $id, collectionId: $collectionId, recipeId: $recipeId, recipeName: $recipeName, thumbnailUrl: $thumbnailUrl, tags: $tags, prepTime: $prepTime, cookTime: $cookTime, favoriteCount: $favoriteCount, addedAt: $addedAt, notes: $notes, totalCalories: $totalCalories, order: $order)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $CollectionItemCopyWith<$Res>  {
   factory $CollectionItemCopyWith(CollectionItem value, $Res Function(CollectionItem) _then) = _$CollectionItemCopyWithImpl;
 @useResult
 $Res call({
- String id, String collectionId, String recipeId, String recipeName, String? thumbnailUrl, List<String> tags, int prepTime, int cookTime, int favoriteCount,@TimestampConverter() DateTime addedAt, String? notes, double order
+ String id, String collectionId, String recipeId, String recipeName, String? thumbnailUrl, List<String> tags, int prepTime, int cookTime, int favoriteCount,@TimestampConverter() DateTime addedAt, String? notes, int totalCalories, double order
 });
 
 
@@ -65,7 +65,7 @@ class _$CollectionItemCopyWithImpl<$Res>
 
 /// Create a copy of CollectionItem
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? collectionId = null,Object? recipeId = null,Object? recipeName = null,Object? thumbnailUrl = freezed,Object? tags = null,Object? prepTime = null,Object? cookTime = null,Object? favoriteCount = null,Object? addedAt = null,Object? notes = freezed,Object? order = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? collectionId = null,Object? recipeId = null,Object? recipeName = null,Object? thumbnailUrl = freezed,Object? tags = null,Object? prepTime = null,Object? cookTime = null,Object? favoriteCount = null,Object? addedAt = null,Object? notes = freezed,Object? totalCalories = null,Object? order = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,collectionId: null == collectionId ? _self.collectionId : collectionId // ignore: cast_nullable_to_non_nullable
@@ -78,7 +78,8 @@ as int,cookTime: null == cookTime ? _self.cookTime : cookTime // ignore: cast_nu
 as int,favoriteCount: null == favoriteCount ? _self.favoriteCount : favoriteCount // ignore: cast_nullable_to_non_nullable
 as int,addedAt: null == addedAt ? _self.addedAt : addedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
-as String?,order: null == order ? _self.order : order // ignore: cast_nullable_to_non_nullable
+as String?,totalCalories: null == totalCalories ? _self.totalCalories : totalCalories // ignore: cast_nullable_to_non_nullable
+as int,order: null == order ? _self.order : order // ignore: cast_nullable_to_non_nullable
 as double,
   ));
 }
@@ -164,10 +165,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String collectionId,  String recipeId,  String recipeName,  String? thumbnailUrl,  List<String> tags,  int prepTime,  int cookTime,  int favoriteCount, @TimestampConverter()  DateTime addedAt,  String? notes,  double order)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String collectionId,  String recipeId,  String recipeName,  String? thumbnailUrl,  List<String> tags,  int prepTime,  int cookTime,  int favoriteCount, @TimestampConverter()  DateTime addedAt,  String? notes,  int totalCalories,  double order)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CollectionItem() when $default != null:
-return $default(_that.id,_that.collectionId,_that.recipeId,_that.recipeName,_that.thumbnailUrl,_that.tags,_that.prepTime,_that.cookTime,_that.favoriteCount,_that.addedAt,_that.notes,_that.order);case _:
+return $default(_that.id,_that.collectionId,_that.recipeId,_that.recipeName,_that.thumbnailUrl,_that.tags,_that.prepTime,_that.cookTime,_that.favoriteCount,_that.addedAt,_that.notes,_that.totalCalories,_that.order);case _:
   return orElse();
 
 }
@@ -185,10 +186,10 @@ return $default(_that.id,_that.collectionId,_that.recipeId,_that.recipeName,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String collectionId,  String recipeId,  String recipeName,  String? thumbnailUrl,  List<String> tags,  int prepTime,  int cookTime,  int favoriteCount, @TimestampConverter()  DateTime addedAt,  String? notes,  double order)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String collectionId,  String recipeId,  String recipeName,  String? thumbnailUrl,  List<String> tags,  int prepTime,  int cookTime,  int favoriteCount, @TimestampConverter()  DateTime addedAt,  String? notes,  int totalCalories,  double order)  $default,) {final _that = this;
 switch (_that) {
 case _CollectionItem():
-return $default(_that.id,_that.collectionId,_that.recipeId,_that.recipeName,_that.thumbnailUrl,_that.tags,_that.prepTime,_that.cookTime,_that.favoriteCount,_that.addedAt,_that.notes,_that.order);case _:
+return $default(_that.id,_that.collectionId,_that.recipeId,_that.recipeName,_that.thumbnailUrl,_that.tags,_that.prepTime,_that.cookTime,_that.favoriteCount,_that.addedAt,_that.notes,_that.totalCalories,_that.order);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -205,10 +206,10 @@ return $default(_that.id,_that.collectionId,_that.recipeId,_that.recipeName,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String collectionId,  String recipeId,  String recipeName,  String? thumbnailUrl,  List<String> tags,  int prepTime,  int cookTime,  int favoriteCount, @TimestampConverter()  DateTime addedAt,  String? notes,  double order)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String collectionId,  String recipeId,  String recipeName,  String? thumbnailUrl,  List<String> tags,  int prepTime,  int cookTime,  int favoriteCount, @TimestampConverter()  DateTime addedAt,  String? notes,  int totalCalories,  double order)?  $default,) {final _that = this;
 switch (_that) {
 case _CollectionItem() when $default != null:
-return $default(_that.id,_that.collectionId,_that.recipeId,_that.recipeName,_that.thumbnailUrl,_that.tags,_that.prepTime,_that.cookTime,_that.favoriteCount,_that.addedAt,_that.notes,_that.order);case _:
+return $default(_that.id,_that.collectionId,_that.recipeId,_that.recipeName,_that.thumbnailUrl,_that.tags,_that.prepTime,_that.cookTime,_that.favoriteCount,_that.addedAt,_that.notes,_that.totalCalories,_that.order);case _:
   return null;
 
 }
@@ -220,7 +221,7 @@ return $default(_that.id,_that.collectionId,_that.recipeId,_that.recipeName,_tha
 @JsonSerializable()
 
 class _CollectionItem implements CollectionItem {
-  const _CollectionItem({required this.id, required this.collectionId, required this.recipeId, required this.recipeName, this.thumbnailUrl, final  List<String> tags = const <String>[], required this.prepTime, required this.cookTime, this.favoriteCount = 0, @TimestampConverter() required this.addedAt, this.notes, this.order = 0.0}): _tags = tags;
+  const _CollectionItem({required this.id, required this.collectionId, required this.recipeId, required this.recipeName, this.thumbnailUrl, final  List<String> tags = const <String>[], required this.prepTime, required this.cookTime, this.favoriteCount = 0, @TimestampConverter() required this.addedAt, this.notes, this.totalCalories = 0, this.order = 0.0}): _tags = tags;
   factory _CollectionItem.fromJson(Map<String, dynamic> json) => _$CollectionItemFromJson(json);
 
 @override final  String id;
@@ -240,6 +241,7 @@ class _CollectionItem implements CollectionItem {
 @override@JsonKey() final  int favoriteCount;
 @override@TimestampConverter() final  DateTime addedAt;
 @override final  String? notes;
+@override@JsonKey() final  int totalCalories;
 @override@JsonKey() final  double order;
 
 /// Create a copy of CollectionItem
@@ -255,16 +257,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CollectionItem&&(identical(other.id, id) || other.id == id)&&(identical(other.collectionId, collectionId) || other.collectionId == collectionId)&&(identical(other.recipeId, recipeId) || other.recipeId == recipeId)&&(identical(other.recipeName, recipeName) || other.recipeName == recipeName)&&(identical(other.thumbnailUrl, thumbnailUrl) || other.thumbnailUrl == thumbnailUrl)&&const DeepCollectionEquality().equals(other._tags, _tags)&&(identical(other.prepTime, prepTime) || other.prepTime == prepTime)&&(identical(other.cookTime, cookTime) || other.cookTime == cookTime)&&(identical(other.favoriteCount, favoriteCount) || other.favoriteCount == favoriteCount)&&(identical(other.addedAt, addedAt) || other.addedAt == addedAt)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.order, order) || other.order == order));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CollectionItem&&(identical(other.id, id) || other.id == id)&&(identical(other.collectionId, collectionId) || other.collectionId == collectionId)&&(identical(other.recipeId, recipeId) || other.recipeId == recipeId)&&(identical(other.recipeName, recipeName) || other.recipeName == recipeName)&&(identical(other.thumbnailUrl, thumbnailUrl) || other.thumbnailUrl == thumbnailUrl)&&const DeepCollectionEquality().equals(other._tags, _tags)&&(identical(other.prepTime, prepTime) || other.prepTime == prepTime)&&(identical(other.cookTime, cookTime) || other.cookTime == cookTime)&&(identical(other.favoriteCount, favoriteCount) || other.favoriteCount == favoriteCount)&&(identical(other.addedAt, addedAt) || other.addedAt == addedAt)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.totalCalories, totalCalories) || other.totalCalories == totalCalories)&&(identical(other.order, order) || other.order == order));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,collectionId,recipeId,recipeName,thumbnailUrl,const DeepCollectionEquality().hash(_tags),prepTime,cookTime,favoriteCount,addedAt,notes,order);
+int get hashCode => Object.hash(runtimeType,id,collectionId,recipeId,recipeName,thumbnailUrl,const DeepCollectionEquality().hash(_tags),prepTime,cookTime,favoriteCount,addedAt,notes,totalCalories,order);
 
 @override
 String toString() {
-  return 'CollectionItem(id: $id, collectionId: $collectionId, recipeId: $recipeId, recipeName: $recipeName, thumbnailUrl: $thumbnailUrl, tags: $tags, prepTime: $prepTime, cookTime: $cookTime, favoriteCount: $favoriteCount, addedAt: $addedAt, notes: $notes, order: $order)';
+  return 'CollectionItem(id: $id, collectionId: $collectionId, recipeId: $recipeId, recipeName: $recipeName, thumbnailUrl: $thumbnailUrl, tags: $tags, prepTime: $prepTime, cookTime: $cookTime, favoriteCount: $favoriteCount, addedAt: $addedAt, notes: $notes, totalCalories: $totalCalories, order: $order)';
 }
 
 
@@ -275,7 +277,7 @@ abstract mixin class _$CollectionItemCopyWith<$Res> implements $CollectionItemCo
   factory _$CollectionItemCopyWith(_CollectionItem value, $Res Function(_CollectionItem) _then) = __$CollectionItemCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String collectionId, String recipeId, String recipeName, String? thumbnailUrl, List<String> tags, int prepTime, int cookTime, int favoriteCount,@TimestampConverter() DateTime addedAt, String? notes, double order
+ String id, String collectionId, String recipeId, String recipeName, String? thumbnailUrl, List<String> tags, int prepTime, int cookTime, int favoriteCount,@TimestampConverter() DateTime addedAt, String? notes, int totalCalories, double order
 });
 
 
@@ -292,7 +294,7 @@ class __$CollectionItemCopyWithImpl<$Res>
 
 /// Create a copy of CollectionItem
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? collectionId = null,Object? recipeId = null,Object? recipeName = null,Object? thumbnailUrl = freezed,Object? tags = null,Object? prepTime = null,Object? cookTime = null,Object? favoriteCount = null,Object? addedAt = null,Object? notes = freezed,Object? order = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? collectionId = null,Object? recipeId = null,Object? recipeName = null,Object? thumbnailUrl = freezed,Object? tags = null,Object? prepTime = null,Object? cookTime = null,Object? favoriteCount = null,Object? addedAt = null,Object? notes = freezed,Object? totalCalories = null,Object? order = null,}) {
   return _then(_CollectionItem(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,collectionId: null == collectionId ? _self.collectionId : collectionId // ignore: cast_nullable_to_non_nullable
@@ -305,7 +307,8 @@ as int,cookTime: null == cookTime ? _self.cookTime : cookTime // ignore: cast_nu
 as int,favoriteCount: null == favoriteCount ? _self.favoriteCount : favoriteCount // ignore: cast_nullable_to_non_nullable
 as int,addedAt: null == addedAt ? _self.addedAt : addedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
-as String?,order: null == order ? _self.order : order // ignore: cast_nullable_to_non_nullable
+as String?,totalCalories: null == totalCalories ? _self.totalCalories : totalCalories // ignore: cast_nullable_to_non_nullable
+as int,order: null == order ? _self.order : order // ignore: cast_nullable_to_non_nullable
 as double,
   ));
 }

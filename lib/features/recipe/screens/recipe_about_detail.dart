@@ -401,24 +401,24 @@ class _FavoriteButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isFavorited = ref.watch(isRecipeFavoritedProvider(recipe.id));
-    final isLoading =
-        ref.watch(toggleFavoriteProvider).isLoading;
+    final isFavoritedAsync = ref.watch(isRecipeFavoritedProvider(recipe.id));
+    final isLoading = ref.watch(toggleFavoriteProvider).isLoading;
+
+    bool isFavorited = false;
+    if (isFavoritedAsync is AsyncData) {
+      isFavorited = isFavoritedAsync.value ?? false;
+    }
 
     return GestureDetector(
-      onTap: isLoading
+      onTap: isLoading || isFavoritedAsync is AsyncLoading
           ? null
           : () async {
               final wasLiked = isFavorited;
               await ref.read(toggleFavoriteProvider.notifier).toggle(recipe.id);
-              
               if (!context.mounted) return;
-              
-              // Show feedback message
               final message = !wasLiked
                   ? '❤️ Added "${recipe.name}" to Favorites!'
                   : '💔 Removed from Favorites';
-              
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(message),
@@ -436,7 +436,7 @@ class _FavoriteButton extends ConsumerWidget {
           color: Colors.white.withValues(alpha: 0.85),
           shape: BoxShape.circle,
         ),
-        child: isLoading
+        child: (isLoading || isFavoritedAsync is AsyncLoading)
             ? SizedBox(
                 width: 24,
                 height: 24,

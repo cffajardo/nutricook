@@ -13,6 +13,7 @@ import 'package:nutricook/features/profile/provider/user_preferences_provider.da
 import 'package:nutricook/features/profile/provider/user_provider.dart';
 import 'package:nutricook/features/recipe/recipe_util/recipe_filters.dart';
 import 'package:nutricook/features/recipe/recipe_util/recipe_nutrition_total.dart';
+import 'package:nutricook/core/constants.dart';
 
 // Recipe Service Provider
 final recipeServiceProvider = Provider<RecipeService>((ref) {
@@ -772,13 +773,13 @@ final userFavoriteRecipesProvider = Provider<AsyncValue<List<Recipe>>>((ref) {
 
 // Provider: is a specific recipe favorited by the current user?
 final isRecipeFavoritedProvider =
-    Provider.family<bool, String>((ref, recipeId) {
+    StreamProvider.family<bool, String>((ref, recipeId) {
       final userId = ref.watch(currentUserIdProvider);
-      if (userId == null) return false;
-
-      // Check from the already-streamed single recipe details.
-      final recipeAsync = ref.watch(recipeDetailsProvider(recipeId));
-      return recipeAsync.asData?.value?.favoritedBy.contains(userId) ?? false;
+      if (userId == null) return Stream.value(false);
+      final recipeService = ref.watch(recipeServiceProvider);
+      final recipeRef = recipeService.db.collection(FirestoreConstants.recipes).doc(recipeId);
+      final favoriteRef = recipeRef.collection(FirestoreConstants.favorites).doc(userId);
+      return favoriteRef.snapshots().map((doc) => doc.exists);
     });
 
 // Notifier: toggle favorite (add or remove).
@@ -786,34 +787,42 @@ class ToggleFavoriteNotifier extends AsyncNotifier<void> {
   @override
   Future<void> build() async {}
 
+  bool _optimisticState = false;
+
   Future<void> toggle(String recipeId) async {
     final userId = ref.watch(currentUserIdProvider);
     if (userId == null) return;
 
-    final isFavorited = ref.read(isRecipeFavoritedProvider(recipeId));
+    // Use the current value from the stream provider
+    final isFavoritedAsync = ref.read(isRecipeFavoritedProvider(recipeId));
+    final isFavorited = isFavoritedAsync.asData?.value ?? false;
     final recipeService = ref.read(recipeServiceProvider);
     final collectionService = ref.read(collectionServiceProvider);
-    
-    // Get recipe details for the collection
     final recipeAsync = ref.read(recipeDetailsProvider(recipeId));
     final recipe = recipeAsync.asData?.value;
 
+    // Optimistic UI: update local state immediately
+    _optimisticState = !isFavorited;
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+
+    try {
       if (isFavorited) {
         await recipeService.removeFavorite(recipeId, userId);
-        // Remove from favorites collection
         await collectionService.removeRecipeFromFavorites(recipeId);
       } else {
         await recipeService.addFavorite(recipeId, userId);
-        // Add to favorites collection
         await collectionService.addRecipeToFavorites(
           recipeId: recipeId,
           recipeName: recipe?.name ?? 'Recipe',
           thumbnailUrl: recipe != null && recipe.imageURL.isNotEmpty == true ? recipe.imageURL.first : null,
         );
       }
-    });
+      state = const AsyncValue.data(null);
+    } catch (e) {
+      // Rollback optimistic UI if failed
+      _optimisticState = isFavorited;
+      state = AsyncValue.error(e, StackTrace.current);
+    }
   }
 }
 

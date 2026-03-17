@@ -71,10 +71,6 @@ class _CollectionDetailModalState extends State<CollectionDetailModal> {
                     const SizedBox(height: 32),
                     _buildDetailsSection(),
                     const SizedBox(height: 32),
-                    if (isFavorites) ...[
-                      _buildFavoritesNotice(),
-                      const SizedBox(height: 32),
-                    ],
                     if (canEdit) ...[
                       const SizedBox(height: 8),
                       _buildDeleteButton(),
@@ -259,35 +255,6 @@ class _CollectionDetailModalState extends State<CollectionDetailModal> {
     );
   }
 
-  Widget _buildFavoritesNotice() {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.cardRose.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.rosePink.withValues(alpha: 0.15),
-          width: 1.5,
-        ),
-      ),
-      child: const Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: EdgeInsets.only(top: 2),
-            child: Icon(Icons.auto_awesome, color: AppColors.rosePink),
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'Your Favorites collection is automatically synced across all your devices.',
-              style: TextStyle(fontSize: 14.5, height: 1.35),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildDeleteButton() {
     return SizedBox(

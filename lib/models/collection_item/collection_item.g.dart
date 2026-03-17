@@ -23,6 +23,7 @@ _CollectionItem _$CollectionItemFromJson(Map<String, dynamic> json) =>
         json['addedAt'] as Timestamp,
       ),
       notes: json['notes'] as String?,
+      totalCalories: (json['totalCalories'] as num?)?.toInt() ?? 0,
       order: (json['order'] as num?)?.toDouble() ?? 0.0,
     );
 
@@ -39,5 +40,6 @@ Map<String, dynamic> _$CollectionItemToJson(_CollectionItem instance) =>
       'favoriteCount': instance.favoriteCount,
       'addedAt': const TimestampConverter().toJson(instance.addedAt),
       'notes': instance.notes,
+      'totalCalories': instance.totalCalories,
       'order': instance.order,
     };
