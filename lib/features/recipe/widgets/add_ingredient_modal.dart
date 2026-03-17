@@ -252,8 +252,8 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
         final filtered = ingredients.where((ingredient) {
           final inCategory =
               _selectedCategory == null ||
-              ingredient.category.toLowerCase() ==
-                  _selectedCategory!.toLowerCase();
+              (ingredient.category?.toLowerCase() ?? '')
+                  == _selectedCategory!.toLowerCase();
           if (!inCategory) return false;
           if (query.isEmpty) return true;
           return ingredient.name.toLowerCase().contains(query);
@@ -409,7 +409,9 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
             const SizedBox(width: 12),
             Expanded(
               child: ElevatedButton(
-                onPressed: () => _submitCustomIngredient(nameController),
+                onPressed: ingredientState.isLoadingNutrition || ingredientState.isLoadingPhysicalProperty
+                    ? null
+                    : () => _submitCustomIngredient(nameController),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.rosePink,
                   minimumSize: const Size(0, 50),
@@ -417,13 +419,19 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                 ),
-                child: const Text(
-                  'Create & Add',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                child: ingredientState.isLoadingNutrition || ingredientState.isLoadingPhysicalProperty
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      )
+                    : const Text(
+                        'Create & Add',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
             ),
           ],

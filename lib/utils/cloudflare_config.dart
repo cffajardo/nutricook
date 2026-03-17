@@ -58,16 +58,21 @@ class CloudflareConfig {
     if (id.isEmpty) {
       throw ConfigurationException('Account ID is empty');
     }
-    return 'https://$id.r2.cloudflarestorage.com';
+    String endpoint = 'https://$id.r2.cloudflarestorage.com';
+    // Ensure we return a clean base endpoint without trailing slashes or bucket names
+    return endpoint.replaceAll(RegExp(r'/+$'), '');
   }
 
   static String getUploadUrl(String objectKey) {
-    final endpoint = s3Endpoint;
+    // Ensure endpoint doesn't have the bucket name or trailing slash
     final bucket = bucketName;
+    final endpoint = s3Endpoint.replaceAll(RegExp('/$bucket\$'), '').replaceAll(RegExp(r'/+$'), '');
+    
     if (bucket.isEmpty) {
       throw ConfigurationException('Bucket name is empty');
     }
-    return '$endpoint/$bucket/${objectKey.trim().replaceAll(RegExp(r'^/+|/+$'), '')}';
+    final cleanKey = objectKey.trim().replaceAll(RegExp(r'^/+|/+$'), '');
+    return '$endpoint/$bucket/$cleanKey';
   }
 
   static String getPublicUrl(String objectKey) {

@@ -295,12 +295,40 @@ class _CreateRecipeAboutPageState extends ConsumerState<CreateRecipeAboutPage> {
   void _handleNext() {
     final name = _nameController.text.trim();
     final description = _descriptionController.text.trim();
+    final prepTime = int.tryParse(_prepTimeController.text.trim()) ?? 0;
+    final cookTime = int.tryParse(_cookTimeController.text.trim()) ?? 0;
+    final servings = int.tryParse(_servingsController.text.trim()) ?? 0;
+
     if (name.isEmpty || description.isEmpty) {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
           const SnackBar(
             content: Text('Please enter recipe name and description.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      return;
+    }
+
+    if (prepTime <= 0 || cookTime <= 0) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Please enter Prep Time and Cook Time.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      return;
+    }
+
+    if (servings <= 0) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Please enter number of servings.'),
             behavior: SnackBarBehavior.floating,
           ),
         );

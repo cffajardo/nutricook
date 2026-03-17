@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Collection {
 
- String get id; String get ownerId; String get name; String get description; String? get thumbnailUrl; int get recipeCount; bool get isDefault; bool get isPublic;@TimestampConverter() DateTime get createdAt;@TimestampConverter() DateTime get updatedAt;
+ String get id; String get ownerId; String get name; String get description; String? get thumbnailUrl; int get recipeCount; bool get isDefault; bool get isPublic;@TimestampConverter() DateTime get createdAt;@TimestampConverter() DateTime get updatedAt; bool get archived;@NullableTimestampConverter() DateTime? get archivedAt;@NullableTimestampConverter() DateTime? get deleteAfter;
 /// Create a copy of Collection
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $CollectionCopyWith<Collection> get copyWith => _$CollectionCopyWithImpl<Collect
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Collection&&(identical(other.id, id) || other.id == id)&&(identical(other.ownerId, ownerId) || other.ownerId == ownerId)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.thumbnailUrl, thumbnailUrl) || other.thumbnailUrl == thumbnailUrl)&&(identical(other.recipeCount, recipeCount) || other.recipeCount == recipeCount)&&(identical(other.isDefault, isDefault) || other.isDefault == isDefault)&&(identical(other.isPublic, isPublic) || other.isPublic == isPublic)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Collection&&(identical(other.id, id) || other.id == id)&&(identical(other.ownerId, ownerId) || other.ownerId == ownerId)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.thumbnailUrl, thumbnailUrl) || other.thumbnailUrl == thumbnailUrl)&&(identical(other.recipeCount, recipeCount) || other.recipeCount == recipeCount)&&(identical(other.isDefault, isDefault) || other.isDefault == isDefault)&&(identical(other.isPublic, isPublic) || other.isPublic == isPublic)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.archived, archived) || other.archived == archived)&&(identical(other.archivedAt, archivedAt) || other.archivedAt == archivedAt)&&(identical(other.deleteAfter, deleteAfter) || other.deleteAfter == deleteAfter));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,ownerId,name,description,thumbnailUrl,recipeCount,isDefault,isPublic,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,ownerId,name,description,thumbnailUrl,recipeCount,isDefault,isPublic,createdAt,updatedAt,archived,archivedAt,deleteAfter);
 
 @override
 String toString() {
-  return 'Collection(id: $id, ownerId: $ownerId, name: $name, description: $description, thumbnailUrl: $thumbnailUrl, recipeCount: $recipeCount, isDefault: $isDefault, isPublic: $isPublic, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'Collection(id: $id, ownerId: $ownerId, name: $name, description: $description, thumbnailUrl: $thumbnailUrl, recipeCount: $recipeCount, isDefault: $isDefault, isPublic: $isPublic, createdAt: $createdAt, updatedAt: $updatedAt, archived: $archived, archivedAt: $archivedAt, deleteAfter: $deleteAfter)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $CollectionCopyWith<$Res>  {
   factory $CollectionCopyWith(Collection value, $Res Function(Collection) _then) = _$CollectionCopyWithImpl;
 @useResult
 $Res call({
- String id, String ownerId, String name, String description, String? thumbnailUrl, int recipeCount, bool isDefault, bool isPublic,@TimestampConverter() DateTime createdAt,@TimestampConverter() DateTime updatedAt
+ String id, String ownerId, String name, String description, String? thumbnailUrl, int recipeCount, bool isDefault, bool isPublic,@TimestampConverter() DateTime createdAt,@TimestampConverter() DateTime updatedAt, bool archived,@NullableTimestampConverter() DateTime? archivedAt,@NullableTimestampConverter() DateTime? deleteAfter
 });
 
 
@@ -65,7 +65,7 @@ class _$CollectionCopyWithImpl<$Res>
 
 /// Create a copy of Collection
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? ownerId = null,Object? name = null,Object? description = null,Object? thumbnailUrl = freezed,Object? recipeCount = null,Object? isDefault = null,Object? isPublic = null,Object? createdAt = null,Object? updatedAt = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? ownerId = null,Object? name = null,Object? description = null,Object? thumbnailUrl = freezed,Object? recipeCount = null,Object? isDefault = null,Object? isPublic = null,Object? createdAt = null,Object? updatedAt = null,Object? archived = null,Object? archivedAt = freezed,Object? deleteAfter = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,ownerId: null == ownerId ? _self.ownerId : ownerId // ignore: cast_nullable_to_non_nullable
@@ -77,7 +77,10 @@ as int,isDefault: null == isDefault ? _self.isDefault : isDefault // ignore: cas
 as bool,isPublic: null == isPublic ? _self.isPublic : isPublic // ignore: cast_nullable_to_non_nullable
 as bool,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
-as DateTime,
+as DateTime,archived: null == archived ? _self.archived : archived // ignore: cast_nullable_to_non_nullable
+as bool,archivedAt: freezed == archivedAt ? _self.archivedAt : archivedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,deleteAfter: freezed == deleteAfter ? _self.deleteAfter : deleteAfter // ignore: cast_nullable_to_non_nullable
+as DateTime?,
   ));
 }
 
@@ -162,10 +165,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String ownerId,  String name,  String description,  String? thumbnailUrl,  int recipeCount,  bool isDefault,  bool isPublic, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String ownerId,  String name,  String description,  String? thumbnailUrl,  int recipeCount,  bool isDefault,  bool isPublic, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime updatedAt,  bool archived, @NullableTimestampConverter()  DateTime? archivedAt, @NullableTimestampConverter()  DateTime? deleteAfter)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Collection() when $default != null:
-return $default(_that.id,_that.ownerId,_that.name,_that.description,_that.thumbnailUrl,_that.recipeCount,_that.isDefault,_that.isPublic,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.ownerId,_that.name,_that.description,_that.thumbnailUrl,_that.recipeCount,_that.isDefault,_that.isPublic,_that.createdAt,_that.updatedAt,_that.archived,_that.archivedAt,_that.deleteAfter);case _:
   return orElse();
 
 }
@@ -183,10 +186,10 @@ return $default(_that.id,_that.ownerId,_that.name,_that.description,_that.thumbn
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String ownerId,  String name,  String description,  String? thumbnailUrl,  int recipeCount,  bool isDefault,  bool isPublic, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String ownerId,  String name,  String description,  String? thumbnailUrl,  int recipeCount,  bool isDefault,  bool isPublic, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime updatedAt,  bool archived, @NullableTimestampConverter()  DateTime? archivedAt, @NullableTimestampConverter()  DateTime? deleteAfter)  $default,) {final _that = this;
 switch (_that) {
 case _Collection():
-return $default(_that.id,_that.ownerId,_that.name,_that.description,_that.thumbnailUrl,_that.recipeCount,_that.isDefault,_that.isPublic,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.ownerId,_that.name,_that.description,_that.thumbnailUrl,_that.recipeCount,_that.isDefault,_that.isPublic,_that.createdAt,_that.updatedAt,_that.archived,_that.archivedAt,_that.deleteAfter);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -203,10 +206,10 @@ return $default(_that.id,_that.ownerId,_that.name,_that.description,_that.thumbn
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String ownerId,  String name,  String description,  String? thumbnailUrl,  int recipeCount,  bool isDefault,  bool isPublic, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String ownerId,  String name,  String description,  String? thumbnailUrl,  int recipeCount,  bool isDefault,  bool isPublic, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime updatedAt,  bool archived, @NullableTimestampConverter()  DateTime? archivedAt, @NullableTimestampConverter()  DateTime? deleteAfter)?  $default,) {final _that = this;
 switch (_that) {
 case _Collection() when $default != null:
-return $default(_that.id,_that.ownerId,_that.name,_that.description,_that.thumbnailUrl,_that.recipeCount,_that.isDefault,_that.isPublic,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.ownerId,_that.name,_that.description,_that.thumbnailUrl,_that.recipeCount,_that.isDefault,_that.isPublic,_that.createdAt,_that.updatedAt,_that.archived,_that.archivedAt,_that.deleteAfter);case _:
   return null;
 
 }
@@ -218,7 +221,7 @@ return $default(_that.id,_that.ownerId,_that.name,_that.description,_that.thumbn
 @JsonSerializable()
 
 class _Collection implements Collection {
-  const _Collection({required this.id, required this.ownerId, required this.name, required this.description, this.thumbnailUrl, this.recipeCount = 0, this.isDefault = false, this.isPublic = false, @TimestampConverter() required this.createdAt, @TimestampConverter() required this.updatedAt});
+  const _Collection({required this.id, required this.ownerId, required this.name, required this.description, this.thumbnailUrl, this.recipeCount = 0, this.isDefault = false, this.isPublic = false, @TimestampConverter() required this.createdAt, @TimestampConverter() required this.updatedAt, this.archived = false, @NullableTimestampConverter() this.archivedAt, @NullableTimestampConverter() this.deleteAfter});
   factory _Collection.fromJson(Map<String, dynamic> json) => _$CollectionFromJson(json);
 
 @override final  String id;
@@ -231,6 +234,9 @@ class _Collection implements Collection {
 @override@JsonKey() final  bool isPublic;
 @override@TimestampConverter() final  DateTime createdAt;
 @override@TimestampConverter() final  DateTime updatedAt;
+@override@JsonKey() final  bool archived;
+@override@NullableTimestampConverter() final  DateTime? archivedAt;
+@override@NullableTimestampConverter() final  DateTime? deleteAfter;
 
 /// Create a copy of Collection
 /// with the given fields replaced by the non-null parameter values.
@@ -245,16 +251,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Collection&&(identical(other.id, id) || other.id == id)&&(identical(other.ownerId, ownerId) || other.ownerId == ownerId)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.thumbnailUrl, thumbnailUrl) || other.thumbnailUrl == thumbnailUrl)&&(identical(other.recipeCount, recipeCount) || other.recipeCount == recipeCount)&&(identical(other.isDefault, isDefault) || other.isDefault == isDefault)&&(identical(other.isPublic, isPublic) || other.isPublic == isPublic)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Collection&&(identical(other.id, id) || other.id == id)&&(identical(other.ownerId, ownerId) || other.ownerId == ownerId)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.thumbnailUrl, thumbnailUrl) || other.thumbnailUrl == thumbnailUrl)&&(identical(other.recipeCount, recipeCount) || other.recipeCount == recipeCount)&&(identical(other.isDefault, isDefault) || other.isDefault == isDefault)&&(identical(other.isPublic, isPublic) || other.isPublic == isPublic)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.archived, archived) || other.archived == archived)&&(identical(other.archivedAt, archivedAt) || other.archivedAt == archivedAt)&&(identical(other.deleteAfter, deleteAfter) || other.deleteAfter == deleteAfter));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,ownerId,name,description,thumbnailUrl,recipeCount,isDefault,isPublic,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,ownerId,name,description,thumbnailUrl,recipeCount,isDefault,isPublic,createdAt,updatedAt,archived,archivedAt,deleteAfter);
 
 @override
 String toString() {
-  return 'Collection(id: $id, ownerId: $ownerId, name: $name, description: $description, thumbnailUrl: $thumbnailUrl, recipeCount: $recipeCount, isDefault: $isDefault, isPublic: $isPublic, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'Collection(id: $id, ownerId: $ownerId, name: $name, description: $description, thumbnailUrl: $thumbnailUrl, recipeCount: $recipeCount, isDefault: $isDefault, isPublic: $isPublic, createdAt: $createdAt, updatedAt: $updatedAt, archived: $archived, archivedAt: $archivedAt, deleteAfter: $deleteAfter)';
 }
 
 
@@ -265,7 +271,7 @@ abstract mixin class _$CollectionCopyWith<$Res> implements $CollectionCopyWith<$
   factory _$CollectionCopyWith(_Collection value, $Res Function(_Collection) _then) = __$CollectionCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String ownerId, String name, String description, String? thumbnailUrl, int recipeCount, bool isDefault, bool isPublic,@TimestampConverter() DateTime createdAt,@TimestampConverter() DateTime updatedAt
+ String id, String ownerId, String name, String description, String? thumbnailUrl, int recipeCount, bool isDefault, bool isPublic,@TimestampConverter() DateTime createdAt,@TimestampConverter() DateTime updatedAt, bool archived,@NullableTimestampConverter() DateTime? archivedAt,@NullableTimestampConverter() DateTime? deleteAfter
 });
 
 
@@ -282,7 +288,7 @@ class __$CollectionCopyWithImpl<$Res>
 
 /// Create a copy of Collection
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? ownerId = null,Object? name = null,Object? description = null,Object? thumbnailUrl = freezed,Object? recipeCount = null,Object? isDefault = null,Object? isPublic = null,Object? createdAt = null,Object? updatedAt = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? ownerId = null,Object? name = null,Object? description = null,Object? thumbnailUrl = freezed,Object? recipeCount = null,Object? isDefault = null,Object? isPublic = null,Object? createdAt = null,Object? updatedAt = null,Object? archived = null,Object? archivedAt = freezed,Object? deleteAfter = freezed,}) {
   return _then(_Collection(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,ownerId: null == ownerId ? _self.ownerId : ownerId // ignore: cast_nullable_to_non_nullable
@@ -294,7 +300,10 @@ as int,isDefault: null == isDefault ? _self.isDefault : isDefault // ignore: cas
 as bool,isPublic: null == isPublic ? _self.isPublic : isPublic // ignore: cast_nullable_to_non_nullable
 as bool,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
-as DateTime,
+as DateTime,archived: null == archived ? _self.archived : archived // ignore: cast_nullable_to_non_nullable
+as bool,archivedAt: freezed == archivedAt ? _self.archivedAt : archivedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,deleteAfter: freezed == deleteAfter ? _self.deleteAfter : deleteAfter // ignore: cast_nullable_to_non_nullable
+as DateTime?,
   ));
 }
 

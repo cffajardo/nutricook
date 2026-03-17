@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nutricook/routing/app_routes.dart';
 
 import '../providers/auth_provider.dart';
 
@@ -18,17 +19,19 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
 
   void _showRootSnackBar(String message) {
     if (!mounted) return;
-    final messenger = ScaffoldMessenger.of(
-      Navigator.of(context, rootNavigator: true).context,
-    );
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+    try {
+      final messenger = ScaffoldMessenger.of(context);
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(message),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+    } catch (e) {
+      debugPrint('Error showing snackbar: $e');
+    }
   }
 
   Future<void> _resendVerification() async {
@@ -68,12 +71,13 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
 
       setState(() => _isChecking = false);
       if (user?.emailVerified == true) {
-        ref.invalidate(currentUserWithVerificationProvider);
-        _showRootSnackBar('Email verified!');
-        context.go('/');
+        _showRootSnackBar('Email verified! Please log in to continue.');
+        await ref.read(authProvider).signOut();
+        if (!mounted) return;
+        GoRouter.of(context).go(AppRoutes.loginPath);
       } else {
         setState(
-          () => _message = 'Not verified yet. Click the link in your email.',
+          () => _message = 'Your email has not been verified yet. Please check your inbox.',
         );
       }
     } catch (e) {

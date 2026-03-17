@@ -11,10 +11,10 @@ final ingredientServiceProvider = Provider<IngredientService>((ref) {
 });
 
 
-// All Ingredients (Cached)
-final ingredientsProvider = FutureProvider<List<Ingredient>>((ref) async {
+// All Ingredients (Real-time)
+final ingredientsProvider = StreamProvider<List<Ingredient>>((ref) {
   final service = ref.watch(ingredientServiceProvider);
-  return service.getAllIngredients();
+  return service.getAllIngredientsStream();
 });
 
 // Single ingredient by id
@@ -67,7 +67,7 @@ final filteredIngredientsProvider = Provider.family<
     Iterable<Ingredient> result = ingredients;
 
     if (input.category != null && input.category!.isNotEmpty) {
-      result = result.where((ing) => ing.category == input.category);
+      result = result.where((ing) => (ing.category ?? '') == input.category);
     }
 
     final trimmed = input.query.trim().toLowerCase();
@@ -89,8 +89,9 @@ final ingredientsByCategoryProvider =
   return ingredientsAsync.whenData((ingredients) {
     final map = <String, List<Ingredient>>{};
     for (final ingredient in ingredients) {
-      map.putIfAbsent(ingredient.category, () => <Ingredient>[]);
-      map[ingredient.category]!.add(ingredient);
+      final category = ingredient.category ?? 'Uncategorized';
+      map.putIfAbsent(category, () => <Ingredient>[]);
+      map[category]!.add(ingredient);
     }
     return map;
   });
@@ -105,7 +106,8 @@ final ingredientCategoriesProvider =
   return ingredientsAsync.whenData((ingredients) {
     final set = <String>{};
     for (final ing in ingredients) {
-      set.add(ing.category);
+      final category = ing.category ?? 'Uncategorized';
+      set.add(category);
     }
 
     if (ingredients.any((ing) => ing.ownerId != null)) {

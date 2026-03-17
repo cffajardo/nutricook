@@ -26,7 +26,10 @@ class RecipeService {
 
     return query.snapshots().map(
       (snapshot) =>
-          snapshot.docs.map((doc) => Recipe.fromJson(doc.data())).toList(),
+          snapshot.docs
+              .map((doc) => Recipe.fromJson(doc.data()))
+              .where((recipe) => recipe.archived == false)
+              .toList(),
     );
   }
 
@@ -37,6 +40,8 @@ class RecipeService {
         .snapshots()
         .map((doc) {
           if (!doc.exists) return null;
+          // Also check if the recipe is archived when fetching by ID
+          if (doc.data()?['archived'] == true) return null;
           return Recipe.fromJson(doc.data()!);
         });
   }
@@ -49,7 +54,10 @@ class RecipeService {
         .snapshots()
         .map(
           (snapshot) =>
-              snapshot.docs.map((doc) => Recipe.fromJson(doc.data())).toList(),
+              snapshot.docs
+                  .map((doc) => Recipe.fromJson(doc.data()))
+                  .where((recipe) => recipe.archived == false)
+                  .toList(),
         );
   }
 
@@ -58,11 +66,14 @@ class RecipeService {
         .collection(FirestoreConstants.recipes)
         .where('isPublic', isEqualTo: true)
         .orderBy('favoriteCount', descending: true)
-        .limit(limit)
         .snapshots()
         .map(
           (snapshot) =>
-              snapshot.docs.map((doc) => Recipe.fromJson(doc.data())).toList(),
+              snapshot.docs
+                  .map((doc) => Recipe.fromJson(doc.data()))
+                  .where((recipe) => recipe.archived == false)
+                  .take(limit)
+                  .toList(),
         );
   }
 

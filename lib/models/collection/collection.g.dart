@@ -21,18 +21,27 @@ _Collection _$CollectionFromJson(Map<String, dynamic> json) => _Collection(
   updatedAt: const TimestampConverter().fromJson(
     json['updatedAt'] as Timestamp,
   ),
+  archived: json['archived'] as bool? ?? false,
+  archivedAt: const NullableTimestampConverter().fromJson(json['archivedAt']),
+  deleteAfter: const NullableTimestampConverter().fromJson(json['deleteAfter']),
 );
 
-Map<String, dynamic> _$CollectionToJson(_Collection instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'ownerId': instance.ownerId,
-      'name': instance.name,
-      'description': instance.description,
-      'thumbnailUrl': instance.thumbnailUrl,
-      'recipeCount': instance.recipeCount,
-      'isDefault': instance.isDefault,
-      'isPublic': instance.isPublic,
-      'createdAt': const TimestampConverter().toJson(instance.createdAt),
-      'updatedAt': const TimestampConverter().toJson(instance.updatedAt),
-    };
+Map<String, dynamic> _$CollectionToJson(
+  _Collection instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'ownerId': instance.ownerId,
+  'name': instance.name,
+  'description': instance.description,
+  'thumbnailUrl': instance.thumbnailUrl,
+  'recipeCount': instance.recipeCount,
+  'isDefault': instance.isDefault,
+  'isPublic': instance.isPublic,
+  'createdAt': const TimestampConverter().toJson(instance.createdAt),
+  'updatedAt': const TimestampConverter().toJson(instance.updatedAt),
+  'archived': instance.archived,
+  'archivedAt': const NullableTimestampConverter().toJson(instance.archivedAt),
+  'deleteAfter': const NullableTimestampConverter().toJson(
+    instance.deleteAfter,
+  ),
+};

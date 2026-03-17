@@ -9,7 +9,6 @@ import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
 import 'package:nutricook/utils/cloudflare_config.dart';
 
-/// Exception thrown during image upload
 class UploadException implements Exception {
   final String message;
   final dynamic originalError;
@@ -82,9 +81,6 @@ class R2UploadService {
     }
   }
 
-  /// Generates a unique object key for the file
-  /// 
-  /// Format: {folder}/{uuid}_original_filename.ext
   String _generateObjectKey(
     String folder,
     String filePath,
@@ -98,7 +94,6 @@ class R2UploadService {
     return objectKey;
   }
 
-  /// Determines the MIME type of a file
   String? _getMimeType(String filePath) {
     try {
       return lookupMimeType(filePath) ?? 'application/octet-stream';
@@ -114,33 +109,26 @@ class R2UploadService {
     String mimeType,
   ) async {
     try {
-      final endpoint = CloudflareConfig.s3Endpoint;
       final bucket = CloudflareConfig.bucketName;
-      
-      // Ensure objectKey doesn't have leading/trailing slashes
+      final uploadUrl = CloudflareConfig.getUploadUrl(objectKey);
       final cleanObjectKey = objectKey.trim().replaceAll(RegExp(r'^/+|/+$'), '');
-      final uploadUrl = '$endpoint/$bucket/$cleanObjectKey';
       
       if (CloudflareConfig.debugMode) {
         debugPrint('[R2] Constructed upload URL: $uploadUrl');
       }
 
-      // Validate URL can be parsed
       try {
         Uri.parse(uploadUrl);
       } catch (e) {
         throw UploadException('Invalid upload URL: $uploadUrl', e);
       }
 
-      // Get current date and time for signature
       final now = DateTime.now().toUtc();
       final amzDate = _formatAmzDate(now);
       final dateStamp = _formatDateStamp(now);
 
-      // Compute payload hash
       final payloadHash = sha256.convert(fileBytes).toString();
 
-      // Create canonical request
       final canonicalRequest = _createCanonicalRequest(
         bucket: bucket,
         objectKey: cleanObjectKey,
@@ -149,23 +137,32 @@ class R2UploadService {
         mimeType: mimeType,
       );
 
-      // Create string to sign
       final credentialScope = '$dateStamp/auto/$_awsService/$_awsTerminator';
       final canonicalRequestHash = sha256.convert(utf8.encode(canonicalRequest)).toString();
       final stringToSign = '$_awsAlgorithm\n$amzDate\n$credentialScope\n$canonicalRequestHash';
 
-      // Calculate signature
       final signature = _calculateSignature(
         stringToSign,
         dateStamp,
       );
 
-      // Build Authorization header
       final authorizationHeader = _buildAuthorizationHeader(
         amzDate,
         dateStamp,
         signature,
       );
+
+      if (CloudflareConfig.debugMode) {
+        debugPrint('[R2] --- Signature Debug ---');
+        debugPrint('[R2] Canonical Request:');
+        debugPrint(canonicalRequest);
+        debugPrint('[R2] Canonical Request Hash: $canonicalRequestHash');
+        debugPrint('[R2] String to Sign:');
+        debugPrint(stringToSign);
+        debugPrint('[R2] Signature: $signature');
+        debugPrint('[R2] Authorization Header: $authorizationHeader');
+        debugPrint('[R2] ----------------------');
+      }
 
       // Build headers for request
       final headers = <String, String>{
@@ -209,7 +206,6 @@ class R2UploadService {
         );
       }
 
-      // Return public URL using cleaned objectKey
       final publicUrl = CloudflareConfig.getPublicUrl(cleanObjectKey);
       if (CloudflareConfig.debugMode) {
         debugPrint('[R2] Public URL for image: $publicUrl');
@@ -281,7 +277,6 @@ class R2UploadService {
     return signature.toString();
   }
 
-  /// Builds the Authorization header for AWS Signature V4
   String _buildAuthorizationHeader(
     String amzDate,
     String dateStamp,

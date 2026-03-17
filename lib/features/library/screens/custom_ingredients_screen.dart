@@ -51,8 +51,7 @@ class CustomIngredientsScreen extends ConsumerWidget {
           child: Text('Failed to load custom ingredients: $error'),
         ),
         data: (items) {
-          // Grid with items + create button
-          final itemCount = items.length + 1; // +1 for create button
+          final itemCount = items.length + 1; 
 
           return GridView.builder(
             padding: const EdgeInsets.all(20),
@@ -65,12 +64,10 @@ class CustomIngredientsScreen extends ConsumerWidget {
             ),
             itemCount: itemCount,
             itemBuilder: (context, index) {
-              // First tile is the create button
               if (index == 0) {
                 return _buildCreateIngredientCard(context);
               }
 
-              // Rest are ingredients
               final item = items[index - 1];
               return _buildIngredientCard(context, item);
             },
@@ -158,7 +155,6 @@ class CustomIngredientsScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image placeholder or image
             Expanded(
               child: Container(
                 width: double.infinity,
@@ -176,8 +172,7 @@ class CustomIngredientsScreen extends ConsumerWidget {
                       )
                     : _buildImagePlaceholder(),
               ),
-            ),
-            // Name and description
+            ),                                                                                                                                                                                                              
             Padding(
               padding: const EdgeInsets.all(12),
               child: Column(

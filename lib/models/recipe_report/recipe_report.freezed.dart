@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$RecipeReport {
 
- String get id; String get recipeId; String get reporterId; String get reason; String? get details; String get status;@TimestampConverter() DateTime get createdAt;@TimestampConverter() DateTime get updatedAt;
+ String get id; String get recipeId; String get reporterId; String get reason; String? get details; String get status; String? get reviewedBy; String? get reviewNote;@TimestampConverter() DateTime? get reviewedAt;@TimestampConverter() DateTime get createdAt;@TimestampConverter() DateTime get updatedAt;
 /// Create a copy of RecipeReport
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $RecipeReportCopyWith<RecipeReport> get copyWith => _$RecipeReportCopyWithImpl<R
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RecipeReport&&(identical(other.id, id) || other.id == id)&&(identical(other.recipeId, recipeId) || other.recipeId == recipeId)&&(identical(other.reporterId, reporterId) || other.reporterId == reporterId)&&(identical(other.reason, reason) || other.reason == reason)&&(identical(other.details, details) || other.details == details)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RecipeReport&&(identical(other.id, id) || other.id == id)&&(identical(other.recipeId, recipeId) || other.recipeId == recipeId)&&(identical(other.reporterId, reporterId) || other.reporterId == reporterId)&&(identical(other.reason, reason) || other.reason == reason)&&(identical(other.details, details) || other.details == details)&&(identical(other.status, status) || other.status == status)&&(identical(other.reviewedBy, reviewedBy) || other.reviewedBy == reviewedBy)&&(identical(other.reviewNote, reviewNote) || other.reviewNote == reviewNote)&&(identical(other.reviewedAt, reviewedAt) || other.reviewedAt == reviewedAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,recipeId,reporterId,reason,details,status,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,recipeId,reporterId,reason,details,status,reviewedBy,reviewNote,reviewedAt,createdAt,updatedAt);
 
 @override
 String toString() {
-  return 'RecipeReport(id: $id, recipeId: $recipeId, reporterId: $reporterId, reason: $reason, details: $details, status: $status, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'RecipeReport(id: $id, recipeId: $recipeId, reporterId: $reporterId, reason: $reason, details: $details, status: $status, reviewedBy: $reviewedBy, reviewNote: $reviewNote, reviewedAt: $reviewedAt, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $RecipeReportCopyWith<$Res>  {
   factory $RecipeReportCopyWith(RecipeReport value, $Res Function(RecipeReport) _then) = _$RecipeReportCopyWithImpl;
 @useResult
 $Res call({
- String id, String recipeId, String reporterId, String reason, String? details, String status,@TimestampConverter() DateTime createdAt,@TimestampConverter() DateTime updatedAt
+ String id, String recipeId, String reporterId, String reason, String? details, String status, String? reviewedBy, String? reviewNote,@TimestampConverter() DateTime? reviewedAt,@TimestampConverter() DateTime createdAt,@TimestampConverter() DateTime updatedAt
 });
 
 
@@ -65,7 +65,7 @@ class _$RecipeReportCopyWithImpl<$Res>
 
 /// Create a copy of RecipeReport
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? recipeId = null,Object? reporterId = null,Object? reason = null,Object? details = freezed,Object? status = null,Object? createdAt = null,Object? updatedAt = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? recipeId = null,Object? reporterId = null,Object? reason = null,Object? details = freezed,Object? status = null,Object? reviewedBy = freezed,Object? reviewNote = freezed,Object? reviewedAt = freezed,Object? createdAt = null,Object? updatedAt = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,recipeId: null == recipeId ? _self.recipeId : recipeId // ignore: cast_nullable_to_non_nullable
@@ -73,7 +73,10 @@ as String,reporterId: null == reporterId ? _self.reporterId : reporterId // igno
 as String,reason: null == reason ? _self.reason : reason // ignore: cast_nullable_to_non_nullable
 as String,details: freezed == details ? _self.details : details // ignore: cast_nullable_to_non_nullable
 as String?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as String,reviewedBy: freezed == reviewedBy ? _self.reviewedBy : reviewedBy // ignore: cast_nullable_to_non_nullable
+as String?,reviewNote: freezed == reviewNote ? _self.reviewNote : reviewNote // ignore: cast_nullable_to_non_nullable
+as String?,reviewedAt: freezed == reviewedAt ? _self.reviewedAt : reviewedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,
   ));
@@ -160,10 +163,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String recipeId,  String reporterId,  String reason,  String? details,  String status, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String recipeId,  String reporterId,  String reason,  String? details,  String status,  String? reviewedBy,  String? reviewNote, @TimestampConverter()  DateTime? reviewedAt, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RecipeReport() when $default != null:
-return $default(_that.id,_that.recipeId,_that.reporterId,_that.reason,_that.details,_that.status,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.recipeId,_that.reporterId,_that.reason,_that.details,_that.status,_that.reviewedBy,_that.reviewNote,_that.reviewedAt,_that.createdAt,_that.updatedAt);case _:
   return orElse();
 
 }
@@ -181,10 +184,10 @@ return $default(_that.id,_that.recipeId,_that.reporterId,_that.reason,_that.deta
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String recipeId,  String reporterId,  String reason,  String? details,  String status, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String recipeId,  String reporterId,  String reason,  String? details,  String status,  String? reviewedBy,  String? reviewNote, @TimestampConverter()  DateTime? reviewedAt, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _RecipeReport():
-return $default(_that.id,_that.recipeId,_that.reporterId,_that.reason,_that.details,_that.status,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.recipeId,_that.reporterId,_that.reason,_that.details,_that.status,_that.reviewedBy,_that.reviewNote,_that.reviewedAt,_that.createdAt,_that.updatedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -201,10 +204,10 @@ return $default(_that.id,_that.recipeId,_that.reporterId,_that.reason,_that.deta
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String recipeId,  String reporterId,  String reason,  String? details,  String status, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String recipeId,  String reporterId,  String reason,  String? details,  String status,  String? reviewedBy,  String? reviewNote, @TimestampConverter()  DateTime? reviewedAt, @TimestampConverter()  DateTime createdAt, @TimestampConverter()  DateTime updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _RecipeReport() when $default != null:
-return $default(_that.id,_that.recipeId,_that.reporterId,_that.reason,_that.details,_that.status,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.recipeId,_that.reporterId,_that.reason,_that.details,_that.status,_that.reviewedBy,_that.reviewNote,_that.reviewedAt,_that.createdAt,_that.updatedAt);case _:
   return null;
 
 }
@@ -216,7 +219,7 @@ return $default(_that.id,_that.recipeId,_that.reporterId,_that.reason,_that.deta
 @JsonSerializable()
 
 class _RecipeReport implements RecipeReport {
-  const _RecipeReport({required this.id, required this.recipeId, required this.reporterId, required this.reason, this.details, this.status = 'open', @TimestampConverter() required this.createdAt, @TimestampConverter() required this.updatedAt});
+  const _RecipeReport({required this.id, required this.recipeId, required this.reporterId, required this.reason, this.details, this.status = 'open', this.reviewedBy, this.reviewNote, @TimestampConverter() this.reviewedAt, @TimestampConverter() required this.createdAt, @TimestampConverter() required this.updatedAt});
   factory _RecipeReport.fromJson(Map<String, dynamic> json) => _$RecipeReportFromJson(json);
 
 @override final  String id;
@@ -225,6 +228,9 @@ class _RecipeReport implements RecipeReport {
 @override final  String reason;
 @override final  String? details;
 @override@JsonKey() final  String status;
+@override final  String? reviewedBy;
+@override final  String? reviewNote;
+@override@TimestampConverter() final  DateTime? reviewedAt;
 @override@TimestampConverter() final  DateTime createdAt;
 @override@TimestampConverter() final  DateTime updatedAt;
 
@@ -241,16 +247,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RecipeReport&&(identical(other.id, id) || other.id == id)&&(identical(other.recipeId, recipeId) || other.recipeId == recipeId)&&(identical(other.reporterId, reporterId) || other.reporterId == reporterId)&&(identical(other.reason, reason) || other.reason == reason)&&(identical(other.details, details) || other.details == details)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RecipeReport&&(identical(other.id, id) || other.id == id)&&(identical(other.recipeId, recipeId) || other.recipeId == recipeId)&&(identical(other.reporterId, reporterId) || other.reporterId == reporterId)&&(identical(other.reason, reason) || other.reason == reason)&&(identical(other.details, details) || other.details == details)&&(identical(other.status, status) || other.status == status)&&(identical(other.reviewedBy, reviewedBy) || other.reviewedBy == reviewedBy)&&(identical(other.reviewNote, reviewNote) || other.reviewNote == reviewNote)&&(identical(other.reviewedAt, reviewedAt) || other.reviewedAt == reviewedAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,recipeId,reporterId,reason,details,status,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,recipeId,reporterId,reason,details,status,reviewedBy,reviewNote,reviewedAt,createdAt,updatedAt);
 
 @override
 String toString() {
-  return 'RecipeReport(id: $id, recipeId: $recipeId, reporterId: $reporterId, reason: $reason, details: $details, status: $status, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'RecipeReport(id: $id, recipeId: $recipeId, reporterId: $reporterId, reason: $reason, details: $details, status: $status, reviewedBy: $reviewedBy, reviewNote: $reviewNote, reviewedAt: $reviewedAt, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -261,7 +267,7 @@ abstract mixin class _$RecipeReportCopyWith<$Res> implements $RecipeReportCopyWi
   factory _$RecipeReportCopyWith(_RecipeReport value, $Res Function(_RecipeReport) _then) = __$RecipeReportCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String recipeId, String reporterId, String reason, String? details, String status,@TimestampConverter() DateTime createdAt,@TimestampConverter() DateTime updatedAt
+ String id, String recipeId, String reporterId, String reason, String? details, String status, String? reviewedBy, String? reviewNote,@TimestampConverter() DateTime? reviewedAt,@TimestampConverter() DateTime createdAt,@TimestampConverter() DateTime updatedAt
 });
 
 
@@ -278,7 +284,7 @@ class __$RecipeReportCopyWithImpl<$Res>
 
 /// Create a copy of RecipeReport
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? recipeId = null,Object? reporterId = null,Object? reason = null,Object? details = freezed,Object? status = null,Object? createdAt = null,Object? updatedAt = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? recipeId = null,Object? reporterId = null,Object? reason = null,Object? details = freezed,Object? status = null,Object? reviewedBy = freezed,Object? reviewNote = freezed,Object? reviewedAt = freezed,Object? createdAt = null,Object? updatedAt = null,}) {
   return _then(_RecipeReport(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,recipeId: null == recipeId ? _self.recipeId : recipeId // ignore: cast_nullable_to_non_nullable
@@ -286,7 +292,10 @@ as String,reporterId: null == reporterId ? _self.reporterId : reporterId // igno
 as String,reason: null == reason ? _self.reason : reason // ignore: cast_nullable_to_non_nullable
 as String,details: freezed == details ? _self.details : details // ignore: cast_nullable_to_non_nullable
 as String?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as String,reviewedBy: freezed == reviewedBy ? _self.reviewedBy : reviewedBy // ignore: cast_nullable_to_non_nullable
+as String?,reviewNote: freezed == reviewNote ? _self.reviewNote : reviewNote // ignore: cast_nullable_to_non_nullable
+as String?,reviewedAt: freezed == reviewedAt ? _self.reviewedAt : reviewedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,
   ));

@@ -46,6 +46,8 @@ class UserPreferencesNotifier extends AsyncNotifier<UserPreferences> {
       allergens: remote.allergens,
       mealStartHours: remote.mealStartHours,
       dailyCalorieGoal: remote.dailyCalorieGoal,
+      archiveRetentionDays: remote.archiveRetentionDays,
+      autoAdvanceStepTimer: remote.autoAdvanceStepTimer,
     );
   }
 
@@ -73,6 +75,18 @@ class UserPreferencesNotifier extends AsyncNotifier<UserPreferences> {
     final sanitizedCalories = calories < 100 ? 100 : calories;
     return _update(
       (current) => current.copyWith(dailyCalorieGoal: sanitizedCalories),
+    );
+  }
+
+  Future<void> updateArchiveRetentionDays(int days) {
+    return _update(
+      (current) => current.copyWith(archiveRetentionDays: days),
+    );
+  }
+
+  Future<void> updateAutoAdvanceStepTimer(bool enabled) {
+    return _update(
+      (current) => current.copyWith(autoAdvanceStepTimer: enabled),
     );
   }
 
@@ -105,6 +119,7 @@ class UserPreferencesNotifier extends AsyncNotifier<UserPreferences> {
       allergens: defaults.allergens,
       mealStartHours: defaults.mealStartHours,
       dailyCalorieGoal: defaults.dailyCalorieGoal,
+      archiveRetentionDays: defaults.archiveRetentionDays,
     );
     state = AsyncData(defaults);
   }
@@ -130,15 +145,27 @@ class UserPreferencesNotifier extends AsyncNotifier<UserPreferences> {
     );
     final didDailyCalorieGoalChange =
         current.dailyCalorieGoal != updated.dailyCalorieGoal;
+    final didArchiveRetentionChange =
+        current.archiveRetentionDays != updated.archiveRetentionDays;
+    final didAutoAdvanceChange =
+        current.autoAdvanceStepTimer != updated.autoAdvanceStepTimer;
 
     if (didAllergensChange ||
         didMealStartHoursChange ||
-        didDailyCalorieGoalChange) {
+        didDailyCalorieGoalChange ||
+        didArchiveRetentionChange ||
+        didAutoAdvanceChange) {
       await _syncRemotePreferencesToFirestore(
         allergens: didAllergensChange ? updated.allergens : null,
         mealStartHours: didMealStartHoursChange ? updated.mealStartHours : null,
         dailyCalorieGoal: didDailyCalorieGoalChange
             ? updated.dailyCalorieGoal
+            : null,
+        archiveRetentionDays: didArchiveRetentionChange
+            ? updated.archiveRetentionDays
+            : null,
+        autoAdvanceStepTimer: didAutoAdvanceChange
+            ? updated.autoAdvanceStepTimer
             : null,
       );
     }
@@ -148,6 +175,8 @@ class UserPreferencesNotifier extends AsyncNotifier<UserPreferences> {
     List<String>? allergens,
     Map<String, int>? mealStartHours,
     int? dailyCalorieGoal,
+    int? archiveRetentionDays,
+    bool? autoAdvanceStepTimer,
   }) async {
     final uid = ref.read(currentUserIdProvider);
     if (uid == null || uid.trim().isEmpty) {
@@ -176,6 +205,14 @@ class UserPreferencesNotifier extends AsyncNotifier<UserPreferences> {
           ? 100
           : dailyCalorieGoal;
       update['dailyCalorieGoal'] = normalizedCalories;
+    }
+
+    if (archiveRetentionDays != null) {
+      update['archiveRetentionDays'] = archiveRetentionDays;
+    }
+
+    if (autoAdvanceStepTimer != null) {
+      update['autoAdvanceStepTimer'] = autoAdvanceStepTimer;
     }
 
     if (update.isEmpty) {
@@ -240,10 +277,19 @@ class UserPreferencesNotifier extends AsyncNotifier<UserPreferences> {
           (data['dailyCalorieGoal'] as num?)?.toInt() ??
           UserPreferences.defaults.dailyCalorieGoal;
 
+      final archiveRetentionDays =
+          (data['archiveRetentionDays'] as num?)?.toInt() ??
+          UserPreferences.defaults.archiveRetentionDays;
+
+      final autoAdvanceStepTimer = data['autoAdvanceStepTimer'] as bool? ??
+          UserPreferences.defaults.autoAdvanceStepTimer;
+
       return _RemotePreferenceValues(
         allergens: allergens,
         mealStartHours: mealStartHours,
         dailyCalorieGoal: dailyCalorieGoal < 100 ? 100 : dailyCalorieGoal,
+        archiveRetentionDays: archiveRetentionDays,
+        autoAdvanceStepTimer: autoAdvanceStepTimer,
       );
     } catch (_) {
       return _RemotePreferenceValues.defaults();
@@ -276,17 +322,23 @@ class _RemotePreferenceValues {
     required this.allergens,
     required this.mealStartHours,
     required this.dailyCalorieGoal,
+    required this.archiveRetentionDays,
+    required this.autoAdvanceStepTimer,
   });
 
   final List<String> allergens;
   final Map<String, int> mealStartHours;
   final int dailyCalorieGoal;
+  final int archiveRetentionDays;
+  final bool autoAdvanceStepTimer;
 
   factory _RemotePreferenceValues.defaults() {
     return const _RemotePreferenceValues(
       allergens: <String>[],
       mealStartHours: defaultMealStartHours,
       dailyCalorieGoal: 2000,
+      archiveRetentionDays: 30, // Default matching UserPreferences
+      autoAdvanceStepTimer: true,
     );
   }
 }

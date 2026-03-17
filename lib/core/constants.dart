@@ -19,6 +19,12 @@ class FirestoreConstants {
   static const items = 'items';
 }
 
+class AppConstants {
+  static const collectionRecipes = FirestoreConstants.recipes;
+  static const collectionCollections = FirestoreConstants.collections;
+  static const collectionIngredients = FirestoreConstants.ingredients;
+}
+
 class IngredientCategory {
   static const vegetables = 'Vegetables';
   static const fruits = 'Fruits';

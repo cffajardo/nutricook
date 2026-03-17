@@ -7,6 +7,7 @@ import 'package:nutricook/features/recipe/providers/recipe_provider.dart';
 import 'package:nutricook/features/recipe/widgets/recipe_card.dart';
 import 'package:nutricook/features/recipe/widgets/recipe_list_item.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
+import 'package:nutricook/routing/navigation_provider.dart';
 
 class RecipeCategoryListScreen extends ConsumerStatefulWidget {
   final String category;
@@ -48,6 +49,12 @@ class _RecipeCategoryListScreenState
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(activeTabProvider, (previous, next) {
+      if (previous != next) {
+        _searchController.clear();
+      }
+    });
+
     return Scaffold(
       backgroundColor: const Color(0xFFFFF9FA),
       body: SafeArea(

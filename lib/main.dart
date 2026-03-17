@@ -12,6 +12,8 @@ import 'package:nutricook/features/notifications/notification_handler.dart';
 import 'package:nutricook/models/notification_payload.dart';
 import 'firebase_options.dart';
 import 'routing/main_router.dart';
+import 'package:nutricook/services/archive_service.dart';
+import 'package:nutricook/features/auth/providers/auth_provider.dart';
 
 
 Future<void> main() async {
@@ -74,6 +76,13 @@ class NutriCookApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(appThemeModeProvider);
+
+    // Trigger archive cleanup on login
+    ref.listen(currentUserIdProvider, (previous, next) {
+      if (next != null && next.isNotEmpty && previous != next) {
+        ref.read(archiveServiceProvider).runCleanup();
+      }
+    });
 
     // Set up notification tap listener
     _setupNotificationTapListener(context);

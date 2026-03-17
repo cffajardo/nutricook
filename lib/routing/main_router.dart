@@ -14,6 +14,7 @@ import 'package:nutricook/features/recipe/screens/recipe_create.dart';
 import 'package:nutricook/features/recipe/screens/recipe_category.dart';
 import 'package:nutricook/features/recipe/screens/recipe_main_details.dart';
 import 'package:nutricook/features/planner/screens/planner_main.dart';
+import 'package:nutricook/features/planner/screens/planner_history_screen.dart';
 import 'package:nutricook/features/profile/screens/edit_profile_page.dart';
 import 'package:nutricook/features/profile/screens/followers_following_page.dart';
 import 'package:nutricook/features/profile/screens/profile_page.dart';
@@ -24,6 +25,7 @@ import 'package:nutricook/features/notifications/screens/notification_test_page.
 import 'package:nutricook/features/library/screens/library_main.dart';
 import 'package:nutricook/features/library/screens/library_subcategory.dart';
 import 'package:nutricook/features/library/screens/library_main_item.dart';
+import 'package:nutricook/features/archive/screens/archive_page.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
 import 'package:nutricook/screens/home_screen.dart';
 import 'package:nutricook/screens/splash_screen.dart';
@@ -31,6 +33,7 @@ import 'package:nutricook/routing/app_routes.dart';
 import 'package:nutricook/features/home/widgets/custom_bottom_nav_bar.dart';
 import 'package:nutricook/features/profile/provider/user_provider.dart';
 import 'package:nutricook/services/recipe_service.dart';
+import 'package:nutricook/routing/navigation_provider.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final userAsync = ref.watch(authStateProvider);
@@ -208,6 +211,14 @@ final routerProvider = Provider<GoRouter>((ref) {
               path ==
                   '${AppRoutes.profilePath}/${AppRoutes.profileConnectionsPath}';
 
+          // Sync the active tab index with our provider
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (ref.read(activeTabProvider) != navigationShell.currentIndex) {
+              ref.read(activeTabProvider.notifier).state =
+                  navigationShell.currentIndex;
+            }
+          });
+
           return Scaffold(
             backgroundColor: Colors.white,
             body: navigationShell,
@@ -291,8 +302,15 @@ final routerProvider = Provider<GoRouter>((ref) {
                   onPopInvokedWithResult: (didPop, result) {
                     if (!didPop) context.go(AppRoutes.homePath);
                   },
-                  child: const PlannerScreen(),
+                   child: const PlannerScreen(),
                 ),
+                routes: [
+                  GoRoute(
+                    path: 'history',
+                    name: AppRoutes.plannerHistoryName,
+                    builder: (context, state) => const PlannerHistoryScreen(),
+                  ),
+                ],
               ),
             ],
           ),
@@ -408,6 +426,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                     path: AppRoutes.settingsPath,
                     name: AppRoutes.settingsName,
                     builder: (context, state) => const SettingsPage(),
+                  ),
+                  GoRoute(
+                    path: AppRoutes.archivePath,
+                    name: AppRoutes.archiveName,
+                    builder: (context, state) => const ArchivePage(),
                   ),
                   GoRoute(
                     path: ':userId',

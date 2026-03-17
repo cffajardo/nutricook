@@ -4,6 +4,7 @@ import 'package:nutricook/core/theme/app_theme.dart';
 import 'package:nutricook/features/library/library_constants.dart';
 import 'package:nutricook/features/library/providers/library_catalog_provider.dart';
 import 'package:nutricook/features/library/screens/library_item_detail_page.dart';
+import 'package:nutricook/routing/navigation_provider.dart';
 
 class LibraryItemDetailScreen extends ConsumerStatefulWidget {
   final String categoryId;
@@ -41,6 +42,14 @@ class _LibraryItemDetailScreenState
     );
 
     final title = subCategory?.label ?? category?.label ?? 'Library';
+
+    ref.listen(activeTabProvider, (previous, next) {
+      if (previous != next) {
+        _searchController.clear();
+        setState(() => _searchQuery = '');
+      }
+    });
+
     final itemsAsync = ref.watch(
       libraryItemsProvider(
         LibraryCatalogQuery(

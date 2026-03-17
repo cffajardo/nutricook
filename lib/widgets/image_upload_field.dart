@@ -72,7 +72,6 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
   /// Call this when the save button is clicked
   Future<String?> uploadImage() async {
     if (_selectedImageFile == null && _uploadedImageUrl == null) {
-      _showError('No image selected');
       return null;
     }
 
@@ -89,6 +88,8 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
         folder: widget.folder,
       );
 
+      if (!mounted) return null;
+
       setState(() {
         _uploadedImageUrl = imageUrl;
         _isUploading = false;
@@ -98,6 +99,7 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
       widget.onSuccess?.call(imageUrl);
       return imageUrl;
     } catch (e) {
+      if (!mounted) return null;
       setState(() => _isUploading = false);
       final errorMsg = 'Upload failed: ${_extractErrorMessage(e)}';
       _showError(errorMsg);
@@ -147,6 +149,7 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
       );
 
       if (pickedFile != null) {
+        if (!mounted) return;
         setState(() {
           _selectedImagePath = pickedFile.path;
           _selectedImageFile = pickedFile;
@@ -157,6 +160,7 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
         }
       }
     } catch (e) {
+      if (!mounted) return;
       _showError('Failed to pick image from camera: $e');
     }
   }
@@ -171,6 +175,7 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
       );
 
       if (pickedFile != null) {
+        if (!mounted) return;
         setState(() {
           _selectedImagePath = pickedFile.path;
           _selectedImageFile = pickedFile;
@@ -181,6 +186,7 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
         }
       }
     } catch (e) {
+      if (!mounted) return;
       _showError('Failed to pick image from gallery: $e');
     }
   }
@@ -195,6 +201,8 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
         folder: widget.folder,
       );
 
+      if (!mounted) return;
+
       setState(() {
         _uploadedImageUrl = imageUrl;
         _isUploading = false;
@@ -203,6 +211,7 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
 
       widget.onSuccess?.call(imageUrl);
     } catch (e) {
+      if (!mounted) return;
       setState(() => _isUploading = false);
       final errorMsg = 'Upload failed: ${_extractErrorMessage(e)}';
       _showError(errorMsg);

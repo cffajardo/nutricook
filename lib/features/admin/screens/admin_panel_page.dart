@@ -11,7 +11,9 @@ import 'package:nutricook/features/profile/provider/user_provider.dart';
 import 'package:nutricook/features/recipe/providers/recipe_report_provider.dart';
 import 'package:nutricook/models/recipe_report/recipe_report.dart';
 import 'package:nutricook/routing/app_routes.dart';
+import 'package:nutricook/services/archive_service.dart';
 import 'package:nutricook/services/notification_trigger.dart';
+import 'package:nutricook/core/constants.dart';
 
 class AdminPanelPage extends ConsumerStatefulWidget {
   const AdminPanelPage({super.key});
@@ -41,11 +43,27 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 6, vsync: this);
+    _tabController.addListener(_handleTabSelection);
+  }
+
+  void _handleTabSelection() {
+    if (_tabController.indexIsChanging) {
+      _userSearchController.clear();
+      _ingredientSearchController.clear();
+      _recipeSearchController.clear();
+      // Also clear the internal query strings to reset providers
+      setState(() {
+        _query = '';
+        _ingredientQuery = '';
+        _recipeQuery = '';
+      });
+    }
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_handleTabSelection);
     _tabController.dispose();
     _userSearchController.dispose();
     _ingredientSearchController.dispose();
@@ -121,6 +139,7 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
             Tab(text: 'Reports'),
             Tab(text: 'Ingredients'),
             Tab(text: 'Recipes'),
+            Tab(text: 'Archive'),
           ],
         ),
       ),
@@ -302,13 +321,11 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
                   physics: const BouncingScrollPhysics(),
                   child: Row(
                     children: [
-                      _statusFilterChip('All', ''),
+                      _statusFilterChip('All Reports', ''),
                       const SizedBox(width: 8),
                       _statusFilterChip('Open', 'open'),
                       const SizedBox(width: 8),
-                      _statusFilterChip('Reviewed', 'reviewed'),
-                      const SizedBox(width: 8),
-                      _statusFilterChip('Dismissed', 'dismissed'),
+                      _statusFilterChip('Archived', 'archived'),
                     ],
                   ),
                 ),
@@ -330,6 +347,7 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
                           report: reports[index],
                           onStatusChanged: _setReportStatus,
                           onRecipeDeleted: _deleteRecipe,
+                          onReportDeleted: _deleteReport,
                           statusColor: _statusColor,
                         );
                       },
@@ -621,6 +639,10 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
                                     label: isPublic ? 'PUBLIC' : 'PRIVATE',
                                     color: isPublic ? Colors.green : Colors.blueGrey,
                                   ),
+                                  if (recipe['archived'] == true) ...[
+                                    const SizedBox(width: 8),
+                                    const _ChipLabel(label: 'ARCHIVED', color: AppColors.rosePink),
+                                  ],
                                 ],
                               ),
                               const SizedBox(height: 8),
@@ -673,6 +695,17 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
                 ),
               ),
             ],
+          ),
+          
+          // 6. ARCHIVE TAB
+          _ArchiveTab(
+            recipeQuery: _recipeQuery,
+            recipeSortBy: _recipeSortBy,
+            showEditRecipeDialog: _showEditRecipeDialog,
+            onReportStatusChanged: _setReportStatus,
+            onRecipeDeleted: _deleteRecipe,
+            onReportDeleted: _deleteReport,
+            statusColor: _statusColor,
           ),
         ],
       ),
@@ -737,6 +770,10 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
         return Colors.green;
       case 'dismissed':
         return Colors.grey;
+      case 'archived':
+        return AppColors.rosePink;
+      case 'resolved': // Hypothetical if we ever use it
+        return Colors.blue;
       case 'open':
       default:
         return Colors.orange;
@@ -745,13 +782,56 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
 
   Future<void> _setReportStatus({required String reportId, required String status}) async {
     final currentUserId = ref.read(currentUserIdProvider);
+    String finalStatus = status;
+    String? note;
+
+    // Based on user feedback: Reviewed and Dismissed reports should be ARCHIVED after processing.
+    if (status == 'reviewed' || status == 'dismissed') {
+      finalStatus = 'archived';
+      note = status == 'reviewed' ? 'Marked as Reviewed' : 'Marked as Dismissed';
+    }
+
     try {
-      await ref.read(recipeReportServiceProvider).updateReportStatus(reportId: reportId, status: status, reviewedBy: currentUserId);
+      await ref.read(recipeReportServiceProvider).updateReportStatus(
+            reportId: reportId,
+            status: finalStatus,
+            reviewedBy: currentUserId,
+            reviewNote: note,
+          );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Report marked as $status.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Report processed and archived.')));
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update report: $error')));
+    }
+  }
+
+  Future<void> _deleteReport({required String reportId}) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Report'),
+        content: const Text('Are you sure you want to permanently delete this report? This cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await ref.read(recipeReportServiceProvider).deleteReport(reportId: reportId);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Report permanently deleted.')));
+      } catch (error) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to delete report: $error')));
+      }
     }
   }
 
@@ -769,10 +849,30 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
           .get();
       
       final ownerFcmToken = userDoc.data()?['fcmToken'] as String?;
-
-      // Delete the recipe
-      await ref.read(recipeReportServiceProvider).deleteRecipe(recipeId: recipeId);
+  
+      // Archive the recipe instead of deleting
+      await ref.read(archiveServiceProvider).archiveItem(
+            collection: AppConstants.collectionRecipes,
+            docId: recipeId,
+          );
       
+      // Update ALL reports for this recipe to 'archived' status
+      final reportsSnapshot = await FirebaseFirestore.instance
+          .collection(FirestoreConstants.recipeReports)
+          .where('recipeId', isEqualTo: recipeId)
+          .get();
+      
+      final currentUserId = ref.read(currentUserIdProvider);
+      final reportService = ref.read(recipeReportServiceProvider);
+      
+      for (final doc in reportsSnapshot.docs) {
+        await reportService.updateReportStatus(
+          reportId: doc.id,
+          status: 'archived',
+          reviewedBy: currentUserId,
+          reviewNote: 'Archived by admin. Reason: $reason',
+        );
+      }
   
       if (ownerFcmToken != null && ownerFcmToken.isNotEmpty) {
         await NotificationTrigger.sendRecipeDeletedNotification(
@@ -785,10 +885,10 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
       }
       
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Recipe deleted successfully.')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Recipe moved to archive.')));
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to delete recipe: $error')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to archive recipe: $error')));
     }
   }
 
@@ -979,6 +1079,7 @@ class _ReportCard extends ConsumerWidget {
     required this.report,
     required this.onStatusChanged,
     required this.onRecipeDeleted,
+    required this.onReportDeleted,
     required this.statusColor,
   });
 
@@ -990,6 +1091,7 @@ class _ReportCard extends ConsumerWidget {
     required String recipeOwnerId,
     required String reason,
   }) onRecipeDeleted;
+  final Function({required String reportId}) onReportDeleted;
   final Color Function(String) statusColor;
 
   @override
@@ -1102,82 +1204,322 @@ class _ReportCard extends ConsumerWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              if (report.status != 'open')
-                OutlinedButton(
+              if (report.status == 'archived') ...[
+                OutlinedButton.icon(
                   onPressed: () => onStatusChanged(reportId: report.id, status: 'open'),
+                  icon: const Icon(Icons.restore_rounded, size: 18),
+                  label: const Text('Reopen', style: TextStyle(fontWeight: FontWeight.bold)),
                   style: OutlinedButton.styleFrom(
                     visualDensity: VisualDensity.compact,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text('Reopen', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
-              if (report.status != 'reviewed')
-                FilledButton.tonal(
-                  onPressed: () => onStatusChanged(reportId: report.id, status: 'reviewed'),
-                  style: FilledButton.styleFrom(
+                OutlinedButton.icon(
+                  onPressed: () => onReportDeleted(reportId: report.id),
+                  icon: const Icon(Icons.delete_forever_rounded, size: 18),
+                  label: const Text('Delete Report', style: TextStyle(fontWeight: FontWeight.bold)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red),
                     visualDensity: VisualDensity.compact,
-                    backgroundColor: Colors.green.withValues(alpha: 0.1),
-                    foregroundColor: Colors.green,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text('Mark Reviewed', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
-              if (report.status != 'dismissed')
-                FilledButton.tonal(
-                  onPressed: () => onStatusChanged(reportId: report.id, status: 'dismissed'),
-                  style: FilledButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    backgroundColor: Colors.grey.shade200,
-                    foregroundColor: Colors.black87,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ] else ...[
+                if (report.status != 'open')
+                  OutlinedButton(
+                    onPressed: () => onStatusChanged(reportId: report.id, status: 'open'),
+                    style: OutlinedButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Reopen', style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
-                  child: const Text('Dismiss', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
+                if (report.status != 'reviewed')
+                  FilledButton.tonal(
+                    onPressed: () => onStatusChanged(reportId: report.id, status: 'reviewed'),
+                    style: FilledButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      backgroundColor: Colors.green.withValues(alpha: 0.1),
+                      foregroundColor: Colors.green,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Mark Reviewed', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                if (report.status != 'dismissed')
+                  FilledButton.tonal(
+                    onPressed: () => onStatusChanged(reportId: report.id, status: 'dismissed'),
+                    style: FilledButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      backgroundColor: Colors.grey.shade200,
+                      foregroundColor: Colors.black87,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Dismiss', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+              ],
             ],
           ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: recipeDataAsync.when(
-              loading: () => FilledButton.tonal(
-                onPressed: null,
-                style: FilledButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  backgroundColor: Colors.red.withValues(alpha: 0.1),
-                  foregroundColor: Colors.red,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          if (report.status != 'archived') ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: recipeDataAsync.when(
+                loading: () => FilledButton.tonal(
+                  onPressed: null,
+                  style: FilledButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    backgroundColor: Colors.red.withValues(alpha: 0.1),
+                    foregroundColor: Colors.red,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Delete Recipe', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
-                child: const Text('Delete Recipe', style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-              error: (_, _) => FilledButton.tonal(
-                onPressed: null,
-                style: FilledButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  backgroundColor: Colors.red.withValues(alpha: 0.1),
-                  foregroundColor: Colors.red,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                error: (_, _) => FilledButton.tonal(
+                  onPressed: null,
+                  style: FilledButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    backgroundColor: Colors.red.withValues(alpha: 0.1),
+                    foregroundColor: Colors.red,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Delete Recipe', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
-                child: const Text('Delete Recipe', style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-              data: (recipeData) => FilledButton.tonal(
-                onPressed: () => onRecipeDeleted(
-                  recipeId: report.recipeId,
-                  recipeName: recipeData.name ?? 'Unknown Recipe',
-                  recipeOwnerId: recipeData.ownerId ?? 'unknown',
-                  reason: report.reason,
+                data: (recipeData) => FilledButton.tonal(
+                  onPressed: () => onRecipeDeleted(
+                    recipeId: report.recipeId,
+                    recipeName: recipeData.name ?? 'Unknown Recipe',
+                    recipeOwnerId: recipeData.ownerId ?? 'unknown',
+                    reason: report.reason,
+                  ),
+                  style: FilledButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    backgroundColor: Colors.red.withValues(alpha: 0.1),
+                    foregroundColor: Colors.red,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Delete Recipe', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
-                style: FilledButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  backgroundColor: Colors.red.withValues(alpha: 0.1),
-                  foregroundColor: Colors.red,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                child: const Text('Delete Recipe', style: TextStyle(fontWeight: FontWeight.bold)),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
   }
 }
+
+class _ArchiveTab extends ConsumerStatefulWidget {
+  const _ArchiveTab({
+    required this.recipeQuery,
+    required this.recipeSortBy,
+    required this.showEditRecipeDialog,
+    required this.onReportStatusChanged,
+    required this.onRecipeDeleted,
+    required this.onReportDeleted,
+    required this.statusColor,
+  });
+
+  final String recipeQuery;
+  final String recipeSortBy;
+  final Function({
+    required String recipeId,
+    required String initialName,
+    required String initialDescription,
+    required int initialPrepTime,
+    required int initialCookTime,
+    required int initialServings,
+    required bool initialIsPublic,
+  }) showEditRecipeDialog;
+  final Function({required String reportId, required String status}) onReportStatusChanged;
+  final Function({
+    required String recipeId,
+    required String recipeName,
+    required String recipeOwnerId,
+    required String reason,
+  }) onRecipeDeleted;
+  final Function({required String reportId}) onReportDeleted;
+  final Color Function(String) statusColor;
+
+  @override
+  ConsumerState<_ArchiveTab> createState() => _ArchiveTabState();
+}
+
+class _ArchiveTabState extends ConsumerState<_ArchiveTab> {
+  String _archiveType = 'recipes'; // 'recipes' or 'reports'
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+          child: SegmentedButton<String>(
+            segments: const [
+              ButtonSegment(value: 'recipes', label: Text('Recipes'), icon: Icon(Icons.restaurant_menu)),
+              ButtonSegment(value: 'reports', label: Text('Reports'), icon: Icon(Icons.flag)),
+            ],
+            selected: {_archiveType},
+            onSelectionChanged: (value) => setState(() => _archiveType = value.first),
+            style: SegmentedButton.styleFrom(
+              selectedBackgroundColor: AppColors.rosePink.withValues(alpha: 0.1),
+              selectedForegroundColor: AppColors.rosePink,
+            ),
+          ),
+        ),
+        Expanded(
+          child: _archiveType == 'recipes' ? _buildArchivedRecipes() : _buildArchivedReports(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildArchivedRecipes() {
+    final archivedRecipesAsync = ref.watch(adminArchivedRecipesProvider(widget.recipeQuery));
+
+    return archivedRecipesAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator(color: AppColors.rosePink)),
+      error: (error, _) => Center(child: Text('Failed to load archived recipes: $error')),
+      data: (recipes) {
+        if (recipes.isEmpty) return const Center(child: Text('No archived recipes found.'));
+
+        return ListView.separated(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          physics: const BouncingScrollPhysics(),
+          itemCount: recipes.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            final recipe = recipes[index];
+            final recipeId = recipe['id'].toString();
+            final name = (recipe['name'] ?? 'Untitled').toString();
+            final prepTime = (recipe['prepTime'] as num?)?.toInt() ?? 0;
+            final cookTime = (recipe['cookTime'] as num?)?.toInt() ?? 0;
+
+            return _AdminCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      ),
+                      const _ChipLabel(label: 'ARCHIVED', color: AppColors.rosePink),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text('Total Time: ${prepTime + cookTime}m', style: const TextStyle(color: Colors.black54, fontSize: 13)),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _restoreRecipe(recipeId),
+                          icon: const Icon(Icons.restore_rounded, size: 18),
+                          label: const Text('Restore'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.green,
+                            side: const BorderSide(color: Colors.green),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _permanentlyDeleteRecipe(recipeId),
+                          icon: const Icon(Icons.delete_forever_rounded, size: 18),
+                          label: const Text('Delete'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            side: const BorderSide(color: Colors.red),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildArchivedReports() {
+    final archivedReportsAsync = ref.watch(adminReportsProvider('archived'));
+
+    return archivedReportsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator(color: AppColors.rosePink)),
+      error: (error, _) => Center(child: Text('Failed to load archived reports: $error')),
+      data: (reports) {
+        if (reports.isEmpty) return const Center(child: Text('No archived reports found.'));
+
+        return ListView.separated(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          physics: const BouncingScrollPhysics(),
+          itemCount: reports.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            final report = reports[index];
+            return _ReportCard(
+              report: report,
+              onStatusChanged: widget.onReportStatusChanged,
+              onRecipeDeleted: widget.onRecipeDeleted,
+              onReportDeleted: widget.onReportDeleted,
+              statusColor: widget.statusColor,
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _restoreRecipe(String recipeId) async {
+    try {
+      await ref.read(archiveServiceProvider).restoreItem(
+        collection: AppConstants.collectionRecipes,
+        docId: recipeId,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Recipe restored.')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error restoring recipe: $e')));
+    }
+  }
+
+  Future<void> _permanentlyDeleteRecipe(String recipeId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Permanent Delete'),
+        content: const Text('Are you sure you want to permanently delete this recipe? This cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await ref.read(archiveServiceProvider).permanentlyDeleteItem(
+          collection: AppConstants.collectionRecipes,
+          docId: recipeId,
+        );
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Recipe permanently deleted.')));
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error deleting recipe: $e')));
+      }
+    }
+  }
+}

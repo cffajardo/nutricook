@@ -11,6 +11,7 @@ import 'package:nutricook/features/recipe/widgets/recipe_list_item.dart';
 import 'package:nutricook/features/utils/nutrition_calculator.dart';
 import 'package:nutricook/models/ingredient/ingredient.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
+import 'package:nutricook/routing/navigation_provider.dart';
 
 class PlannerRecipeSelectModal extends ConsumerStatefulWidget {
   const PlannerRecipeSelectModal({super.key});
@@ -44,6 +45,12 @@ class _PlannerRecipeSelectModalState
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(activeTabProvider, (previous, next) {
+      if (previous != next) {
+        _searchController.clear();
+      }
+    });
+
     final recipesAsync = ref.watch(
       filteredRecipesProvider(RecipeFilterInput(query: _searchController.text)),
     );

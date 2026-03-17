@@ -1,11 +1,24 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:nutricook/core/constants.dart';
 import 'package:nutricook/models/ingredient/ingredient.dart';
 
 class IngredientService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  // Real-time stream of all ingredients (not just custom)
+  Stream<List<Ingredient>> getAllIngredientsStream() {
+    return _db
+        .collection(FirestoreConstants.ingredients)
+        .orderBy('name')
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => Ingredient.fromJson(doc.data()..['id'] = doc.id))
+            .where((ing) => ing.archived == false)
+            .toList());
+  }
 
   Future<List<Ingredient>> getAllIngredients() async {
     final snapshot = await _db
@@ -15,6 +28,7 @@ class IngredientService {
 
     return snapshot.docs
         .map((doc) => Ingredient.fromJson(doc.data()))
+        .where((ing) => ing.archived == false)
         .toList();
   }
 
@@ -36,7 +50,8 @@ class IngredientService {
         .orderBy('name')
         .snapshots()
         .map((snapshot) => snapshot.docs
-            .map((doc) => Ingredient.fromJson(doc.data()))
+            .map((doc) => Ingredient.fromJson(doc.data()..['id'] = doc.id))
+            .where((ing) => ing.archived == false)
             .toList());
   }
 
@@ -49,6 +64,7 @@ class IngredientService {
 
     return snapshot.docs
         .map((doc) => Ingredient.fromJson(doc.data()))
+        .where((ing) => ing.archived == false)
         .toList();
   }
 
@@ -64,7 +80,16 @@ class IngredientService {
       ownerId: userId, 
     );
 
-    await ingredientRef.set(ingredientWithId.toJson());
+    // DEBUG: Check what's being serialized
+    debugPrint('🔍 INGREDIENT SERVICE DEBUG:');
+    debugPrint('  Name: ${ingredientWithId.name}');
+    debugPrint('  NutritionInfo object: ${ingredientWithId.nutritionPer100g}');
+    final json = ingredientWithId.toJson();
+    debugPrint('  Serialized JSON: $json');
+    debugPrint('  nutritionPer100g in JSON: ${json['nutritionPer100g']}');
+    debugPrint('  nutritionPer100g type: ${json['nutritionPer100g'].runtimeType}');
+
+    await ingredientRef.set(json);
     return ingredientRef.id;
   }
 

@@ -155,6 +155,34 @@ class SettingsPage extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 24),
+              _SectionHeader(label: 'Cooking'),
+              _SettingsCard(
+                children: [
+                  _SwitchRow(
+                    icon: Icons.auto_mode_rounded,
+                    label: 'Auto-advance recipe steps',
+                    value: preferences.autoAdvanceStepTimer,
+                    onChanged: notifier.updateAutoAdvanceStepTimer,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              _SectionHeader(label: 'Archive'),
+              _SettingsCard(
+                children: [
+                  _ActionRow(
+                    icon: Icons.archive_outlined,
+                    label: 'Manage Archive',
+                    onTap: () => context.pushNamed(AppRoutes.archiveName),
+                  ),
+                  const _Divider(),
+                  _RetentionDaysRow(
+                    current: preferences.archiveRetentionDays,
+                    onChanged: notifier.updateArchiveRetentionDays,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
               _SectionHeader(label: 'About'),
               _SettingsCard(
                 children: [
@@ -1381,3 +1409,68 @@ String _allergenEntryLabel(
 
   return entry;
 }
+
+class _RetentionDaysRow extends StatelessWidget {
+  const _RetentionDaysRow({required this.current, required this.onChanged});
+  final int current;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.auto_delete_outlined,
+            size: 20,
+            color: AppColors.rosePink,
+          ),
+          const SizedBox(width: 12),
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Auto-delete after',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+              ),
+              Text(
+                'Permanently delete from archive',
+                style: TextStyle(fontSize: 12, color: Colors.black45),
+              ),
+            ],
+          ),
+          const Spacer(),
+          Theme(
+            data: Theme.of(context).copyWith(
+              canvasColor: Colors.white,
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<int>(
+                value: [0, 7, 30, 60, 90].contains(current) ? current : 30,
+                icon: const Icon(Icons.expand_more_rounded, size: 20, color: AppColors.rosePink),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.rosePink,
+                  fontSize: 14,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                items: const [
+                  DropdownMenuItem(value: 7, child: Text('7 days')),
+                  DropdownMenuItem(value: 30, child: Text('30 days')),
+                  DropdownMenuItem(value: 60, child: Text('60 days')),
+                  DropdownMenuItem(value: 90, child: Text('90 days')),
+                  DropdownMenuItem(value: 0, child: Text('Never')),
+                ],
+                onChanged: (val) {
+                  if (val != null) onChanged(val);
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+

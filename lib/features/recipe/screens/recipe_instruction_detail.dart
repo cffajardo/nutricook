@@ -1,10 +1,16 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
 import 'package:nutricook/models/recipe_step/recipe_step.dart';
+import 'package:nutricook/features/profile/provider/user_provider.dart';
+import 'package:nutricook/features/profile/provider/user_preferences_provider.dart';
+import 'package:vibration/vibration.dart';
+import 'package:audioplayers/audioplayers.dart';
 
-class RecipeViewInstructions extends StatefulWidget {
+class RecipeViewInstructions extends ConsumerStatefulWidget {
   final List<RecipeStep> steps;
   final int startCookingSignal;
 
@@ -15,13 +21,15 @@ class RecipeViewInstructions extends StatefulWidget {
   });
 
   @override
-  State<RecipeViewInstructions> createState() => _RecipeViewInstructionsState();
+  ConsumerState<RecipeViewInstructions> createState() => _RecipeViewInstructionsState();
 }
 
-class _RecipeViewInstructionsState extends State<RecipeViewInstructions> {
+class _RecipeViewInstructionsState extends ConsumerState<RecipeViewInstructions> {
   static const int _autoAdvanceSecondsForUntimedStep = 8;
+  static const int _alertDurationSeconds = 5;
 
   final ScrollController _scrollController = ScrollController();
+  final AudioPlayer _audioPlayer = AudioPlayer();
   Timer? _timer;
   List<GlobalKey> _stepKeys = <GlobalKey>[];
 
@@ -31,6 +39,9 @@ class _RecipeViewInstructionsState extends State<RecipeViewInstructions> {
   int _remainingSeconds = 0;
   int _originalStepDuration = 0;
   bool _isTimerRunning = false;
+
+  bool _isAlerting = false;
+  int _alertRemainingSeconds = 0;
 
   @override
   void initState() {
@@ -45,7 +56,7 @@ class _RecipeViewInstructionsState extends State<RecipeViewInstructions> {
     if (oldWidget.steps.length != widget.steps.length) {
       _syncStepKeys();
       if (widget.steps.isEmpty) {
-        _timer?.cancel();
+        _stopAll();
         _isCookingSessionActive = false;
         _isUsingAutoAdvanceTimer = false;
         _activeStepIndex = 0;
@@ -63,9 +74,20 @@ class _RecipeViewInstructionsState extends State<RecipeViewInstructions> {
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _stopAll();
     _scrollController.dispose();
+    _audioPlayer.dispose();
     super.dispose();
+  }
+
+  void _stopAll() {
+    _timer?.cancel();
+    _audioPlayer.stop();
+    Vibration.cancel();
+    setState(() {
+      _isAlerting = false;
+      _alertRemainingSeconds = 0;
+    });
   }
 
   void _syncStepKeys() {
@@ -106,7 +128,7 @@ class _RecipeViewInstructionsState extends State<RecipeViewInstructions> {
       return;
     }
 
-    _timer?.cancel();
+    _stopAll();
     setState(() {
       _activeStepIndex = index;
       _originalStepDuration = 0;
@@ -126,7 +148,7 @@ class _RecipeViewInstructionsState extends State<RecipeViewInstructions> {
 
   void _startTimerForActiveStep() {
     if (!_isCookingSessionActive) return;
-    _timer?.cancel();
+    _stopAll();
     if (widget.steps.isEmpty) return;
 
     final currentStep = widget.steps[_activeStepIndex];
@@ -156,18 +178,67 @@ class _RecipeViewInstructionsState extends State<RecipeViewInstructions> {
         _isTimerRunning = false;
         _isUsingAutoAdvanceTimer = false;
       });
-      _goToNextStep(fromTimerCompletion: true);
+      
+      _triggerAlert();
     });
   }
 
+  Future<void> _triggerAlert() async {
+    final hasUntimedAutoAdvance = widget.steps[_activeStepIndex].timerSeconds <= 0;
+    
+    if (hasUntimedAutoAdvance) {
+      _goToNextStep(fromTimerCompletion: true);
+      return;
+    }
+
+    // Timed step complete -> Trigger Alert
+    setState(() {
+      _isAlerting = true;
+      _alertRemainingSeconds = _alertDurationSeconds;
+    });
+
+    // Start Vibration
+    if (await Vibration.hasVibrator() ?? false) {
+      Vibration.vibrate(duration: _alertDurationSeconds * 1000, amplitude: 255);
+    }
+
+    // Start Sound
+    try {
+      await _audioPlayer.play(AssetSource('audio/alert.mp3'));
+    } catch (e) {
+      debugPrint('Error playing alert sound: $e');
+    }
+
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
+
+      if (_alertRemainingSeconds > 1) {
+        setState(() => _alertRemainingSeconds -= 1);
+        return;
+      }
+
+      timer.cancel();
+      _handleAlertEnd();
+    });
+  }
+
+  void _handleAlertEnd() {
+    _stopAll();
+    
+    final autoAdvance = ref.read(userPreferencesProvider).value?.autoAdvanceStepTimer ?? true;
+    if (autoAdvance) {
+      _goToNextStep(fromTimerCompletion: true);
+    }
+  }
+
   void _pauseTimer() {
-    if (!_isCookingSessionActive) return;
+    if (!_isCookingSessionActive || _isAlerting) return;
     _timer?.cancel();
     setState(() => _isTimerRunning = false);
   }
 
   void _resumeTimer() {
-    if (!_isCookingSessionActive) return;
+    if (!_isCookingSessionActive || _isAlerting) return;
     if (_remainingSeconds <= 0 || _isTimerRunning) return;
 
     setState(() => _isTimerRunning = true);
@@ -185,13 +256,13 @@ class _RecipeViewInstructionsState extends State<RecipeViewInstructions> {
         _isTimerRunning = false;
         _isUsingAutoAdvanceTimer = false;
       });
-      _goToNextStep(fromTimerCompletion: true);
+      _triggerAlert();
     });
   }
 
   void _resetTimer() {
-    if (!_isCookingSessionActive || _originalStepDuration <= 0) return;
-    _timer?.cancel();
+    if (!_isCookingSessionActive || _originalStepDuration <= 0 || _isAlerting) return;
+    _stopAll();
     setState(() {
       _remainingSeconds = _originalStepDuration;
       _isTimerRunning = false;
@@ -202,13 +273,14 @@ class _RecipeViewInstructionsState extends State<RecipeViewInstructions> {
     if (!_isCookingSessionActive || widget.steps.isEmpty) return;
 
     if (_activeStepIndex >= widget.steps.length - 1) {
-      _timer?.cancel();
+      _stopAll();
       setState(() {
         _isTimerRunning = false;
         _remainingSeconds = 0;
         _isUsingAutoAdvanceTimer = false;
       });
       if (fromTimerCompletion) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('All cooking steps complete.'),
@@ -302,6 +374,7 @@ class _RecipeViewInstructionsState extends State<RecipeViewInstructions> {
               final isActive =
                   _isCookingSessionActive && index == _activeStepIndex;
               final showLiveTimer = isActive && _remainingSeconds > 0;
+              final isThisStepAlerting = isActive && _isAlerting;
 
               return InkWell(
                 onTap: () => _activateStep(
@@ -356,7 +429,7 @@ class _RecipeViewInstructionsState extends State<RecipeViewInstructions> {
                             if (isActive) ...[
                               const SizedBox(height: 12),
                               Text(
-                                'Current Step',
+                                isThisStepAlerting ? 'TIMER COMPLETE' : 'Current Step',
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w900,
@@ -365,7 +438,79 @@ class _RecipeViewInstructionsState extends State<RecipeViewInstructions> {
                               ),
                             ],
 
-                            if (showLiveTimer) ...[
+                            if (isThisStepAlerting) ...[
+                              const SizedBox(height: 12),
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: AppColors.rosePink,
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.rosePink.withValues(alpha: 0.3),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.notifications_active_rounded,
+                                          color: Colors.white,
+                                          size: 24,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              const Text(
+                                                'Timer Complete!',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w900,
+                                                  fontSize: 16,
+                                                ),
+                                              ),
+                                              if (ref.watch(userPreferencesProvider).value?.autoAdvanceStepTimer ?? true)
+                                                Text(
+                                                  'Next step in $_alertRemainingSeconds seconds...',
+                                                  style: TextStyle(
+                                                    color: Colors.white.withValues(alpha: 0.9),
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 16),
+                                    ElevatedButton(
+                                      onPressed: () => _goToNextStep(fromTimerCompletion: true),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.white,
+                                        foregroundColor: AppColors.rosePink,
+                                        minimumSize: const Size(double.infinity, 45),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        elevation: 0,
+                                      ),
+                                      child: const Text(
+                                        'Next Step Now',
+                                        style: TextStyle(fontWeight: FontWeight.w900),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ] else if (showLiveTimer) ...[
                               const SizedBox(height: 12),
                               Container(
                                 padding: const EdgeInsets.symmetric(
@@ -475,7 +620,7 @@ class _RecipeViewInstructionsState extends State<RecipeViewInstructions> {
                               _buildTimerChip(timerSeconds),
                             ],
 
-                            if (isActive) ...[
+                            if (isActive && !isThisStepAlerting) ...[
                               const SizedBox(height: 14),
                               Row(
                                 children: [

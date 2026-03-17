@@ -60,6 +60,35 @@ final adminRecipesProvider =
             return snapshot.docs
                 .map((doc) => <String, dynamic>{...doc.data(), 'id': doc.id})
                 .where((recipe) {
+                  // Exclude archived recipes from the main list
+                  if (recipe['archived'] == true) return false;
+                  
+                  if (normalized.isEmpty) return true;
+                  final name = (recipe['name'] ?? '').toString().toLowerCase();
+                  final description =
+                      (recipe['description'] ?? '').toString().toLowerCase();
+                  return name.contains(normalized) ||
+                      description.contains(normalized);
+                })
+                .toList(growable: false);
+          });
+    });
+
+final adminArchivedRecipesProvider =
+    StreamProvider.family<List<Map<String, dynamic>>, String>((ref, query) {
+      final normalized = query.trim().toLowerCase();
+      return FirebaseFirestore.instance
+          .collection(FirestoreConstants.recipes)
+          .orderBy('createdAt', descending: true)
+          .limit(400)
+          .snapshots()
+          .map((snapshot) {
+            return snapshot.docs
+                .map((doc) => <String, dynamic>{...doc.data(), 'id': doc.id})
+                .where((recipe) {
+                  // ONLY show archived recipes
+                  if (recipe['archived'] != true) return false;
+
                   if (normalized.isEmpty) return true;
                   final name = (recipe['name'] ?? '').toString().toLowerCase();
                   final description =

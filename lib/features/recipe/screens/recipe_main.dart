@@ -7,6 +7,7 @@ import 'package:nutricook/features/recipe/providers/recipe_provider.dart';
 import 'package:nutricook/features/recipe/widgets/recipe_card.dart';
 import 'package:nutricook/features/recipe/widgets/recipe_list_item.dart';
 import 'package:nutricook/routing/app_routes.dart';
+import 'package:nutricook/routing/navigation_provider.dart';
 
 class RecipeMainScreen extends ConsumerStatefulWidget {
   const RecipeMainScreen({super.key});
@@ -38,6 +39,12 @@ class _RecipeMainScreenState extends ConsumerState<RecipeMainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(activeTabProvider, (previous, next) {
+      if (previous != next) {
+        _searchController.clear();
+      }
+    });
+
     return Container(
       color: const Color(0xFFFFF9FA), 
       child: SafeArea(

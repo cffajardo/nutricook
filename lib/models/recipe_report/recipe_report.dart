@@ -14,6 +14,9 @@ abstract class RecipeReport with _$RecipeReport {
     required String reason,
     String? details,
     @Default('open') String status,
+    String? reviewedBy,
+    String? reviewNote,
+    @TimestampConverter() DateTime? reviewedAt,
     @TimestampConverter() required DateTime createdAt,
     @TimestampConverter() required DateTime updatedAt,
   }) = _RecipeReport;

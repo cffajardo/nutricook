@@ -3,7 +3,7 @@ import 'package:firebase_ai/firebase_ai.dart';
 class GenerativeAiService {
   GenerativeAiService({
     FirebaseAI? firebaseAI,
-    String model = 'gemini-2.5-flash-lite',
+    String model = 'gemma-3-1b-it',
     Content? systemInstruction,
     GenerationConfig? generationConfig,
     List<SafetySetting>? safetySettings,
@@ -16,7 +16,6 @@ class GenerativeAiService {
 
   final GenerativeModel _model;
 
-  /// Generates a single text response from Gemini.
   Future<String> generateText({
     required String prompt,
     List<Content> context = const <Content>[],
@@ -75,8 +74,6 @@ class GenerativeAiService {
     }
   }
 
-  /// Generates nutrition information for an ingredient per 100g.
-  /// Returns a JSON string that should be parsed into a NutritionInfo object.
   Future<IngredientNutritionData> generateNutritionFromAI(
     String ingredientName,
   ) async {
@@ -113,10 +110,6 @@ Most common values for reference:
     }
   }
 
-  /// Generates density (g/ml) for a liquid ingredient or avgWeight (g) for solid.
-  /// AI infers whether the ingredient is solid or liquid automatically.
-  /// For liquids: returns density in g/ml
-  /// For solids: returns average piece weight in grams
   Future<double> generateDensityFromAI(String ingredientName) async {
     final prompt = '''
 For the ingredient called "$ingredientName", first determine if it is naturally a LIQUID or a SOLID.
@@ -147,8 +140,6 @@ In both cases, return ONLY the decimal number with no other text.
     }
   }
 
-  /// Generates density (g/ml) for a liquid ingredient.
-  /// Returns weight in grams for a typical piece/unit (e.g., 1 clove, 1 slice, 1 berry).
   Future<double> generateAveragePieceWeightFromAI(
     String ingredientName,
   ) async {
@@ -198,7 +189,6 @@ class GenerativeAiException implements Exception {
   String toString() => 'GenerativeAiException: $message';
 }
 
-/// Helper class for parsing nutrition data from Gemini AI.
 class IngredientNutritionData {
   const IngredientNutritionData({
     required this.calories,
@@ -220,13 +210,11 @@ class IngredientNutritionData {
 
   factory IngredientNutritionData.fromJson(String jsonString) {
     try {
-      // Remove any markdown code blocks if present
       String cleaned = jsonString
           .replaceAll('```json', '')
           .replaceAll('```', '')
           .trim();
 
-      // Parse the JSON
       final json = _parseJson(cleaned);
 
       return IngredientNutritionData(

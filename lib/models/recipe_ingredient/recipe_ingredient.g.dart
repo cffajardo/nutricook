@@ -31,7 +31,7 @@ Map<String, dynamic> _$RecipeIngredientToJson(_RecipeIngredient instance) =>
       'quantity': instance.quantity,
       'unitID': instance.unitID,
       'unitName': instance.unitName,
-      'nutritionPer100g': instance.nutritionPer100g,
+      'nutritionPer100g': instance.nutritionPer100g?.toJson(),
       'densityGPerMl': instance.densityGPerMl,
       'avgWeightG': instance.avgWeightG,
       'calculatedWeightG': instance.calculatedWeightG,

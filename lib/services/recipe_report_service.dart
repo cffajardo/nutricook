@@ -10,6 +10,7 @@ class RecipeReportService {
     'open',
     'reviewed',
     'dismissed',
+    'archived',
   };
 
   Future<void> submitReport({
@@ -183,6 +184,13 @@ class RecipeReportService {
         transaction.delete(reportDoc.reference);
       }
     });
+  }
+
+  Future<void> deleteReport({required String reportId}) async {
+    await _db
+        .collection(FirestoreConstants.recipeReports)
+        .doc(reportId)
+        .delete();
   }
 
   String _reportDocId(String recipeId, String userId) {

@@ -135,6 +135,7 @@ class CollectionService {
           (snapshot) {
             final collections = snapshot.docs
                 .map((doc) => Collection.fromJson(doc.data()))
+                .where((col) => col.archived == false)
                 .toList();
             
             // Sort to put Favorites (default) collection first

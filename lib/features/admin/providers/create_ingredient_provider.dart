@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nutricook/models/ingredient/ingredient.dart';
 import 'package:nutricook/models/nutrition_info/nutrition_info.dart';
@@ -18,7 +19,7 @@ class CreateIngredientState {
   const CreateIngredientState({
     this.name = '',
     this.description = '',
-    this.category = 'proteins',
+    this.category = 'Proteins',
     this.isLiquid = false,
     this.nutritionMethod = 'manual', // 'manual' or 'ai'
     this.calories = 0,
@@ -266,19 +267,8 @@ class CreateIngredientNotifier extends Notifier<CreateIngredientState> {
       return null;
     }
 
-    if (state.isLiquid && state.density == null) {
-      state = state.copyWith(
-        error: 'Please generate density for liquid ingredients',
-      );
-      return null;
-    }
-
-    if (!state.isLiquid && state.avgWeight == null) {
-      state = state.copyWith(
-        error: 'Please generate average piece weight for solid ingredients',
-      );
-      return null;
-    }
+    // density and avgWeight are now optional to allow creation even if AI generation fails
+    // but they remain preferred for unit conversion accuracy.
 
     try {
       state = state.copyWith(error: '');
@@ -293,6 +283,17 @@ class CreateIngredientNotifier extends Notifier<CreateIngredientState> {
         sodium: state.sodium,
       );
 
+      // DEBUG: Verify NutritionInfo was created correctly
+      debugPrint('📋 NUTRITION INFO DEBUG (Provider):');
+      debugPrint('  Calories: ${nutritionInfo.calories}');
+      debugPrint('  Carbs: ${nutritionInfo.carbohydrates}');
+      debugPrint('  Protein: ${nutritionInfo.protein}');
+      debugPrint('  Fat: ${nutritionInfo.fat}');
+      debugPrint('  Fiber: ${nutritionInfo.fiber}');
+      debugPrint('  Sugar: ${nutritionInfo.sugar}');
+      debugPrint('  Sodium: ${nutritionInfo.sodium}');
+      debugPrint('  ToJson: ${nutritionInfo.toJson()}');
+
       final ingredient = Ingredient(
         id: '',
         name: state.name.trim(),
@@ -305,6 +306,11 @@ class CreateIngredientNotifier extends Notifier<CreateIngredientState> {
         avgWeightG: !state.isLiquid ? state.avgWeight : null,
         imageURL: state.imageUrl.isNotEmpty ? state.imageUrl : null,
       );
+
+      debugPrint('📦 INGREDIENT CREATED (Provider):');
+      debugPrint('  Name: ${ingredient.name}');
+      debugPrint('  Category: ${ingredient.category}');
+      debugPrint('  NutritionInfo field: ${ingredient.nutritionPer100g}');
 
       final ingredientService = ref.read(ingredientServiceProvider);
       final ingredientId = await ingredientService.createIngredient(ingredient);

@@ -26,6 +26,9 @@ _Recipe _$RecipeFromJson(Map<String, dynamic> json) => _Recipe(
   updatedAt: const TimestampConverter().fromJson(
     json['updatedAt'] as Timestamp,
   ),
+  archived: json['archived'] as bool? ?? false,
+  archivedAt: const NullableTimestampConverter().fromJson(json['archivedAt']),
+  deleteAfter: const NullableTimestampConverter().fromJson(json['deleteAfter']),
   nutritionTotal: json['nutritionTotal'] == null
       ? null
       : NutritionInfo.fromJson(json['nutritionTotal'] as Map<String, dynamic>),
@@ -58,8 +61,8 @@ _Recipe _$RecipeFromJson(Map<String, dynamic> json) => _Recipe(
 Map<String, dynamic> _$RecipeToJson(_Recipe instance) => <String, dynamic>{
   'id': instance.id,
   'name': instance.name,
-  'ingredients': instance.ingredients,
-  'steps': instance.steps,
+  'ingredients': instance.ingredients.map((e) => e.toJson()).toList(),
+  'steps': instance.steps.map((e) => e.toJson()).toList(),
   'description': instance.description,
   'isPublic': instance.isPublic,
   'servings': instance.servings,
@@ -67,8 +70,13 @@ Map<String, dynamic> _$RecipeToJson(_Recipe instance) => <String, dynamic>{
   'prepTime': instance.prepTime,
   'createdAt': const TimestampConverter().toJson(instance.createdAt),
   'updatedAt': const TimestampConverter().toJson(instance.updatedAt),
-  'nutritionTotal': instance.nutritionTotal,
-  'nutritionPerServing': instance.nutritionPerServing,
+  'archived': instance.archived,
+  'archivedAt': const NullableTimestampConverter().toJson(instance.archivedAt),
+  'deleteAfter': const NullableTimestampConverter().toJson(
+    instance.deleteAfter,
+  ),
+  'nutritionTotal': instance.nutritionTotal?.toJson(),
+  'nutritionPerServing': instance.nutritionPerServing?.toJson(),
   'ownerId': instance.ownerId,
   'favoriteCount': instance.favoriteCount,
   'reportCount': instance.reportCount,

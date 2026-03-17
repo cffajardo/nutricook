@@ -18,6 +18,9 @@ abstract class Collection with _$Collection {
     @Default(false) bool isPublic,
     @TimestampConverter() required DateTime createdAt,
     @TimestampConverter() required DateTime updatedAt,
+    @Default(false) bool archived,
+    @NullableTimestampConverter() DateTime? archivedAt,
+    @NullableTimestampConverter() DateTime? deleteAfter,
   }) = _Collection;
 
   factory Collection.fromJson(Map<String, dynamic> json) =>

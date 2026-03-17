@@ -3,6 +3,7 @@ class AppRoutes {
   static const String homePath = '/';
   static const String recipesPath = '/recipes';
   static const String plannerPath = '/planner';
+  static const String plannerHistoryPath = '/planner/history';
   static const String libraryPath = '/library';
   static const String loginPath = '/login';
   static const String registerPath = '/register';
@@ -22,11 +23,13 @@ class AppRoutes {
   static const String adminPath = '/admin';
   static const String adminEditIngredientPath = '/admin/ingredient/:ingredientId';
   static const String bannedPath = '/banned';
+  static const String archivePath = 'archive';
 
   static const String splashName = 'splash';
   static const String homeName = 'home';
   static const String recipesName = 'recipes';
   static const String plannerName = 'planner';
+  static const String plannerHistoryName = 'planner_history';
   static const String libraryName = 'library';
   static const String loginName = 'login';
   static const String registerName = 'register';
@@ -47,4 +50,5 @@ class AppRoutes {
   static const String adminName = 'admin';
   static const String adminEditIngredientName = 'admin_edit_ingredient';
   static const String bannedName = 'banned';
+  static const String archiveName = 'archive';
 }

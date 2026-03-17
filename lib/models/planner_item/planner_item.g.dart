@@ -44,5 +44,5 @@ Map<String, dynamic> _$PlannerItemToJson(_PlannerItem instance) =>
       'cookTime': instance.cookTime,
       'notes': instance.notes,
       'isCompleted': instance.isCompleted,
-      'nutritionPerServing': instance.nutritionPerServing,
+      'nutritionPerServing': instance.nutritionPerServing?.toJson(),
     };

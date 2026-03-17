@@ -20,17 +20,26 @@ _Ingredient _$IngredientFromJson(Map<String, dynamic> json) => _Ingredient(
   densityGPerMl: (json['densityGPerMl'] as num?)?.toDouble(),
   avgWeightG: (json['avgWeightG'] as num?)?.toDouble(),
   imageURL: json['imageURL'] as String?,
+  archived: json['archived'] as bool? ?? false,
+  archivedAt: const NullableTimestampConverter().fromJson(json['archivedAt']),
+  deleteAfter: const NullableTimestampConverter().fromJson(json['deleteAfter']),
 );
 
-Map<String, dynamic> _$IngredientToJson(_Ingredient instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'ownerId': instance.ownerId,
-      'name': instance.name,
-      'category': instance.category,
-      'description': instance.description,
-      'nutritionPer100g': instance.nutritionPer100g,
-      'densityGPerMl': instance.densityGPerMl,
-      'avgWeightG': instance.avgWeightG,
-      'imageURL': instance.imageURL,
-    };
+Map<String, dynamic> _$IngredientToJson(
+  _Ingredient instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'ownerId': instance.ownerId,
+  'name': instance.name,
+  'category': instance.category,
+  'description': instance.description,
+  'nutritionPer100g': instance.nutritionPer100g?.toJson(),
+  'densityGPerMl': instance.densityGPerMl,
+  'avgWeightG': instance.avgWeightG,
+  'imageURL': instance.imageURL,
+  'archived': instance.archived,
+  'archivedAt': const NullableTimestampConverter().toJson(instance.archivedAt),
+  'deleteAfter': const NullableTimestampConverter().toJson(
+    instance.deleteAfter,
+  ),
+};

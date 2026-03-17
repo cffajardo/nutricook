@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Added for HapticFeedback
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 import 'package:nutricook/core/meal_time_preferences.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
 import 'package:nutricook/features/planner/provider/planner_provider.dart';
@@ -11,6 +12,7 @@ import 'package:nutricook/features/planner/widgets/planner_item_modal_screen.dar
 import 'package:nutricook/features/planner/widgets/planner_item_edit_modal.dart';
 import 'package:nutricook/features/planner/widgets/planner_nutrition_total_modal.dart';
 import 'package:nutricook/models/planner_item/planner_item.dart';
+import 'package:nutricook/routing/app_routes.dart';
 
 class PlannerScreen extends ConsumerStatefulWidget {
   const PlannerScreen({super.key});
@@ -207,16 +209,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
         ),
         onPressed: () {
           if (tag == 'fab_n') {
-            showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              useRootNavigator: true,
-              backgroundColor: Colors.transparent,
-              builder: (context) => PlannerNutritionTotalsModal(
-                selectedDate: _selectedDate,
-                mealTypes: _mealTypes,
-              ),
-            );
+            _showNutritionMenu();
           } else {
             showModalBottomSheet(
               context: context,
@@ -590,6 +583,116 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  void _showNutritionMenu() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.black12,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Nutrition & History',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 24),
+            _buildMenuItem(
+              icon: Icons.pie_chart_rounded,
+              title: 'Daily Nutrition',
+              subtitle: 'View detailed totals for today',
+              onTap: () {
+                Navigator.pop(context);
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  useRootNavigator: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => PlannerNutritionTotalsModal(
+                    selectedDate: _selectedDate,
+                    mealTypes: _mealTypes,
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            _buildMenuItem(
+              icon: Icons.history_rounded,
+              title: 'Planner History',
+              subtitle: 'Past plans and monthly trends',
+              onTap: () {
+                Navigator.pop(context);
+                context.pushNamed(AppRoutes.plannerHistoryName);
+              },
+            ),
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuItem({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.rosePink.withValues(alpha: 0.1)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.cardRose.withValues(alpha: 0.3),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: AppColors.rosePink),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(fontSize: 12, color: Colors.black54),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Colors.black26),
+          ],
         ),
       ),
     );

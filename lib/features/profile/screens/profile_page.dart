@@ -14,6 +14,8 @@ import 'package:nutricook/features/collection/screens/collection_recipes_screen.
 import 'package:nutricook/models/collection/collection.dart';
 import 'package:nutricook/models/recipe/recipe.dart';
 import 'package:nutricook/services/collection_service.dart';
+import 'package:nutricook/services/archive_service.dart';
+import 'package:nutricook/core/constants.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key, this.userId});
@@ -843,9 +845,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     return showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Collection?'),
+        title: const Text('Archive Collection?'),
         content: Text(
-          'Are you sure you want to delete "${collection.name}"? This cannot be undone.',
+          'Are you sure you want to move "${collection.name}" to the archive? '
+          'You can restore it later from Settings → Archive.',
         ),
         actions: [
           TextButton(
@@ -853,24 +856,27 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
             child: const Text('Cancel'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.rosePink),
             onPressed: () async {
               try {
-                await CollectionService().deleteCollection(collection.id);
+                await ref.read(archiveServiceProvider).archiveItem(
+                      collection: AppConstants.collectionCollections,
+                      docId: collection.id,
+                    );
                 if (!mounted) return;
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Collection deleted.')),
+                  const SnackBar(content: Text('Collection moved to archive.')),
                 );
               } catch (e) {
                 if (!mounted) return;
                 if (!context.mounted) return;
                 ScaffoldMessenger.of(
                   context,
-                ).showSnackBar(SnackBar(content: Text('Failed to delete: $e')));
+                ).showSnackBar(SnackBar(content: Text('Failed to archive: $e')));
               }
             },
-            child: const Text('Delete'),
+            child: const Text('Archive'),
           ),
         ],
       ),

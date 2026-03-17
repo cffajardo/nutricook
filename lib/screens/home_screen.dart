@@ -13,6 +13,7 @@ import 'package:nutricook/features/planner/provider/planner_provider.dart';
 import 'package:nutricook/features/profile/provider/user_preferences_provider.dart';
 import 'package:nutricook/features/recipe/providers/recipe_provider.dart';
 import 'package:nutricook/routing/app_routes.dart';
+import 'package:nutricook/routing/navigation_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -70,6 +71,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(activeTabProvider, (previous, next) {
+      if (previous != next) {
+        _searchController.clear();
+      }
+    });
+
     final mealStartHours = ref.watch(mealStartHoursProvider);
     final autoMealType = resolveMealTypeForTime(
       _now,
@@ -107,8 +114,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     controller: _searchController,
                     unreadCount: unreadCount,
                     onSubmitted: _submitHomeSearch,
-                    onNotificationTap: () =>
-                        context.pushNamed(AppRoutes.notificationsName),
+                    onNotificationTap: () {
+                      context.pushNamed(AppRoutes.notificationsName);
+                    },
                   ),
                   const SizedBox(height: 20),
                   _buildTabs(),

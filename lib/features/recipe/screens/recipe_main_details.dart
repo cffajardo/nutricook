@@ -16,6 +16,8 @@ import 'package:nutricook/features/recipe/providers/recipe_report_provider.dart'
 import 'package:nutricook/features/recipe/widgets/recipe_fab_modal.dart';
 import 'package:nutricook/features/collection/screens/add_to_collections_modal.dart';
 import 'package:nutricook/features/utils/nutrition_calculator.dart';
+import 'package:nutricook/services/archive_service.dart';
+import 'package:nutricook/core/constants.dart';
 import 'package:nutricook/routing/app_routes.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -173,8 +175,11 @@ class _RecipeDetailsScreenState extends ConsumerState<RecipeDetailsScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Delete recipe?'),
-          content: const Text('This action cannot be undone.'),
+          title: const Text('Move to Archive?'),
+          content: const Text(
+            'This recipe will be moved to your archive. '
+            'You can restore it later from Settings → Archive.',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -182,7 +187,10 @@ class _RecipeDetailsScreenState extends ConsumerState<RecipeDetailsScreen> {
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Delete'),
+              child: const Text(
+                'Archive',
+                style: TextStyle(color: AppColors.rosePink),
+              ),
             ),
           ],
         );
@@ -195,14 +203,17 @@ class _RecipeDetailsScreenState extends ConsumerState<RecipeDetailsScreen> {
       Navigator.of(context, rootNavigator: true).context,
     );
     try {
-      await ref.read(recipeServiceProvider).deleteRecipe(widget.recipe.id);
+      await ref.read(archiveServiceProvider).archiveItem(
+            collection: AppConstants.collectionRecipes,
+            docId: widget.recipe.id,
+          );
       if (!mounted) return;
-      Navigator.pop(context);
+      Navigator.pop(context); // Pop the details screen to go back
       rootMessenger
         ..hideCurrentSnackBar()
         ..showSnackBar(
           const SnackBar(
-            content: Text('Recipe deleted.'),
+            content: Text('Recipe moved to archive.'),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -211,7 +222,7 @@ class _RecipeDetailsScreenState extends ConsumerState<RecipeDetailsScreen> {
         ..hideCurrentSnackBar()
         ..showSnackBar(
           SnackBar(
-            content: Text('Failed to delete recipe: $error'),
+            content: Text('Failed to archive recipe: $error'),
             behavior: SnackBarBehavior.floating,
           ),
         );

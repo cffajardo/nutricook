@@ -248,7 +248,8 @@ final libraryItemDetailProvider =
       query,
     ) async {
       if (query.categoryId == LibraryCategoryIds.ingredients) {
-        final ingredients = await ref.watch(ingredientsProvider.future);
+        final ingredientsAsync = ref.watch(ingredientsProvider);
+        final ingredients = ingredientsAsync.asData?.value ?? const <dynamic>[];
         for (final ingredient in ingredients) {
           if (ingredient.id != query.itemId) continue;
 

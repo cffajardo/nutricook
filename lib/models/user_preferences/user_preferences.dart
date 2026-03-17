@@ -13,6 +13,8 @@ class UserPreferences {
     this.allergens = const <String>[],
     this.showRecipesWithAllergens = true,
     this.mealStartHours = defaultMealStartHours,
+    this.archiveRetentionDays = 30, // Default to 30 days
+    this.autoAdvanceStepTimer = true,
   });
 
   final ThemeMode themeMode;
@@ -23,6 +25,8 @@ class UserPreferences {
   final List<String> allergens;
   final bool showRecipesWithAllergens;
   final Map<String, int> mealStartHours;
+  final int archiveRetentionDays;
+  final bool autoAdvanceStepTimer;
 
   static const UserPreferences defaults = UserPreferences();
 
@@ -35,6 +39,8 @@ class UserPreferences {
     List<String>? allergens,
     bool? showRecipesWithAllergens,
     Map<String, int>? mealStartHours,
+    int? archiveRetentionDays,
+    bool? autoAdvanceStepTimer,
   }) {
     return UserPreferences(
       themeMode: themeMode ?? this.themeMode,
@@ -49,6 +55,8 @@ class UserPreferences {
       mealStartHours: sanitizeMealStartHours(
         mealStartHours ?? this.mealStartHours,
       ),
+      archiveRetentionDays: archiveRetentionDays ?? this.archiveRetentionDays,
+      autoAdvanceStepTimer: autoAdvanceStepTimer ?? this.autoAdvanceStepTimer,
     );
   }
 
@@ -62,6 +70,8 @@ class UserPreferences {
       'allergens': allergens,
       'showRecipesWithAllergens': showRecipesWithAllergens,
       'mealStartHours': mealStartHours,
+      'archiveRetentionDays': archiveRetentionDays,
+      'autoAdvanceStepTimer': autoAdvanceStepTimer,
     };
   }
 
@@ -114,6 +124,10 @@ class UserPreferences {
           json['showRecipesWithAllergens'] as bool? ??
           UserPreferences.defaults.showRecipesWithAllergens,
       mealStartHours: parsedMealStartHours,
+      archiveRetentionDays: (json['archiveRetentionDays'] as num?)?.toInt() ??
+          UserPreferences.defaults.archiveRetentionDays,
+      autoAdvanceStepTimer: json['autoAdvanceStepTimer'] as bool? ??
+          UserPreferences.defaults.autoAdvanceStepTimer,
     );
   }
 }

@@ -68,6 +68,10 @@ class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
       return;
     }
 
+    // Capture the Navigator and ScaffoldMessenger before any async operations
+    final navigator = Navigator.of(context);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
     try {
       setState(() => _isFinishing = true);
 
@@ -115,10 +119,14 @@ class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
               }
             }
           } catch (e) {
-            _showMessage('Failed to create custom ingredient: $e');
+            if (mounted) {
+              _showMessage('Failed to create custom ingredient: $e');
+            }
             return;
           }
         }
+        // Reset the ingredient creation provider once all pending ingredients are handled
+        ref.read(createIngredientProvider.notifier).reset();
       }
 
       // Step 2: Update recipe ingredients with real IDs
@@ -167,13 +175,13 @@ class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
             );
       }
 
-      ref.read(recipeCreationProvider.notifier).clear();
       if (!mounted) return;
-      final rootMessenger = ScaffoldMessenger.of(
-        Navigator.of(context, rootNavigator: true).context,
-      );
-      Navigator.pop(context);
-      rootMessenger
+      
+      ref.read(recipeCreationProvider.notifier).clear();
+      
+      // Use the captured states
+      navigator.pop();
+      scaffoldMessenger
         ..hideCurrentSnackBar()
         ..showSnackBar(
           SnackBar(
@@ -186,11 +194,13 @@ class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
           ),
         );
     } catch (error) {
-      _showMessage(
-        creation.isEditing 
-          ? 'Failed to update recipe: $error'
-          : 'Failed to create recipe: $error',
-      );
+      if (mounted) {
+        _showMessage(
+          creation.isEditing 
+            ? 'Failed to update recipe: $error'
+            : 'Failed to create recipe: $error',
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => _isFinishing = false);

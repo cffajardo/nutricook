@@ -13,7 +13,6 @@ class CreateIngredientScreen extends ConsumerStatefulWidget {
 }
 
 class _CreateIngredientScreenState extends ConsumerState<CreateIngredientScreen> {
-  // Controllers remain the same
   late TextEditingController _nameController;
   late TextEditingController _descriptionController;
   late TextEditingController _caloriesController;
@@ -24,12 +23,11 @@ class _CreateIngredientScreenState extends ConsumerState<CreateIngredientScreen>
   late TextEditingController _sugarController;
   late TextEditingController _sodiumController;
 
-  // Key to access ImageUploadField for delayed upload
   final _imageUploadKey = GlobalKey();
 
   final List<String> categories = [
-    'proteins', 'vegetables', 'fruits', 'dairy', 'grains', 'spices',
-    'herbs', 'sauces', 'seafood', 'nuts-and-seeds', 'fats-and-oils', 'beverages',
+    'Proteins', 'Vegetables', 'Fruits', 'Dairy', 'Grains', 'Spices',
+    'Herbs', 'Sauces', 'Seafood', 'Nuts and Seeds', 'Fats and Oils', 'Beverages',
   ];
 
   @override
@@ -60,7 +58,6 @@ class _CreateIngredientScreenState extends ConsumerState<CreateIngredientScreen>
     super.dispose();
   }
 
-  // State update logic remains the same...
   void _updateNutritionFromControllers() {
     ref.read(createIngredientProvider.notifier).setNutritionValue(
       calories: int.tryParse(_caloriesController.text) ?? 0,
@@ -76,6 +73,19 @@ class _CreateIngredientScreenState extends ConsumerState<CreateIngredientScreen>
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(createIngredientProvider);
+
+    ref.listen(createIngredientProvider, (previous, next) {
+      if (next.error.isNotEmpty && next.error != previous?.error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(next.error), backgroundColor: Colors.red),
+        );
+      }
+      if (next.success && ! (previous?.success ?? false)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ingredient created successfully!'), backgroundColor: Colors.green),
+        );
+      }
+    });
 
     return Scaffold(
       backgroundColor: const Color(0xFFFFF9FA),
@@ -163,22 +173,35 @@ class _CreateIngredientScreenState extends ConsumerState<CreateIngredientScreen>
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   elevation: 0,
                 ),
-                onPressed: () async {
-                  _updateNutritionFromControllers();
-                  
-                  // Upload image to R2 if one is selected
-                  final imageUrl = await (_imageUploadKey.currentState as dynamic)?.uploadImage();
-                  if (imageUrl != null) {
-                    ref.read(createIngredientProvider.notifier).setImageUrl(imageUrl);
-                  }
-                  
-                  // Automatically generate physical properties (density/avgWeight) with AI
-                  await ref.read(createIngredientProvider.notifier).generatePhysicalProperty(_nameController.text);
-                  final res = await ref.read(createIngredientProvider.notifier).createIngredient();
-                  if (res != null && mounted) context.pop();
-                },
-                child: const Text('Save Ingredient', 
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16)),
+                onPressed: state.isLoadingNutrition || state.isLoadingPhysicalProperty
+                    ? null
+                    : () async {
+                        if (state.nutritionMethod == 'manual') {
+                          _updateNutritionFromControllers();
+                        }
+
+                        final imageUrl = await (_imageUploadKey.currentState as dynamic)?.uploadImage();
+                        if (imageUrl != null) {
+                          ref.read(createIngredientProvider.notifier).setImageUrl(imageUrl);
+                        }
+
+                        await ref.read(createIngredientProvider.notifier).generatePhysicalProperty(_nameController.text);
+                        
+                        final res = await ref.read(createIngredientProvider.notifier).createIngredient();
+                        
+                        if (res != null && mounted) {
+                          ref.read(createIngredientProvider.notifier).reset();
+                          context.pop();
+                        }
+                      },
+                child: state.isLoadingNutrition || state.isLoadingPhysicalProperty
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      )
+                    : const Text('Save Ingredient',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16)),
               ),
             ),
             const SizedBox(height: 40),
@@ -188,7 +211,6 @@ class _CreateIngredientScreenState extends ConsumerState<CreateIngredientScreen>
     );
   }
 
-  // --- THEMED UI COMPONENTS ---
 
   Widget _buildSectionHeader(String title) {
     return Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.black87));
@@ -230,7 +252,14 @@ class _CreateIngredientScreenState extends ConsumerState<CreateIngredientScreen>
           value: state.category,
           isExpanded: true,
           style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
-          items: categories.map((c) => DropdownMenuItem(value: c, child: Text(c.toUpperCase()))).toList(),
+          items: categories.map((c) {
+            final displayText = c
+                .split(' ')
+                .map((word) => word[0].toUpperCase() + word.substring(1))
+                .join(' ')
+                .replaceAll('And', '&');
+            return DropdownMenuItem(value: c, child: Text(displayText));
+          }).toList(),
           onChanged: (val) {
             if (val != null) ref.read(createIngredientProvider.notifier).setCategory(val);
           },
@@ -316,7 +345,6 @@ class _CreateIngredientScreenState extends ConsumerState<CreateIngredientScreen>
   }
 
   Widget _buildAIStatusCard(dynamic state) {
-    // Check if nutrition values have been generated
     final hasGeneratedValues = state.calories > 0 || 
         state.carbohydrates > 0 || 
         state.protein > 0 || 
@@ -376,7 +404,6 @@ class _CreateIngredientScreenState extends ConsumerState<CreateIngredientScreen>
     );
   }
 
-  /// Displays the generated nutrition values
   Widget _buildGeneratedValueDisplay(dynamic state) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -392,7 +419,6 @@ class _CreateIngredientScreenState extends ConsumerState<CreateIngredientScreen>
     );
   }
 
-  /// Helper to display a single nutrition value row
   Widget _buildValueRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
