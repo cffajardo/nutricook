@@ -100,19 +100,16 @@ class NotificationsPage extends ConsumerWidget {
               return InkWell(
                 borderRadius: BorderRadius.circular(16),
                 onTap: () async {
-                  // Mark notification as read
                   if (!item.isRead) {
                     try {
                       await ref
                           .read(notificationServiceProvider)
                           .markNotificationAsRead(item.id);
-                      // The Firestore stream will automatically update the UI
                     } catch (e) {
                       debugPrint('Error marking notification as read: $e');
                     }
                   }
 
-                  // For recipe deleted notifications, only mark as read (no navigation)
                   if (item.type != null) {
                     final notificationType = NotificationType.fromString(item.type);
                     if (notificationType == NotificationType.recipeDeleted) {
@@ -121,7 +118,6 @@ class NotificationsPage extends ConsumerWidget {
                     }
                   }
 
-                  // Route based on notification type (for other notification types)
                   if (!context.mounted) return;
                   
                   if (item.type != null) {
@@ -178,17 +174,16 @@ class NotificationsPage extends ConsumerWidget {
                             }
                             break;
                           case NotificationType.mealReminder:
-                            debugPrint('Navigating to meal planner');
                             if (context.mounted) {
                               await context.pushNamed(AppRoutes.plannerName);
                             }
                             break;
                           case NotificationType.recipeDeleted:
-                            // This case is handled above with early return
+                            break;
+                          case NotificationType.calorieGoal:
                             break;
                         }
                       } catch (e) {
-                        debugPrint('Error navigating from notification: $e');
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text('Navigation error: $e')),

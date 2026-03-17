@@ -189,11 +189,12 @@ class _AddStepModalState extends State<AddStepModal> {
           controller: controller,
           textAlign: TextAlign.center,
           keyboardType: TextInputType.number,
+  
           decoration: InputDecoration(
             suffixText: label.toLowerCase(),
-            suffixStyle: const TextStyle(fontSize: 10, color: Colors.black26),
+            suffixStyle: const TextStyle(fontSize: 12, color: Colors.black),
             filled: true,
-            fillColor: AppColors.cardRose.withValues(alpha: 0.3),
+            fillColor: AppColors.cardRose.withValues(alpha: 0.5),
             enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.rosePink.withValues(alpha: 0.1), width: 1.5)),
           ),
         ),

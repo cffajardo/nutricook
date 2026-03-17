@@ -15,22 +15,19 @@ import 'package:nutricook/features/recipe/recipe_util/recipe_filters.dart';
 import 'package:nutricook/features/recipe/recipe_util/recipe_nutrition_total.dart';
 import 'package:nutricook/core/constants.dart';
 
-// Recipe Service Provider
+
 final recipeServiceProvider = Provider<RecipeService>((ref) {
   return RecipeService();
 });
 
-// Collection Service Provider
 final collectionServiceProvider = Provider<CollectionService>((ref) {
   return CollectionService();
 });
 
-// Stream Provider for Public Recipes (Streams updates in real-time)
 final publicRecipesProvider = StreamProvider<List<Recipe>>((ref) {
   return ref.watch(recipeServiceProvider).getPublicRecipes();
 });
 
-// Stream Provider for Trending Recipes (Based on favoriteCount)
 final trendingRecipesProvider = StreamProvider<List<Recipe>>((ref) {
   return ref.watch(recipeServiceProvider).getTrendingRecipes(limit: 5);
 });
@@ -116,7 +113,6 @@ final followingRecipesProvider = Provider<AsyncValue<List<Recipe>>>((ref) {
   });
 });
 
-// Stream Provider for single recipe details by ID
 final recipeDetailsProvider = StreamProvider.family<Recipe?, String>((
   ref,
   recipeId,
@@ -124,7 +120,6 @@ final recipeDetailsProvider = StreamProvider.family<Recipe?, String>((
   return ref.watch(recipeServiceProvider).getRecipeById(recipeId);
 });
 
-// Stream Provider for user's own recipes (Requires user ID from auth provider)
 final userRecipesProvider = StreamProvider<List<Recipe>>((ref) {
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) return Stream.value([]);
@@ -138,10 +133,6 @@ final userRecipesByOwnerProvider = StreamProvider.family<List<Recipe>, String>((
   return ref.watch(recipeServiceProvider).getUserRecipes(ownerId);
 });
 
-// Provider for the "Custom" category: includes the current user's own recipes
-// (public and private) plus public recipes by other users, excluding any
-// recipes authored by the current user's own public recipes (avoid duplication)
-// and recipes from the system account "NutriCook".
 final userCustomRecipesProvider = Provider<AsyncValue<List<Recipe>>>((ref) {
   final publicAsync = ref.watch(visiblePublicRecipesProvider);
   final ownAsync = ref.watch(userRecipesProvider);
@@ -156,13 +147,9 @@ final userCustomRecipesProvider = Provider<AsyncValue<List<Recipe>>>((ref) {
   final public = publicAsync.asData?.value ?? <Recipe>[];
   final own = ownAsync.asData?.value ?? <Recipe>[];
 
-  // Filter public recipes: exclude any authored by the current user (to avoid
-  // duplication). Full NutriCook filtering will be added once we confirm
-  // recipes show up in the Custom category.
   final filteredPublic = public.where((r) {
     final ownerId = r.ownerId;
     if (ownerId == null || ownerId.isEmpty) return true;
-    // Exclude current user's public recipes (already in own)
     if (ownerId == currentUserId) return false;
     return true;
   }).toList();
@@ -173,7 +160,6 @@ final userCustomRecipesProvider = Provider<AsyncValue<List<Recipe>>>((ref) {
   return AsyncValue.data(merged);
 });
 
-// Provider for calculating total nutrition information for a recipe (used in recipe details)
 final recipeNutritionTotalsProvider = Provider<NutritionInfo Function(Recipe)>((
   ref,
 ) {
@@ -361,7 +347,7 @@ class RecipeAdvancedFilters {
     sugarComparisonMode: false,
     fiberComparisonMode: false,
     sodiumComparisonMode: false,
-    maxCookTimeMinutes: 180,
+    maxCookTimeMinutes: 360,
     includeTags: <String>[],
     excludeTags: <String>[],
     userCreatedOnly: false,
@@ -398,7 +384,6 @@ bool _listEquals<T>(List<T> a, List<T> b) {
   return true;
 }
 
-// Provider that combines query and tag filtering for public recipe discovery.
 final filteredRecipesProvider =
     Provider.family<AsyncValue<List<Recipe>>, RecipeFilterInput>((ref, input) {
       final recipesAsync = ref.watch(visiblePublicRecipesProvider);
@@ -433,7 +418,6 @@ List<Recipe> applyAdvancedRecipeFilters(
 }) {
   var result = recipes;
 
-  // Apply source filters
   if (filters.userCreatedOnly && currentUserId != null) {
     result = result.where((recipe) => recipe.ownerId == currentUserId).toList();
   }
@@ -743,10 +727,6 @@ final recipeCreationProvider =
     );
 
 
-//todo: add more specific providers for different recipe categories (e.g. breakfast, lunch, dinner)
-
-// Provider: list of recipes the current user has favorited (derived from the
-// already-streamed public + own recipes; no extra Firestore read needed).
 final userFavoriteRecipesProvider = Provider<AsyncValue<List<Recipe>>>((ref) {
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) return const AsyncValue.data(<Recipe>[]);
@@ -771,7 +751,6 @@ final userFavoriteRecipesProvider = Provider<AsyncValue<List<Recipe>>>((ref) {
   );
 });
 
-// Provider: is a specific recipe favorited by the current user?
 final isRecipeFavoritedProvider =
     StreamProvider.family<bool, String>((ref, recipeId) {
       final userId = ref.watch(currentUserIdProvider);
@@ -782,18 +761,16 @@ final isRecipeFavoritedProvider =
       return favoriteRef.snapshots().map((doc) => doc.exists);
     });
 
-// Notifier: toggle favorite (add or remove).
 class ToggleFavoriteNotifier extends AsyncNotifier<void> {
   @override
   Future<void> build() async {}
 
-  bool _optimisticState = false;
+  bool _optimisticState = false; // Track the optimistic state to handle UI updates
 
   Future<void> toggle(String recipeId) async {
     final userId = ref.watch(currentUserIdProvider);
     if (userId == null) return;
 
-    // Use the current value from the stream provider
     final isFavoritedAsync = ref.read(isRecipeFavoritedProvider(recipeId));
     final isFavorited = isFavoritedAsync.asData?.value ?? false;
     final recipeService = ref.read(recipeServiceProvider);
@@ -801,7 +778,6 @@ class ToggleFavoriteNotifier extends AsyncNotifier<void> {
     final recipeAsync = ref.read(recipeDetailsProvider(recipeId));
     final recipe = recipeAsync.asData?.value;
 
-    // Optimistic UI: update local state immediately
     _optimisticState = !isFavorited;
     state = const AsyncValue.loading();
 
@@ -819,7 +795,6 @@ class ToggleFavoriteNotifier extends AsyncNotifier<void> {
       }
       state = const AsyncValue.data(null);
     } catch (e) {
-      // Rollback optimistic UI if failed
       _optimisticState = isFavorited;
       state = AsyncValue.error(e, StackTrace.current);
     }

@@ -39,7 +39,6 @@ class RecipeActionsModal extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Drag handle
           Center(
             child: Container(
               height: 4,

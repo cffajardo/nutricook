@@ -4,12 +4,11 @@ import 'package:nutricook/models/planner_item/planner_item.dart';
 import 'package:nutricook/core/constants.dart';
 import 'package:nutricook/services/meal_reminder_scheduler.dart';
 import 'package:nutricook/services/meal_window_helper.dart';
+import 'package:nutricook/features/planner/util/nutrition_info_util.dart';
 
 class PlannerService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Add a planner item with meal reminders
-  /// Optional: pass mealStartHours to schedule meal window ending reminder
   Future<void> addPlannerItem(
     PlannerItem item, {
     Map<String, int>? mealStartHours,
@@ -19,9 +18,9 @@ class PlannerService {
         .doc(item.id)
         .set(_toFirestoreData(item));
 
-    // Schedule meal reminders
+    await _updateCalorieGoalNotification(item.ownerId, item.date);
+
     try {
-      // Schedule reminder at meal start time
       await MealReminderScheduler().scheduleMealReminder(
         plannerId: item.id,
         mealTime: item.date,
@@ -29,14 +28,13 @@ class PlannerService {
         userId: item.ownerId,
       );
 
-      // Schedule reminder 30 mins before meal window ends
       if (mealStartHours != null) {
         final windowEndTime = MealWindowHelper.getMealWindowEndDateTime(
           mealType: item.mealType,
           mealStartHours: mealStartHours,
         );
 
-        // Adjust to same day as meal or next day if needed
+
         DateTime adjustedEndTime = DateTime(
           item.date.year,
           item.date.month,
@@ -45,7 +43,6 @@ class PlannerService {
           windowEndTime.minute,
         );
 
-        // If end time is before meal time (past midnight), use next day
         if (adjustedEndTime.isBefore(item.date)) {
           adjustedEndTime = adjustedEndTime.add(const Duration(days: 1));
         }
@@ -61,8 +58,6 @@ class PlannerService {
     }
   }
 
-  /// Update a planner item with meal reminders
-  /// Optional: pass mealStartHours to schedule meal window ending reminder
   Future<void> updatePlannerItem(
     PlannerItem item, {
     Map<String, int>? mealStartHours,
@@ -72,11 +67,11 @@ class PlannerService {
         .doc(item.id)
         .update(_toFirestoreData(item));
 
-    // Reschedule meal reminders
+    await _updateCalorieGoalNotification(item.ownerId, item.date);
+
     try {
       await MealReminderScheduler().cancelMealReminder(item.id);
 
-      // Reschedule reminder at meal start time
       await MealReminderScheduler().scheduleMealReminder(
         plannerId: item.id,
         mealTime: item.date,
@@ -84,7 +79,6 @@ class PlannerService {
         userId: item.ownerId,
       );
 
-      // Reschedule reminder 30 mins before meal window ends
       if (mealStartHours != null) {
         final windowEndTime = MealWindowHelper.getMealWindowEndDateTime(
           mealType: item.mealType,
@@ -121,13 +115,18 @@ class PlannerService {
   }
 
   Future<void> deletePlannerItem(String id) async {
-    await _firestore.collection(FirestoreConstants.plannerItems).doc(id).delete();
+    final doc = await _firestore.collection(FirestoreConstants.plannerItems).doc(id).get();
+    if (!doc.exists) return;
+    
+    final item = PlannerItem.fromJson(doc.data()!);
+    
+    await doc.reference.delete();
 
-    // Cancel the meal reminder for this item
+    await _updateCalorieGoalNotification(item.ownerId, item.date);
+
     try {
       await MealReminderScheduler().cancelMealReminder(id);
     } catch (e) {
-      // Log error but don't fail the planner item deletion
       debugPrint('Error canceling meal reminder: $e');
     }
   }
@@ -166,5 +165,35 @@ class PlannerService {
         .collection(FirestoreConstants.plannerItems)
         .doc(itemId)
         .update({'isCompleted': isCompleted});
+  }
+
+  Future<void> _updateCalorieGoalNotification(String userId, DateTime date) async {
+    try {
+      final startOfDay = DateTime(date.year, date.month, date.day);
+      final endOfDay = startOfDay.add(const Duration(days: 1));
+
+      final snapshot = await _firestore
+          .collection(FirestoreConstants.plannerItems)
+          .where('ownerId', isEqualTo: userId)
+          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+          .where('date', isLessThan: Timestamp.fromDate(endOfDay))
+          .get();
+
+      final items = snapshot.docs.map((doc) => PlannerItem.fromJson(doc.data())).toList();
+      final nutrition = calculatePlannerNutrition(plannerItems: items);
+      
+      // Fetch user goal
+      final prefDoc = await _firestore.collection('userPreferences').doc(userId).get();
+      final goal = (prefDoc.data()?['dailyCalorieGoal'] as num?)?.toInt() ?? 2000;
+
+      await MealReminderScheduler().updateCalorieGoalReminder(
+        userId: userId,
+        date: date,
+        currentCalories: nutrition.calories,
+        goalCalories: goal,
+      );
+    } catch (e) {
+      debugPrint('Error updating calorie goal notification: $e');
+    }
   }
 }

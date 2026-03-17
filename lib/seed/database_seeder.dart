@@ -10,7 +10,6 @@ import 'package:nutricook/models/unit/unit.dart';
 class DatabaseSeeder {
   static final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  /// Seeds all reference collections
   static Future<void> seed() async {
     await _seedUnits();
     await _seedNutrition();

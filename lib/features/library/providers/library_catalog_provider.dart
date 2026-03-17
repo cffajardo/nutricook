@@ -125,14 +125,12 @@ final libraryItemsProvider =
       if (query.categoryId == LibraryCategoryIds.ingredients) {
         final ingredients = await ref.watch(ingredientsProvider.future);
         final filtered = ingredients.where((ingredient) {
-          // Handle custom category - show only user-created ingredients
           if (query.subCategoryId == LibrarySubCategoryIds.custom) {
             final isCustom = ingredient.ownerId != null && ingredient.ownerId!.isNotEmpty;
             if (!isCustom) {
               return false;
             }
           } else {
-            // For other categories, filter by category
             final matchesSubCategory = ingredient.category == query.subCategoryId;
             if (!matchesSubCategory) {
               return false;

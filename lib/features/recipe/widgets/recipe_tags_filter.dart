@@ -465,7 +465,6 @@ class _RecipeTagsFilterModalState extends State<RecipeTagsFilterModal> {
     if (tag.isEmpty || _isCreatingTag) return;
 
     setState(() => _isCreatingTag = true);
-    // Optimistically keep the custom tag available and selected in this session.
     setState(() {
       _selectedTags.add(tag);
       _localCustomTags.add(tag);
@@ -477,7 +476,6 @@ class _RecipeTagsFilterModalState extends State<RecipeTagsFilterModal> {
       await _tagService.createCustomTag(tag, categoryId: categoryId);
     } catch (error) {
       if (!mounted) return;
-      // Keep local tag even if persistence fails (e.g., rule/network issue).
       showDialog<void>(
         context: context,
         useRootNavigator: true,

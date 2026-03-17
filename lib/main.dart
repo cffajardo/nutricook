@@ -32,25 +32,19 @@ Future<void> main() async {
 
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  
-  // Initialize Firebase Messaging (FCM)
   await _initializeFirebaseMessaging();
   
   runApp(const ProviderScope(child: NutriCookApp()));
 }
 
-/// Initialize Firebase Messaging for push notifications
 Future<void> _initializeFirebaseMessaging() async {
   try {
     final messagingService = FirebaseMessagingService();
-    
-    // Check for initial message (when app is opened from notification while closed)
     final initialMessage = await messagingService.getInitialMessage();
     if (initialMessage != null) {
       debugPrint('Initial message received: ${initialMessage.messageId}');
     }
     
-    // Initialize FCM with handlers
     await messagingService.initialize(
       onForegroundMessage: (RemoteMessage message) async {
         debugPrint('Foreground message: ${message.messageId}');
@@ -58,8 +52,7 @@ Future<void> _initializeFirebaseMessaging() async {
         debugPrint('Body: ${message.notification?.body}');
       },
       onNotificationTap: (String notificationId) {
-        debugPrint('Notification tapped: $notificationId');
-        // Note: Actual navigation will be handled by the global navigation observer
+        // Navigation done elsewhere
       },
     );
     
@@ -77,14 +70,12 @@ class NutriCookApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(appThemeModeProvider);
 
-    // Trigger archive cleanup on login
+    // Trigger archive cleanup on login (Past archive date)
     ref.listen(currentUserIdProvider, (previous, next) {
       if (next != null && next.isNotEmpty && previous != next) {
         ref.read(archiveServiceProvider).runCleanup();
       }
     });
-
-    // Set up notification tap listener
     _setupNotificationTapListener(context);
 
     return MaterialApp.router(
@@ -109,13 +100,11 @@ class NutriCookApp extends ConsumerWidget {
     );
   }
 
-  /// Set up listener for when user taps a notification
   void _setupNotificationTapListener(BuildContext context) {
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       debugPrint('Notification opened from app: ${message.messageId}');
       
       try {
-        // Parse notification payload
         final payload = NotificationPayload.fromFCMData(
           notificationId: message.messageId ?? 'unknown',
           data: message.data,

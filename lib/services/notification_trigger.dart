@@ -1,13 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:nutricook/core/enums/notification_type.dart';
-import 'dart:convert';
 
-/// Service for triggering and sending notifications
-/// Sends notifications via Firebase Cloud Messaging REST API
-/// and stores them in Firestore for in-app history
 class NotificationTrigger {
-  /// Send a recipe like notification
   static Future<bool> sendRecipeLikeNotification({
     required String recipeId,
     required String recipeName,
@@ -17,7 +12,7 @@ class NotificationTrigger {
     required String recipientFcmToken,
   }) async {
     try {
-      debugPrint('Sending recipe like notification from $senderName to $recipientId');
+
 
       final title = 'Recipe Liked';
       final body = '$senderName liked your recipe: $recipeName';
@@ -37,7 +32,6 @@ class NotificationTrigger {
     }
   }
 
-  /// Send a follow notification
   static Future<bool> sendFollowNotification({
     required String followerId,
     required String followerName,
@@ -57,7 +51,7 @@ class NotificationTrigger {
         type: NotificationType.follow,
         senderId: followerId,
         recipientId: followedUserId,
-        entityId: followerId, // The follower's ID is the entity in follow context
+        entityId: followerId, 
       );
     } catch (e) {
       debugPrint('Error sending follow notification: $e');
@@ -65,7 +59,6 @@ class NotificationTrigger {
     }
   }
 
-  /// Send a meal reminder notification
   static Future<bool> sendMealReminderNotification({
     required String userId,
     required String mealName,
@@ -93,7 +86,6 @@ class NotificationTrigger {
     }
   }
 
-  /// Send a recipe deleted notification
   static Future<bool> sendRecipeDeletedNotification({
     required String recipeId,
     required String recipeName,
@@ -122,7 +114,6 @@ class NotificationTrigger {
     }
   }
 
-  /// Internal method to send notification via FCM REST API and store in Firestore
   static Future<bool> _sendNotification({
     required String title,
     required String body,
@@ -133,7 +124,6 @@ class NotificationTrigger {
     required String? entityId,
   }) async {
     try {
-      // First, create Firestore notification document (dual storage)
       await _createFirestoreNotification(
         title: title,
         body: body,
@@ -143,9 +133,6 @@ class NotificationTrigger {
         entityId: entityId,
       );
 
-      // Then send FCM notification
-      // Note: In a real app, this would use server SDKs with proper authentication
-      // For demo purposes, this endpoint would be called from Cloud Functions instead
       debugPrint(
           'FCM notification queued for delivery to token: $fcmToken');
 
@@ -156,7 +143,6 @@ class NotificationTrigger {
     }
   }
 
-  /// Create notification document in Firestore
   static Future<void> _createFirestoreNotification({
     required String title,
     required String body,
@@ -168,7 +154,6 @@ class NotificationTrigger {
     try {
       final firestore = FirebaseFirestore.instance;
 
-      // Create notification document
       await firestore.collection('notifications').add({
         'title': title,
         'body': body,
@@ -182,46 +167,8 @@ class NotificationTrigger {
 
       debugPrint('Notification stored in Firestore');
     } catch (e) {
-      debugPrint('Error creating Firestore notification: $e');
-      // Don't rethrow - Firestore failure shouldn't prevent notification from being sent
+      //
     }
   }
 
-  /// Send a test notification using Cloud Messaging REST API
-  /// This is DEMO ONLY and requires proper authentication in production
-  static Future<bool> sendTestNotification({
-    required String fcmToken,
-    required String title,
-    required String body,
-    required NotificationType type,
-    String? entityId,
-  }) async {
-    try {
-      debugPrint('Sending test notification via FCM');
-
-      final message = {
-        'message': {
-          'token': fcmToken,
-          'notification': {
-            'title': title,
-            'body': body,
-          },
-          'data': {
-            'type': type.value,
-            'entityId': entityId ?? '',
-            'senderId': 'test-system',
-          },
-        }
-      };
-
-      debugPrint('Test notification message: ${jsonEncode(message)}');
-      // In production, this would make an actual HTTP POST to the FCM endpoint
-      // For now, we'll just log it as a demo
-
-      return true;
-    } catch (e) {
-      debugPrint('Error sending test notification: $e');
-      return false;
-    }
-  }
 }

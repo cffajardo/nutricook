@@ -8,7 +8,6 @@ class IngredientService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Real-time stream of all ingredients (not just custom)
   Stream<List<Ingredient>> getAllIngredientsStream() {
     return _db
         .collection(FirestoreConstants.ingredients)
@@ -42,7 +41,6 @@ class IngredientService {
     return Ingredient.fromJson(doc.data()!);
   }
 
-  /// Get user's custom ingredients only
   Stream<List<Ingredient>> getUserCustomIngredients(String userId) {
     return _db
         .collection(FirestoreConstants.ingredients)
@@ -80,13 +78,11 @@ class IngredientService {
       ownerId: userId, 
     );
 
-    // DEBUG: Check what's being serialized
     debugPrint('🔍 INGREDIENT SERVICE DEBUG:');
     debugPrint('  Name: ${ingredientWithId.name}');
     debugPrint('  NutritionInfo object: ${ingredientWithId.nutritionPer100g}');
     final json = ingredientWithId.toJson();
     
-    // Add temporary metadata that is not part of the model
     if (isTemporary) {
       json['isTemporary'] = true;
       if (createdInRecipeId != null) {
@@ -148,7 +144,6 @@ class IngredientService {
   Future<void> updateIngredient(Ingredient ingredient) async {
     final userId = _auth.currentUser?.uid;
 
-    // Verify ownership
     if (ingredient.ownerId != userId) {
       throw Exception('You can only update your own custom ingredients');
     }
@@ -159,7 +154,6 @@ class IngredientService {
         .update(ingredient.toJson());
   }
 
-  // For Custom Ingredients Only - Deletes the ingredient document
   Future<void> deleteIngredient(String ingredientId) async {
     final userId = _auth.currentUser?.uid;
 

@@ -8,7 +8,6 @@ import '../recipe_step/recipe_step.dart';
 part 'recipe.freezed.dart';
 part 'recipe.g.dart';
 
-// recipe.dart
 @freezed
 abstract class Recipe with _$Recipe {
   const factory Recipe({

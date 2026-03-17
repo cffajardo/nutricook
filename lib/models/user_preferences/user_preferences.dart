@@ -8,19 +8,17 @@ class UserPreferences {
     this.themeMode = ThemeMode.system,
     this.unitSystem = UnitSystem.metric,
     this.notificationsEnabled = true,
-    this.showNutritionPerServing = true,
     this.dailyCalorieGoal = 2000,
     this.allergens = const <String>[],
     this.showRecipesWithAllergens = true,
     this.mealStartHours = defaultMealStartHours,
-    this.archiveRetentionDays = 30, // Default to 30 days
+    this.archiveRetentionDays = 30, 
     this.autoAdvanceStepTimer = true,
   });
 
   final ThemeMode themeMode;
   final UnitSystem unitSystem;
   final bool notificationsEnabled;
-  final bool showNutritionPerServing;
   final int dailyCalorieGoal;
   final List<String> allergens;
   final bool showRecipesWithAllergens;
@@ -34,7 +32,6 @@ class UserPreferences {
     ThemeMode? themeMode,
     UnitSystem? unitSystem,
     bool? notificationsEnabled,
-    bool? showNutritionPerServing,
     int? dailyCalorieGoal,
     List<String>? allergens,
     bool? showRecipesWithAllergens,
@@ -46,8 +43,6 @@ class UserPreferences {
       themeMode: themeMode ?? this.themeMode,
       unitSystem: unitSystem ?? this.unitSystem,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
-      showNutritionPerServing:
-          showNutritionPerServing ?? this.showNutritionPerServing,
       dailyCalorieGoal: dailyCalorieGoal ?? this.dailyCalorieGoal,
       allergens: allergens ?? this.allergens,
       showRecipesWithAllergens:
@@ -65,7 +60,6 @@ class UserPreferences {
       'themeMode': themeMode.name,
       'unitSystem': unitSystem.name,
       'notificationsEnabled': notificationsEnabled,
-      'showNutritionPerServing': showNutritionPerServing,
       'dailyCalorieGoal': dailyCalorieGoal,
       'allergens': allergens,
       'showRecipesWithAllergens': showRecipesWithAllergens,
@@ -113,9 +107,6 @@ class UserPreferences {
       notificationsEnabled:
           json['notificationsEnabled'] as bool? ??
           UserPreferences.defaults.notificationsEnabled,
-      showNutritionPerServing:
-          json['showNutritionPerServing'] as bool? ??
-          UserPreferences.defaults.showNutritionPerServing,
       dailyCalorieGoal: calorieGoal < 100 ? 100 : calorieGoal,
       allergens: (json['allergens'] as List<dynamic>? ?? const <dynamic>[])
           .map((e) => e.toString())

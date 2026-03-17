@@ -19,7 +19,7 @@ class EditProfilePage extends ConsumerStatefulWidget {
 class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _deleteController = TextEditingController(); // Added class-level controller for the dialog
+  final _deleteController = TextEditingController();
 
   bool _initialized = false;
   bool _savingUsername = false;
@@ -32,7 +32,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   void dispose() {
     _usernameController.dispose();
     _emailController.dispose();
-    _deleteController.dispose(); // Properly dispose it here
+    _deleteController.dispose();
     super.dispose();
   }
 
@@ -540,7 +540,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   }
 
   Future<void> _deleteAccount(String uid) async {
-    _deleteController.clear(); // Ensure it is empty when opened
+    _deleteController.clear(); 
     
     final confirm = await showDialog<bool>(
       context: context,

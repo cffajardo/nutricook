@@ -18,7 +18,6 @@ class NotificationService {
           (snapshot) => snapshot.docs
               .map((doc) {
                 final data = doc.data();
-                // Use the document ID from the reference, not from the data
                 data['id'] = doc.id;
                 return AppNotification.fromJson(data);
               })

@@ -37,7 +37,6 @@ class _AddToCollectionsModalState extends ConsumerState<AddToCollectionsModal> {
   @override
   void initState() {
     super.initState();
-    // Pre-select Favorites if recipe is liked
     _initializeSelectedCollections();
   }
 
@@ -53,7 +52,7 @@ class _AddToCollectionsModalState extends ConsumerState<AddToCollectionsModal> {
             _selectedCollectionIds.add(favoritesCollection.id);
           });
         } catch (e) {
-          // Favorites collection not found, which is OK
+          // Favorites collection not found
         }
       }
     });
@@ -70,7 +69,6 @@ class _AddToCollectionsModalState extends ConsumerState<AddToCollectionsModal> {
     try {
       final service = CollectionItemService();
 
-      // Add recipe to all selected collections in parallel
       await Future.wait(
         _selectedCollectionIds.map((collectionId) {
           return service.addItemToCollection(
@@ -87,7 +85,6 @@ class _AddToCollectionsModalState extends ConsumerState<AddToCollectionsModal> {
 
       if (!mounted) return;
 
-      // Get names of collections for confirmation message
       final collectionsAsync = ref.read(userCollectionsProvider);
       collectionsAsync.whenData((collections) {
         final selectedCollectionNames = collections
@@ -167,7 +164,6 @@ class _AddToCollectionsModalState extends ConsumerState<AddToCollectionsModal> {
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Drag handle
               Container(
                 width: 40,
                 height: 4,
@@ -178,7 +174,6 @@ class _AddToCollectionsModalState extends ConsumerState<AddToCollectionsModal> {
               ),
               const SizedBox(height: 14),
 
-              // Title
               const Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
@@ -191,7 +186,6 @@ class _AddToCollectionsModalState extends ConsumerState<AddToCollectionsModal> {
               ),
               const SizedBox(height: 12),
 
-              // Collections list with checkboxes
               Flexible(
                 child: ListView.separated(
                   shrinkWrap: true,
@@ -213,7 +207,7 @@ class _AddToCollectionsModalState extends ConsumerState<AddToCollectionsModal> {
                           if (value ?? false) {
                             _selectedCollectionIds.add(collection.id);
                           } else {
-                            // Prevent deselecting Favorites if recipe is liked
+
                             if (!isFavoritesAndLiked) {
                               _selectedCollectionIds.remove(collection.id);
                             }
@@ -226,7 +220,6 @@ class _AddToCollectionsModalState extends ConsumerState<AddToCollectionsModal> {
               ),
               const SizedBox(height: 16),
 
-              // Action buttons
               Row(
                 children: [
                   Expanded(

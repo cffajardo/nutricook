@@ -4,9 +4,7 @@ import 'package:nutricook/models/notification_payload.dart';
 import 'package:nutricook/core/enums/notification_type.dart';
 import 'package:nutricook/routing/app_routes.dart';
 
-/// Handles notification tap navigation and routing
 class NotificationHandler {
-  /// Navigate to the appropriate screen based on notification type
   static Future<void> handleNotificationTap({
     required BuildContext context,
     required NotificationPayload payload,
@@ -25,7 +23,9 @@ class NotificationHandler {
           _handleMealReminderNotification(context, payload);
           break;
         case NotificationType.recipeDeleted:
-          // No navigation needed for recipe deleted notification
+          break;
+        case NotificationType.calorieGoal:
+          // No action for calorie goal notification
           break;
       }
     } catch (e) {
@@ -33,7 +33,6 @@ class NotificationHandler {
     }
   }
 
-  /// Handle recipe like notification - navigate to recipe detail
   static void _handleRecipeLikeNotification(
     BuildContext context,
     NotificationPayload payload,
@@ -52,7 +51,6 @@ class NotificationHandler {
     }
   }
 
-  /// Handle follow notification - navigate to user profile
   static void _handleFollowNotification(
     BuildContext context,
     NotificationPayload payload,
@@ -64,7 +62,6 @@ class NotificationHandler {
 
     if (context.mounted) {
       debugPrint('Navigating to user profile: ${payload.senderId}');
-      // Note: profileUserPath expects userId parameter
       context.pushNamed(
         AppRoutes.profileUserName,
         pathParameters: {'userId': payload.senderId!},
@@ -72,7 +69,6 @@ class NotificationHandler {
     }
   }
 
-  /// Handle meal reminder notification - navigate to meal planner
   static void _handleMealReminderNotification(
     BuildContext context,
     NotificationPayload payload,

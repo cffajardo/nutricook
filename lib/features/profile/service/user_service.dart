@@ -9,7 +9,12 @@ class UserService {
       _db.collection(FirestoreConstants.users);
 
   Future<void> updateUserProfile(String uid, Map<String, dynamic> data) async {
-    await _users.doc(uid).update(data);
+    final Map<String, dynamic> updatedData = Map.from(data);
+    if (updatedData.containsKey('username')) {
+      updatedData['username_lowercase'] =
+          (updatedData['username'] as String).trim().toLowerCase();
+    }
+    await _users.doc(uid).update(updatedData);
   }
 
   Future<Map<String, dynamic>?> getUserData(String uid) async {
@@ -134,17 +139,18 @@ class UserService {
 
   Future<bool> isUsernameTaken(String username, {String? excludeUid}) async {
     final candidate = username.trim().toLowerCase();
-    final snapshot = await _users.get();
+    final snapshot = await _users
+        .where('username_lowercase', isEqualTo: candidate)
+        .limit(1)
+        .get();
 
-    for (final doc in snapshot.docs) {
-      if (excludeUid != null && doc.id == excludeUid) continue;
-      final existing = (doc.data()['username'] ?? '').toString().trim();
-      if (existing.toLowerCase() == candidate) {
-        return true;
-      }
+    if (snapshot.docs.isEmpty) return false;
+
+    if (excludeUid != null && snapshot.docs.first.id == excludeUid) {
+      return false;
     }
 
-    return false;
+    return true;
   }
 
   Future<void> updateProfilePictureUrl(String uid, String photoUrl) async {
@@ -154,7 +160,6 @@ class UserService {
     });
   }
 
-  // Stream for user allergens (used in recipe filtering to apply allergen filters in real-time)
   Stream<List<String>> getUserAllergensStream(String uid) {
     return _users.doc(uid).snapshots().map((doc) {
       if (doc.exists) {
@@ -167,7 +172,6 @@ class UserService {
     });
   }
 
-  // Stream for user data (used in profile screen to listen for real-time updates)
   Stream<Map<String, dynamic>?> getUserDataStream(String uid) {
     return _users.doc(uid).snapshots().map((doc) {
       if (doc.exists) {
@@ -207,8 +211,8 @@ class UserService {
           .where((user) {
             if (normalized.isEmpty) return true;
             final username = (user['username'] ?? '').toString().toLowerCase();
-            final email = (user['email'] ?? '').toString().toLowerCase();
-            return username.contains(normalized) || email.contains(normalized);
+
+            return username.contains(normalized);
           })
           .toList();
     });
@@ -354,16 +358,13 @@ class UserService {
       });
     });
 
-    // Send notification to followed user
     try {
-      // Fetch the target user's FCM token
       final targetDoc = await _users.doc(targetUserId).get();
       if (!targetDoc.exists) return;
 
       final targetUserFcmToken = targetDoc.get('fcmToken') as String?;
       if (targetUserFcmToken == null || targetUserFcmToken.isEmpty) return;
 
-      // Send the notification
       await FollowHelper.onUserFollowed(
         followerId: currentUserId,
         followerName: currentUserName ?? 'Someone',
@@ -371,8 +372,7 @@ class UserService {
         targetUserFcmToken: targetUserFcmToken,
       );
     } catch (e) {
-      // Log error but don't fail the follow operation
-      debugPrint('Error sending follow notification: $e');
+      // Not let follow notification failure block the follow action
     }
   }
 

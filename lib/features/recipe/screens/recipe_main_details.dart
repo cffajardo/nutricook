@@ -97,7 +97,6 @@ class _RecipeDetailsScreenState extends ConsumerState<RecipeDetailsScreen> {
   Future<void> _addToCollection() async {
     if (!mounted) return;
     
-    // Check if recipe is liked by current user
     final currentUserId = ref.read(currentUserIdProvider);
     final isRecipeLiked =
         currentUserId != null && widget.recipe.favoritedBy.contains(currentUserId);
@@ -208,7 +207,7 @@ class _RecipeDetailsScreenState extends ConsumerState<RecipeDetailsScreen> {
             docId: widget.recipe.id,
           );
       if (!mounted) return;
-      Navigator.pop(context); // Pop the details screen to go back
+      Navigator.pop(context);
       rootMessenger
         ..hideCurrentSnackBar()
         ..showSnackBar(
@@ -388,23 +387,20 @@ class _RecipeDetailsScreenState extends ConsumerState<RecipeDetailsScreen> {
 
   void _shareRecipe() {
     try {
-      // Build formatted recipe text
       final buffer = StringBuffer();
       
-      buffer.writeln('═══════════════════════════════════');
+      buffer.writeln('═════════════════════════════');
       buffer.writeln(widget.recipe.name.toUpperCase());
-      buffer.writeln('═══════════════════════════════════\n');
+      buffer.writeln('═════════════════════════════\n');
       
-      // Basic info
-      buffer.writeln('📋 RECIPE DETAILS');
+      buffer.writeln('📋 Recipe Details');
       buffer.writeln('Servings: ${widget.recipe.servings}');
       buffer.writeln('Prep Time: ${widget.recipe.prepTime} min');
       buffer.writeln('Cook Time: ${widget.recipe.cookTime} min\n');
       
-      // Nutrition information
       if (widget.recipe.nutritionTotal != null) {
         final nutrition = widget.recipe.nutritionTotal!;
-        buffer.writeln('🥗 NUTRITION (per serving)');
+        buffer.writeln('🥗 Nutrition (per serving)');
         buffer.writeln('Calories: ${nutrition.calories.toStringAsFixed(0)} kcal');
         buffer.writeln('Protein: ${nutrition.protein.toStringAsFixed(1)}g');
         buffer.writeln('Carbs: ${nutrition.carbohydrates.toStringAsFixed(1)}g');
@@ -414,9 +410,8 @@ class _RecipeDetailsScreenState extends ConsumerState<RecipeDetailsScreen> {
         buffer.writeln('Sodium: ${(nutrition.sodium / 1000).toStringAsFixed(1)}g\n');
       }
       
-      // Ingredients
       if (widget.recipe.ingredients.isNotEmpty) {
-        buffer.writeln('🛒 INGREDIENTS');
+        buffer.writeln('🛒 Ingredients');
         for (final ingredient in widget.recipe.ingredients) {
           buffer.writeln('• ${ingredient.name}');
           buffer.writeln('  ${ingredient.quantity} ${ingredient.unitName}');
@@ -427,20 +422,25 @@ class _RecipeDetailsScreenState extends ConsumerState<RecipeDetailsScreen> {
         buffer.writeln('');
       }
       
-      // Instructions / Steps
       if (widget.recipe.steps.isNotEmpty) {
-        buffer.writeln('👨‍🍳 INSTRUCTIONS');
+        buffer.writeln('👨‍🍳 Instructions');
         for (int i = 0; i < widget.recipe.steps.length; i++) {
           buffer.writeln('${i + 1}. ${widget.recipe.steps[i].instruction}');
         }
         buffer.writeln('');
       }
       
-      buffer.writeln('═══════════════════════════════════');
+      buffer.writeln('══════════════════════');
       buffer.writeln('Shared from NutriCook');
-      buffer.writeln('═══════════════════════════════════');
+      buffer.writeln('══════════════════════');
       
-      Share.share(buffer.toString(), subject: widget.recipe.name);
+      SharePlus.instance.share(
+        ShareParams(
+          text: buffer.toString(),
+          subject: widget.recipe.name,
+        )
+      );
+
     } catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to share recipe: $error')),

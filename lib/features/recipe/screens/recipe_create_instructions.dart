@@ -27,7 +27,6 @@ class CreateRecipeInstructionsPage extends ConsumerWidget {
     final recipeState = ref.watch(recipeCreationProvider);
     final maxTimeSeconds = (recipeState.prepTimeMinutes + recipeState.cookTimeMinutes) * 60;
     
-    // Calculate sum of all other steps' times (exclude the step being edited)
     int otherStepsSum = 0;
     for (int i = 0; i < recipeState.steps.length; i++) {
       if (i != index) {

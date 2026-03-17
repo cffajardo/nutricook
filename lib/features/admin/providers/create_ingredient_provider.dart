@@ -5,7 +5,6 @@ import 'package:nutricook/models/nutrition_info/nutrition_info.dart';
 import 'package:nutricook/services/generative_ai_service.dart';
 import 'package:nutricook/services/ingredient_service.dart';
 
-// Service providers
 final generativeAiServiceProvider = Provider<GenerativeAiService>((ref) {
   return GenerativeAiService();
 });
@@ -14,14 +13,13 @@ final ingredientServiceProvider = Provider<IngredientService>((ref) {
   return IngredientService();
 });
 
-// State class for ingredient creation form
 class CreateIngredientState {
   const CreateIngredientState({
     this.name = '',
     this.description = '',
     this.category = 'Proteins',
     this.isLiquid = false,
-    this.nutritionMethod = 'manual', // 'manual' or 'ai'
+    this.nutritionMethod = 'manual', // Either AI or Manual
     this.calories = 0,
     this.carbohydrates = 0.0,
     this.protein = 0.0,
@@ -54,7 +52,7 @@ class CreateIngredientState {
   final double sodium;
   final double? density; // for liquids
   final double? avgWeight; // for solids
-  final String imageUrl; // ingredient image from R2
+  final String imageUrl; 
   final bool isLoadingNutrition;
   final bool isLoadingPhysicalProperty;
   final String error;
@@ -112,7 +110,6 @@ class CreateIngredientState {
   }
 }
 
-// Notifier for managing ingredient creation (modern Riverpod pattern)
 class CreateIngredientNotifier extends Notifier<CreateIngredientState> {
   @override
   CreateIngredientState build() {
@@ -226,7 +223,6 @@ class CreateIngredientNotifier extends Notifier<CreateIngredientState> {
       final aiService = ref.read(generativeAiServiceProvider);
 
       if (state.isLiquid) {
-        // Generate density for liquids
         final density = await aiService.generateDensityFromAI(
           ingredientName.trim(),
         );
@@ -236,7 +232,6 @@ class CreateIngredientNotifier extends Notifier<CreateIngredientState> {
           error: '',
         );
       } else {
-        // Generate average weight for solids
         final avgWeight = await aiService.generateAveragePieceWeightFromAI(
           ingredientName.trim(),
         );
@@ -255,13 +250,11 @@ class CreateIngredientNotifier extends Notifier<CreateIngredientState> {
   }
 
   Future<Ingredient?> createIngredient() async {
-    // Validation
     if (state.name.trim().isEmpty) {
       state = state.copyWith(error: 'Please enter ingredient name');
       return null;
     }
 
-    // Check if ingredient with same name already exists
     final existingIngredient = await _checkIngredientExists(state.name.trim());
     if (existingIngredient != null) {
       state = state.copyWith(
@@ -283,9 +276,6 @@ class CreateIngredientNotifier extends Notifier<CreateIngredientState> {
       return null;
     }
 
-    // density and avgWeight are now optional to allow creation even if AI generation fails
-    // but they remain preferred for unit conversion accuracy.
-
     try {
       state = state.copyWith(error: '');
 
@@ -299,17 +289,6 @@ class CreateIngredientNotifier extends Notifier<CreateIngredientState> {
         sodium: state.sodium,
       );
 
-      // DEBUG: Verify NutritionInfo was created correctly
-      debugPrint('📋 NUTRITION INFO DEBUG (Provider):');
-      debugPrint('  Calories: ${nutritionInfo.calories}');
-      debugPrint('  Carbs: ${nutritionInfo.carbohydrates}');
-      debugPrint('  Protein: ${nutritionInfo.protein}');
-      debugPrint('  Fat: ${nutritionInfo.fat}');
-      debugPrint('  Fiber: ${nutritionInfo.fiber}');
-      debugPrint('  Sugar: ${nutritionInfo.sugar}');
-      debugPrint('  Sodium: ${nutritionInfo.sodium}');
-      debugPrint('  ToJson: ${nutritionInfo.toJson()}');
-
       final ingredient = Ingredient(
         id: '',
         name: state.name.trim(),
@@ -322,11 +301,6 @@ class CreateIngredientNotifier extends Notifier<CreateIngredientState> {
         avgWeightG: !state.isLiquid ? state.avgWeight : null,
         imageURL: state.imageUrl.isNotEmpty ? state.imageUrl : null,
       );
-
-      debugPrint('📦 INGREDIENT CREATED (Provider):');
-      debugPrint('  Name: ${ingredient.name}');
-      debugPrint('  Category: ${ingredient.category}');
-      debugPrint('  NutritionInfo field: ${ingredient.nutritionPer100g}');
 
       final ingredientService = ref.read(ingredientServiceProvider);
       final ingredientId = await ingredientService.createIngredient(
@@ -351,7 +325,6 @@ class CreateIngredientNotifier extends Notifier<CreateIngredientState> {
       final ingredientService = ref.read(ingredientServiceProvider);
       final allIngredients = await ingredientService.getAllIngredients();
       
-      // Case-insensitive search for existing ingredient with same name
       for (final ingredient in allIngredients) {
         if (ingredient.name.toLowerCase() == ingredientName.toLowerCase()) {
           return ingredient;
@@ -360,7 +333,6 @@ class CreateIngredientNotifier extends Notifier<CreateIngredientState> {
       
       return null;
     } catch (e) {
-      // If check fails, allow creation to proceed
       return null;
     }
   }
@@ -370,7 +342,6 @@ class CreateIngredientNotifier extends Notifier<CreateIngredientState> {
   }
 }
 
-// Provider using modern Riverpod Notifier pattern
 final createIngredientProvider =
     NotifierProvider<CreateIngredientNotifier, CreateIngredientState>(
   CreateIngredientNotifier.new,

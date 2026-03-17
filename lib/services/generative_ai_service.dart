@@ -231,7 +231,6 @@ class IngredientNutritionData {
     }
   }
 
-  /// Simple JSON parser to avoid adding external dependencies
   static Map<String, dynamic> _parseJson(String jsonString) {
     final trimmed = jsonString.trim();
     if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) {
@@ -241,7 +240,6 @@ class IngredientNutritionData {
     final content = trimmed.substring(1, trimmed.length - 1);
     final result = <String, dynamic>{};
     
-    // Split by commas (simple approach - works for flat objects)
     final pairs = content.split(',');
     for (final pair in pairs) {
       final parts = pair.split(':');

@@ -41,7 +41,6 @@ class RecipeService {
         .snapshots()
         .map((doc) {
           if (!doc.exists) return null;
-          // Also check if the recipe is archived when fetching by ID
           if (doc.data()?['archived'] == true) return null;
           return Recipe.fromJson(doc.data()!);
         });
@@ -50,7 +49,6 @@ class RecipeService {
   Stream<List<Recipe>> getRecipesByIds(List<String> recipeIds) {
     if (recipeIds.isEmpty) return Stream.value([]);
 
-    // Firestore whereIn limit is 30, but we'll stick to a reasonable chunk
     return _db
         .collection(FirestoreConstants.recipes)
         .where(FieldPath.documentId, whereIn: recipeIds.take(30).toList())
@@ -199,7 +197,6 @@ class RecipeService {
       );
     }).toList();
 
-    // Recalculate nutrition
     final totalNutrition = NutritionCalculator.calculateRecipeNutrition(
       recipeIngredients: enrichedIngredients,
       ingredientsMap: ingredientsMap,
@@ -231,7 +228,6 @@ class RecipeService {
     await _db.runTransaction((tx) async {
       final favDoc = await tx.get(favoriteRef);
       if (favDoc.exists) {
-        // Already liked, do nothing
         return;
       }
       tx.set(favoriteRef, {
@@ -242,7 +238,6 @@ class RecipeService {
       });
     });
 
-    // Send notification to recipe owner (unchanged)
     try {
       final recipeDoc = await recipeRef.get();
       if (!recipeDoc.exists) return;
@@ -274,7 +269,6 @@ class RecipeService {
     await _db.runTransaction((tx) async {
       final favDoc = await tx.get(favoriteRef);
       if (!favDoc.exists) {
-        // Not liked, do nothing
         return;
       }
       tx.delete(favoriteRef);

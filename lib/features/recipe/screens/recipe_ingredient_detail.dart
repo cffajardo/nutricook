@@ -16,22 +16,20 @@ class RecipeViewIngredients extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. HEADER (Recipe Name or Part)
           const Text(
             'Main Ingredients', 
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 16),
 
-          // 2. MAIN INGREDIENT BOX (Based on image_9636e0.png)
           Container(
             width: double.infinity,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.black, width: 1.5), // Brutalist 1.5px border
+              border: Border.all(color: Colors.black, width: 1.5), 
             ),
             child: ListView.separated(
-              shrinkWrap: true, // Important for use inside ScrollView
+              shrinkWrap: true, 
               physics: const NeverScrollableScrollPhysics(),
               padding: const EdgeInsets.symmetric(vertical: 8),
               itemCount: ingredients.length,
@@ -67,7 +65,6 @@ class RecipeViewIngredients extends StatelessWidget {
             ),
           ),
           
-          // Added space at bottom for the FAB and Bottom Navigation
           const SizedBox(height: 100),
         ],
       ),

@@ -21,7 +21,6 @@ import 'package:nutricook/features/profile/screens/profile_page.dart';
 import 'package:nutricook/features/settings/screens/settings_page.dart';
 import 'package:nutricook/features/home/screens/home_user_search_results_screen.dart';
 import 'package:nutricook/features/notifications/screens/notifications_page.dart';
-import 'package:nutricook/features/notifications/screens/notification_test_page.dart';
 import 'package:nutricook/features/library/screens/library_main.dart';
 import 'package:nutricook/features/library/screens/library_subcategory.dart';
 import 'package:nutricook/features/library/screens/library_main_item.dart';
@@ -50,7 +49,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isAdminRoute = path.startsWith(AppRoutes.adminPath);
       final isBannedRoute = path == AppRoutes.bannedPath;
       
-      // Check if this is a deep link route (starts with /recipe/)
       final isDeepLinkRoute = path.startsWith('/recipe/');
 
       if (isSplashRoute) return null;
@@ -60,14 +58,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         error: (_, _) => AppRoutes.loginPath,
         data: (user) {
           if (user == null) {
-            // Allow deep link routes for unauthenticated users
             if (isDeepLinkRoute) return null;
             return isAuthRoute ? null : AppRoutes.loginPath;
           }
 
-          // coreUserDataProvider only includes routing-critical fields
           final userData = coreUserDataAsync.asData?.value;
-          // If userData is null or empty, treat as not banned/not admin
           final isBanned = userData != null && userData['isBanned'] == true;
           if (isBanned) {
             return isBannedRoute ? null : AppRoutes.bannedPath;
@@ -192,14 +187,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
 
-      // Development only: Notification testing
-      if (const bool.fromEnvironment('dart.vm.product') == false)
-        GoRoute(
-          path: AppRoutes.notificationTestPath,
-          name: AppRoutes.notificationTestName,
-          builder: (context, state) => const NotificationTestPage(),
-        ),
-
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           final path = state.uri.path;
@@ -211,7 +198,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               path ==
                   '${AppRoutes.profilePath}/${AppRoutes.profileConnectionsPath}';
 
-          // Sync the active tab index with our provider
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (ref.read(activeTabProvider) != navigationShell.currentIndex) {
               ref.read(activeTabProvider.notifier).state =

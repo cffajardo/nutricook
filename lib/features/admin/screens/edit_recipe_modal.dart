@@ -146,10 +146,9 @@ class _EditRecipeModalState extends State<EditRecipeModal>
       debugPrint('Starting recipe update for ${widget.recipeId}');
       debugPrint('Ingredients: ${_ingredients.length}, Steps: ${_steps.length}');
       
-      // Enrich ingredients with nutrition data from the database
       final enrichedIngredients = await _enrichIngredientsWithNutrition(_ingredients);
       
-      // Create a temporary recipe object to calculate nutrition
+      // Temporary Recipe Object for Nutrition Calculation
       final tempRecipe = Recipe(
         id: widget.recipeId,
         name: _nameController.text.trim(),
@@ -164,18 +163,16 @@ class _EditRecipeModalState extends State<EditRecipeModal>
         updatedAt: DateTime.now(),
       );
       
-      // Recalculate nutrition based on enriched ingredients
+      // Recalculate Nutrition based on Ingredients
       final nutritionTotal = calculateRecipeNutritionTotals(tempRecipe);
       final nutritionPerServing = calculateRecipeNutritionPerServing(tempRecipe);
       
       debugPrint('Recalculated nutrition - Total calories: ${nutritionTotal.calories}, Per serving: ${nutritionPerServing.calories}');
       
-      // Convert ingredients to JSON with proper serialization
       final ingredientsList = enrichedIngredients.map((i) {
         return _deepConvertToJson(i.toJson());
       }).toList();
-      
-      // Convert steps to JSON with proper serialization
+
       final stepsList = _steps.map((s) {
         return _deepConvertToJson(s.toJson());
       }).toList();
@@ -223,12 +220,10 @@ class _EditRecipeModalState extends State<EditRecipeModal>
     );
   }
 
-  /// Fetches ingredient and unit data and enriches recipe ingredients with nutrition info
   Future<List<RecipeIngredient>> _enrichIngredientsWithNutrition(
     List<RecipeIngredient> ingredients,
   ) async {
     try {
-      // Fetch all ingredient data from database
       final ingredientDocs = await FirebaseFirestore.instance
           .collection(FirestoreConstants.ingredients)
           .get();
@@ -239,7 +234,6 @@ class _EditRecipeModalState extends State<EditRecipeModal>
         ingredientsMap[ingredient.id] = ingredient;
       }
       
-      // Fetch all unit data from database
       final unitDocs = await FirebaseFirestore.instance
           .collection(FirestoreConstants.units)
           .get();
@@ -250,7 +244,6 @@ class _EditRecipeModalState extends State<EditRecipeModal>
         unitsMap[unit.id] = unit;
       }
       
-      // Enrich each ingredient with nutrition data
       return ingredients.map((recipeIng) {
         final ingredient = ingredientsMap[recipeIng.ingredientID];
         final unit = unitsMap[recipeIng.unitID];
@@ -260,7 +253,6 @@ class _EditRecipeModalState extends State<EditRecipeModal>
           return recipeIng;
         }
         
-        // Calculate weight in grams
         double calculatedWeight = 0;
         try {
           calculatedWeight = NutritionCalculator.convertToGrams(
@@ -273,7 +265,7 @@ class _EditRecipeModalState extends State<EditRecipeModal>
           calculatedWeight = recipeIng.quantity;
         }
         
-        // Return enriched ingredient
+
         return recipeIng.copyWith(
           name: ingredient.name,
           unitName: unit.name,
@@ -289,7 +281,8 @@ class _EditRecipeModalState extends State<EditRecipeModal>
     }
   }
 
-  /// Recursively converts all values to JSON-serializable types
+  // Recursively convert complex objects to JSON Compatible Maps
+  // freezed objects and nested object (For Firestore compatibility)
   dynamic _deepConvertToJson(dynamic value) {
     if (value == null) return null;
     
@@ -301,13 +294,11 @@ class _EditRecipeModalState extends State<EditRecipeModal>
       return value.map((item) => _deepConvertToJson(item)).toList();
     }
     
-    // Handle objects with toJson() method
     if (value is! String && 
         value is! int && 
         value is! double && 
         value is! bool) {
       if (value.runtimeType.toString().contains('_')) {
-        // This is likely a freezed object, try toJson()
         try {
           final jsonValue = (value as dynamic).toJson();
           return _deepConvertToJson(jsonValue);
@@ -402,7 +393,6 @@ class _EditRecipeModalState extends State<EditRecipeModal>
       ),
       child: Column(
         children: [
-          // Drag handle
           Center(
             child: Container(
               margin: const EdgeInsets.symmetric(vertical: 12),
@@ -414,7 +404,6 @@ class _EditRecipeModalState extends State<EditRecipeModal>
               ),
             ),
           ),
-          // Header
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
             child: Row(
@@ -462,7 +451,6 @@ class _EditRecipeModalState extends State<EditRecipeModal>
               ],
             ),
           ),
-          // Page content
           Expanded(
             child: PageView(
               controller: _pageController,
@@ -476,7 +464,6 @@ class _EditRecipeModalState extends State<EditRecipeModal>
               ],
             ),
           ),
-          // Navigation buttons
           Padding(
             padding: const EdgeInsets.all(24),
             child: Row(

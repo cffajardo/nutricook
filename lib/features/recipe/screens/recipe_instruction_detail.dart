@@ -191,18 +191,15 @@ class _RecipeViewInstructionsState extends ConsumerState<RecipeViewInstructions>
       return;
     }
 
-    // Timed step complete -> Trigger Alert
     setState(() {
       _isAlerting = true;
       _alertRemainingSeconds = _alertDurationSeconds;
     });
 
-    // Start Vibration
-    if (await Vibration.hasVibrator() ?? false) {
+    if (await Vibration.hasVibrator()) {
       Vibration.vibrate(duration: _alertDurationSeconds * 1000, amplitude: 255);
     }
 
-    // Start Sound
     try {
       await _audioPlayer.play(AssetSource('audio/alert.mp3'));
     } catch (e) {

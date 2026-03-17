@@ -116,7 +116,6 @@ class CreateRecipeIngredientsPage extends ConsumerWidget {
                     ],
                   ),
                   const Spacer(),
-                  // Logic to show "Amount Unit • Process" or just "Amount Unit"
                   Text(
                     '${_formatQuantity(item.quantity)} ${item.unitName}${process.isNotEmpty ? " • $process" : ""}', 
                     style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.rosePink),

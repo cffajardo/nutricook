@@ -150,28 +150,5 @@ class NutritionCalculator {
     );
   }
 
-  /// Scale recipe nutrition for different serving sizes
-  static NutritionInfo scaleNutritionToServingSizes({
-    required NutritionInfo nutrition,
-    required double servingMultiplier,
-  }) {
-    return NutritionInfo(
-      calories: (nutrition.calories * servingMultiplier).round(),
-      protein: nutrition.protein * servingMultiplier,
-      carbohydrates: nutrition.carbohydrates * servingMultiplier,
-      fat: nutrition.fat * servingMultiplier,
-      fiber: nutrition.fiber * servingMultiplier,
-      sugar: nutrition.sugar * servingMultiplier,
-      sodium: nutrition.sodium * servingMultiplier,
-    );
-  }
 
-  // Calculate percentage of daily recommended value
-  static double calculatePercentDV({
-    required double value,
-    required double recommendedDailyValue,
-  }) {
-    if (recommendedDailyValue <= 0) return 0;
-    return (value / recommendedDailyValue) * 100;
-  }
 }

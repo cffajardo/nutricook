@@ -68,7 +68,6 @@ class _PlannerRecipeSelectModalState
         child: Column(
           children: [
             const SizedBox(height: 12),
-            // Drag Handle
             Container(
               width: 40,
               height: 5,

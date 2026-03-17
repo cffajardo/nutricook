@@ -21,7 +21,7 @@ NutritionInfo calculatePlannerNutrition({
       if (n == null) return total;
       final scale = item.servingMultiplier;
       return total.copyWith( //
-        calories: total.calories + (n.calories * scale).round(), // Round calories to nearest integer
+        calories: total.calories + (n.calories * scale).round(),
         carbohydrates: total.carbohydrates + n.carbohydrates * scale,
         protein: total.protein + n.protein * scale,
         fat: total.fat + n.fat * scale,

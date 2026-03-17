@@ -118,13 +118,6 @@ class SettingsPage extends ConsumerWidget {
                     current: preferences.dailyCalorieGoal,
                     onChanged: notifier.updateDailyCalorieGoal,
                   ),
-                  const _Divider(),
-                  _SwitchRow(
-                    icon: Icons.restaurant_menu_rounded,
-                    label: 'Nutrition per serving',
-                    value: preferences.showNutritionPerServing,
-                    onChanged: notifier.updateShowNutritionPerServing,
-                  ),
                 ],
               ),
               const SizedBox(height: 24),

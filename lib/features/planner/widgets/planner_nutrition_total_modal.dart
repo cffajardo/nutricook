@@ -45,7 +45,6 @@ class _PlannerNutritionTotalsModalState
       widget.selectedDate.month,
     );
 
-    // For week view, calculate number of days in the week
     final weekStart = widget.selectedDate.subtract(
       Duration(days: widget.selectedDate.weekday - 1),
     );

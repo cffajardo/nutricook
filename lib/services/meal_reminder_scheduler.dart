@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:nutricook/core/enums/notification_type.dart';
 
-/// Service for scheduling local notifications for meal reminders
 class MealReminderScheduler {
   static final MealReminderScheduler _instance =
       MealReminderScheduler._internal();
@@ -16,8 +15,6 @@ class MealReminderScheduler {
 
   MealReminderScheduler._internal();
 
-  /// Schedule a meal reminder notification at the specified time
-  /// Returns the notification ID used for scheduling
   Future<int> scheduleMealReminder({
     required String plannerId,
     required DateTime mealTime,
@@ -54,23 +51,18 @@ class MealReminderScheduler {
         iOS: iOSDetails,
       );
 
-      // Create payload for notification tap
       final payload = _createPayload(
         type: NotificationType.mealReminder,
         plannerId: plannerId,
         userId: userId,
       );
 
-      // For demo purposes, use simple scheduling with millisecondsSinceEpoch
-      // In production, use timezone package for proper timezone handling
       final delayDuration = mealTime.difference(DateTime.now());
       
       if (delayDuration.isNegative) {
-        debugPrint('Meal time is in the past, skipping scheduling');
         return notificationId;
       }
 
-      // Schedule the notification
       await _flutterLocalNotificationsPlugin.zonedSchedule(
         notificationId,
         'Meal Reminder',
@@ -91,8 +83,6 @@ class MealReminderScheduler {
     }
   }
 
-  /// Schedule a meal window ending reminder (30 mins before meal window ends)
-  /// This provides a second reminder when the meal time window is about to close
   Future<int?> scheduleMealWindowEndingReminder({
     required String mealType,
     required DateTime mealWindowEndTime,
@@ -102,7 +92,6 @@ class MealReminderScheduler {
       debugPrint(
           'Scheduling meal window ending reminder for $mealType at $mealWindowEndTime');
 
-      // Schedule reminder 30 minutes before the window ends
       final reminderTime = mealWindowEndTime.subtract(const Duration(minutes: 30));
 
       final delayDuration = reminderTime.difference(DateTime.now());
@@ -165,14 +154,77 @@ class MealReminderScheduler {
     }
   }
 
-  /// Get a TZDateTime using the simple approach
-  /// This is a workaround for demo purposes without timezone package
+  Future<void> updateCalorieGoalReminder({
+    required String userId,
+    required DateTime date,
+    required int currentCalories,
+    required int goalCalories,
+  }) async {
+    try {
+      final dateStr = '${date.year}-${date.month}-${date.day}';
+      final notificationId = ('calorie_goal_${userId}_$dateStr').hashCode.abs();
+
+      if (currentCalories >= goalCalories) {
+        await _flutterLocalNotificationsPlugin.cancel(notificationId);
+        debugPrint('Calorie goal reached ($currentCalories/$goalCalories). Cancelled 11 PM reminder for $dateStr');
+        return;
+      }
+
+      final reminderTime = DateTime(date.year, date.month, date.day, 23, 0);
+      
+      if (reminderTime.isBefore(DateTime.now())) {
+        debugPrint('Calorie goal reminder time for $dateStr has already passed.');
+        return;
+      }
+
+      debugPrint('Scheduling calorie goal reminder for $dateStr at 11:00 PM. Current: $currentCalories, Goal: $goalCalories');
+
+      const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+        'calorie_goal_notification_channel',
+        'Daily Goals',
+        channelDescription: 'Channel for daily calorie goal reminders',
+        importance: Importance.high,
+        priority: Priority.high,
+      );
+
+      const DarwinNotificationDetails iOSDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+
+      final NotificationDetails platformChannelSpecifics = NotificationDetails(
+        android: androidDetails,
+        iOS: iOSDetails,
+      );
+
+      final payload = _createPayload(
+        type: NotificationType.calorieGoal,
+        plannerId: dateStr,
+        userId: userId,
+      );
+
+      await _flutterLocalNotificationsPlugin.zonedSchedule(
+        notificationId,
+        'Daily Calorie Goal',
+        "You haven't hit your calorie goal yet! ($currentCalories/$goalCalories kcal)",
+        _getZonedDateTime(reminderTime),
+        platformChannelSpecifics,
+        androidScheduleMode: AndroidScheduleMode.inexact,
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+        payload: payload,
+      );
+
+      debugPrint('Calorie goal reminder scheduled with ID: $notificationId');
+    } catch (e) {
+      debugPrint('Error updating calorie goal reminder: $e');
+    }
+  }
+
   dynamic _getZonedDateTime(DateTime dateTime) {
-    // Use the DateTime directly - flutter_local_notifications handles timezone conversion
     return dateTime;
   }
 
-  /// Cancel a scheduled meal reminder
   Future<void> cancelMealReminder(String plannerId) async {
     try {
       final notificationId = plannerId.hashCode.abs();
@@ -183,7 +235,7 @@ class MealReminderScheduler {
     }
   }
 
-  /// Cancel all meal reminders
+
   Future<void> cancelAllMealReminders() async {
     try {
       await _flutterLocalNotificationsPlugin.cancelAll();
@@ -193,31 +245,25 @@ class MealReminderScheduler {
     }
   }
 
-  /// Get pending notifications (useful for checking scheduled reminders)
   Future<List<PendingNotificationRequest>> getPendingReminders() async {
     try {
       return await _flutterLocalNotificationsPlugin
           .pendingNotificationRequests();
     } catch (e) {
-      debugPrint('Error getting pending reminders: $e');
       return [];
     }
   }
 
-  /// Check if a specific meal reminder is scheduled
   Future<bool> isMealReminderScheduled(String plannerId) async {
     try {
       final notificationId = plannerId.hashCode.abs();
       final pending = await getPendingReminders();
       return pending.any((notification) => notification.id == notificationId);
     } catch (e) {
-      debugPrint('Error checking meal reminder: $e');
       return false;
     }
   }
 
-  /// Create notification channel for Android 8+
-  /// Call this during app initialization
   Future<void> createNotificationChannel() async {
     try {
       const AndroidNotificationChannel mealReminderChannel =
@@ -236,23 +282,36 @@ class MealReminderScheduler {
               AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(mealReminderChannel);
 
+      const AndroidNotificationChannel calorieGoalChannel =
+          AndroidNotificationChannel(
+        'calorie_goal_notification_channel',
+        'Daily Goals',
+        description: 'Channel for daily calorie goal reminders',
+        importance: Importance.high,
+        enableVibration: true,
+        enableLights: true,
+        playSound: true,
+      );
+
+      await _flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(calorieGoalChannel);
+
       debugPrint('Meal reminder notification channel created');
     } catch (e) {
       debugPrint('Error creating notification channel: $e');
     }
   }
 
-  /// Create notification payload for deep linking on tap
   String _createPayload({
     required NotificationType type,
     required String plannerId,
     required String userId,
   }) {
-    // Format: type:plannerId:userId
     return '${type.value}:$plannerId:$userId';
   }
 
-  /// Parse notification payload
   static Map<String, String> parsePayload(String payload) {
     try {
       final parts = payload.split(':');
@@ -264,7 +323,6 @@ class MealReminderScheduler {
         'userId': parts[2],
       };
     } catch (e) {
-      debugPrint('Error parsing notification payload: $e');
       return {};
     }
   }

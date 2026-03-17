@@ -11,8 +11,6 @@ class RecipeSubCategoryScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Logic: ref.watch(subCategoryProvider(category))
-
     return Container(
       color: const Color(0xFFFFF9FA),
       child: SafeArea(
@@ -93,7 +91,6 @@ class RecipeSubCategoryScreen extends ConsumerWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
-          // Unified 1.5 width border
           border: Border.all(color: AppColors.rosePink.withValues(alpha: 0.14), width: 1.5),
         ),
         child: Column(

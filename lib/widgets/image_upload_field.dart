@@ -24,8 +24,6 @@ class ImageUploadField extends StatefulWidget {
   final double? maxHeight;
   final Duration errorDuration;
   
-  /// If true, uploads immediately on image selection (legacy behavior)
-  /// If false, only shows local thumbnail and requires calling uploadImage() manually
   final bool autoUpload;
 
   const ImageUploadField({
@@ -68,14 +66,11 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
     _uploadedImageUrl = widget.initialImageUrl;
   }
 
-  /// Public method to upload the selected image
-  /// Call this when the save button is clicked
   Future<String?> uploadImage() async {
     if (_selectedImageFile == null && _uploadedImageUrl == null) {
       return null;
     }
 
-    // If already uploaded or no local file, return existing URL
     if (_selectedImageFile == null) {
       return _uploadedImageUrl;
     }
@@ -93,7 +88,7 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
       setState(() {
         _uploadedImageUrl = imageUrl;
         _isUploading = false;
-        _selectedImageFile = null; // Clear after upload
+        _selectedImageFile = null;
       });
 
       widget.onSuccess?.call(imageUrl);
@@ -154,7 +149,6 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
           _selectedImagePath = pickedFile.path;
           _selectedImageFile = pickedFile;
         });
-        // Only auto-upload if autoUpload is true
         if (widget.autoUpload) {
           await _uploadImageFile(pickedFile);
         }
@@ -180,7 +174,6 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
           _selectedImagePath = pickedFile.path;
           _selectedImageFile = pickedFile;
         });
-        // Only auto-upload if autoUpload is true
         if (widget.autoUpload) {
           await _uploadImageFile(pickedFile);
         }
@@ -191,7 +184,6 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
     }
   }
 
-  /// Internal method to upload an XFile (used when autoUpload is true)
   Future<void> _uploadImageFile(XFile imageFile) async {
     setState(() => _isUploading = true);
 
@@ -245,7 +237,6 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Label
         if (widget.showLabel)
           Padding(
             padding: EdgeInsets.only(bottom: 8),
@@ -257,7 +248,6 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
             ),
           ),
 
-        // Upload field
         GestureDetector(
           onTap: _isUploading ? null : _showImageSourceSheet,
           child: Container(
@@ -278,7 +268,6 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // Show uploaded network image
                 if (hasUploadedImage && !_isUploading)
                   ClipRRect(
                     borderRadius: BorderRadius.circular(widget.borderRadius),
@@ -303,7 +292,6 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
                       ),
                     ),
                   )
-                // Show local file image (preview before upload)
                 else if (hasLocalImage && !hasUploadedImage && !_isUploading)
                   ClipRRect(
                     borderRadius: BorderRadius.circular(widget.borderRadius),
@@ -314,7 +302,6 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
                       height: widget.height,
                     ),
                   )
-                // Show upload icon while uploading
                 else if (_isUploading)
                   Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -324,7 +311,6 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
                       Text('Uploading...'),
                     ],
                   )
-                // Show upload prompt when nothing selected
                 else
                   Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -353,7 +339,6 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
                     ],
                   ),
 
-                // Loading indicator
                 if (_isUploading)
                   Container(
                     color: Colors.black.withValues(alpha: 0.5),
@@ -380,7 +365,6 @@ class _ImageUploadFieldState extends State<ImageUploadField> {
           ),
         ),
 
-        // Error message
         if (_errorMessage != null)
           Padding(
             padding: EdgeInsets.only(top: 8),

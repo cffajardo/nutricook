@@ -169,12 +169,10 @@ class RecipeReportService {
       throw StateError('Recipe not found.');
     }
 
-    // Delete the recipe and all related reports
+ 
     await _db.runTransaction((transaction) async {
-      // Delete the recipe
       transaction.delete(recipeRef);
 
-      // Delete all reports for this recipe
       final reportsQuery = _db
           .collection(FirestoreConstants.recipeReports)
           .where('recipeId', isEqualTo: recipeId);

@@ -105,6 +105,16 @@ class _HomeMealOverviewCardState extends State<HomeMealOverviewCard> {
   }
 
   Widget _buildCalorieBadge() {
+    // Calculate meal time total calories
+    int mealCalories = 0;
+    for (final item in widget.items) {
+      final n = item.nutritionPerServing;
+      if (n != null) {
+        final scale = (item.servingMultiplier is num) ? (item.servingMultiplier as num).toDouble() : 1.0;
+        final double calories = (n.calories is num) ? (n.calories as num).toDouble() : 0.0;
+        mealCalories += (calories * scale).round();
+      }
+    }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
@@ -120,7 +130,7 @@ class _HomeMealOverviewCardState extends State<HomeMealOverviewCard> {
           : Column(
               children: [
                 Text(
-                  widget.totals?.calories.toString() ?? '0',
+                  mealCalories.toString(),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 20,

@@ -5,27 +5,22 @@ import 'package:nutricook/models/ingredient/ingredient.dart';
 import 'package:nutricook/services/ingredient_service.dart';
 
 
-// Service Provider
 final ingredientServiceProvider = Provider<IngredientService>((ref) {
   return IngredientService();
 });
 
 
-// All Ingredients (Real-time)
 final ingredientsProvider = StreamProvider<List<Ingredient>>((ref) {
   final service = ref.watch(ingredientServiceProvider);
   return service.getAllIngredientsStream();
 });
 
-// Single ingredient by id
 final ingredientByIdProvider =
     FutureProvider.family<Ingredient?, String>((ref, id) async {
   final service = ref.watch(ingredientServiceProvider);
   return service.getIngredientById(id);
 });
 
-// Real Time Stream of User's Custom Ingredients 
-// to-do: modify to account for custom densities/avgWeight and other user‑specific overrides in the future
 final userCustomIngredientsProvider =
     StreamProvider<List<Ingredient>>((ref) {
   final userId = ref.watch(currentUserIdProvider);
@@ -58,7 +53,6 @@ class IngredientFilterInput {
   int get hashCode => Object.hash(query, category);
 }
 
-// Filtered Ingredients by Query or Category
 final filteredIngredientsProvider = Provider.family<
     AsyncValue<List<Ingredient>>, IngredientFilterInput>((ref, input) {
   final ingredientsAsync = ref.watch(ingredientsProvider);
@@ -81,7 +75,6 @@ final filteredIngredientsProvider = Provider.family<
   });
 });
 
-// Ingredients grouped by category
 final ingredientsByCategoryProvider =
     Provider<AsyncValue<Map<String, List<Ingredient>>>>((ref) {
   final ingredientsAsync = ref.watch(ingredientsProvider);
@@ -97,8 +90,6 @@ final ingredientsByCategoryProvider =
   });
 });
 
-// All Ingredient Categories
-// "Custom" for User owned
 final ingredientCategoriesProvider =
     Provider<AsyncValue<List<String>>>((ref) {
   final ingredientsAsync = ref.watch(ingredientsProvider);
@@ -106,7 +97,7 @@ final ingredientCategoriesProvider =
   return ingredientsAsync.whenData((ingredients) {
     final set = <String>{};
     for (final ing in ingredients) {
-      final category = ing.category ?? 'Uncategorized';
+      final category = ing.category;
       set.add(category);
     }
 
@@ -120,7 +111,6 @@ final ingredientCategoriesProvider =
 });
 
 // Map for faster lookup (id, ingredient)
-// Performance issues still needs to be fixed for recipe editing 
 final ingredientsMapProvider =
     Provider<AsyncValue<Map<String, Ingredient>>>((ref) {
   final ingredientsAsync = ref.watch(ingredientsProvider);

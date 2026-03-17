@@ -5,6 +5,9 @@ import 'package:nutricook/core/meal_time_preferences.dart';
 import 'package:nutricook/features/auth/providers/auth_provider.dart';
 import 'package:nutricook/features/profile/service/user_preferences_service.dart';
 import 'package:nutricook/models/user_preferences/user_preferences.dart';
+import 'package:nutricook/features/planner/provider/planner_provider.dart';
+import 'package:nutricook/services/meal_reminder_scheduler.dart';
+import 'package:nutricook/features/planner/util/nutrition_info_util.dart';
 
 final userPreferencesServiceProvider = Provider<UserPreferencesService>((ref) {
   return UserPreferencesService();
@@ -62,12 +65,6 @@ class UserPreferencesNotifier extends AsyncNotifier<UserPreferences> {
   Future<void> updateNotificationsEnabled(bool enabled) {
     return _update(
       (current) => current.copyWith(notificationsEnabled: enabled),
-    );
-  }
-
-  Future<void> updateShowNutritionPerServing(bool enabled) {
-    return _update(
-      (current) => current.copyWith(showNutritionPerServing: enabled),
     );
   }
 
@@ -169,6 +166,34 @@ class UserPreferencesNotifier extends AsyncNotifier<UserPreferences> {
             : null,
       );
     }
+
+    if (didDailyCalorieGoalChange) {
+      _updateTodayCalorieNotification(updated.dailyCalorieGoal);
+    }
+  }
+
+  Future<void> _updateTodayCalorieNotification(int goal) async {
+    final uid = ref.read(currentUserIdProvider);
+    if (uid == null) return;
+
+    try {
+      final now = DateTime.now();
+      final startOfDay = DateTime(now.year, now.month, now.day);
+      final endOfDay = startOfDay.add(const Duration(days: 1));
+
+      final plannerService = ref.read(plannerServiceProvider);
+      final items = await plannerService.getPlannerItemsInRange(uid, startOfDay, endOfDay).first;
+      final nutrition = calculatePlannerNutrition(plannerItems: items);
+
+      await MealReminderScheduler().updateCalorieGoalReminder(
+        userId: uid,
+        date: now,
+        currentCalories: nutrition.calories,
+        goalCalories: goal,
+      );
+    } catch (e) {
+      debugPrint('Error updating calorie notification on goal change: $e');
+    }
   }
 
   Future<void> _syncRemotePreferencesToFirestore({
@@ -220,14 +245,12 @@ class UserPreferencesNotifier extends AsyncNotifier<UserPreferences> {
     }
 
     try {
-      // Sync to separate userPreferences collection instead of main user doc
-      // This prevents preference updates from triggering router re-evaluation
       await FirebaseFirestore.instance
           .collection('userPreferences')
           .doc(uid)
           .set(update, SetOptions(merge: true));
     } catch (_) {
-      // Ignore remote sync failures to avoid blocking local UI updates.
+      // Ignore errors
     }
   }
 
@@ -239,7 +262,6 @@ class UserPreferencesNotifier extends AsyncNotifier<UserPreferences> {
     }
 
     try {
-      // Load from separate userPreferences collection to avoid coupling with user doc
       final snapshot = await FirebaseFirestore.instance
           .collection('userPreferences')
           .doc(uid)
@@ -337,7 +359,7 @@ class _RemotePreferenceValues {
       allergens: <String>[],
       mealStartHours: defaultMealStartHours,
       dailyCalorieGoal: 2000,
-      archiveRetentionDays: 30, // Default matching UserPreferences
+      archiveRetentionDays: 30, 
       autoAdvanceStepTimer: true,
     );
   }

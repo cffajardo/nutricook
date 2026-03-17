@@ -98,9 +98,9 @@ class _CollectionDetailModalState extends State<CollectionDetailModal> {
               context.pop();
             },
             icon: const Icon(
-              Icons.chevron_left, // Changed to chevron_left
+              Icons.chevron_left,
               color: AppColors.rosePink,
-              size: 32, // Size adjusted to match PlannerItemEditModal
+              size: 32, 
             ),
           ),
           const Text(

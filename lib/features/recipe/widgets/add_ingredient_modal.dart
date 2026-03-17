@@ -44,7 +44,6 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
   final TextEditingController _searchController = TextEditingController();
   final GlobalKey<State<ImageUploadField>> _ingredientImageUploadKey = GlobalKey();
 
-  // Create Ingredient controllers
   late TextEditingController _nameController;
   late TextEditingController _descriptionController;
   late TextEditingController _caloriesController;
@@ -914,11 +913,9 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
       _updateNutritionFromControllers();
     }
 
-    // Capture context and navigator before async
     final navigator = Navigator.of(context);
 
     try {
-      // Upload image if one was selected
       String? imageUrl;
       if (_ingredientImageUploadKey.currentState != null) {
         final uploadedUrl = await (_ingredientImageUploadKey.currentState as dynamic)?.uploadImage();
@@ -928,10 +925,7 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
         }
       }
 
-      // Generate physical properties automatically
       await ref.read(createIngredientProvider.notifier).generatePhysicalProperty(_nameController.text);
-      
-      // Set temporary status
       final recipeCreationState = ref.read(recipeCreationProvider);
       final recipeId = recipeCreationState.creationId;
           
@@ -940,14 +934,11 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
         recipeId: recipeId,
       );
 
-      // Create in Firestore immediately
       final createdIng = await ref.read(createIngredientProvider.notifier).createIngredient();
 
       if (createdIng != null) {
-        // Track the temporary ID and object for cleanup/map enrichment
         ref.read(recipeCreationProvider.notifier).addTempIngredient(createdIng);
 
-        // Add to recipe
         if (widget.onIngredientAdded != null) {
           widget.onIngredientAdded!(
             RecipeIngredient(
@@ -964,7 +955,6 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
         _showSnack('Ingredient "${createdIng.name}" created and added.');
         ref.read(createIngredientProvider.notifier).reset();
         
-        // Clear local controllers for next time
         _nameController.clear();
         _descriptionController.clear();
         _caloriesController.clear();
@@ -999,7 +989,6 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => Center(child: Text('Failed to load ingredients: $error')),
           data: (ingredients) {
-            // Find the selected ingredient to check its properties
             final selectedIngredient = _selectedIngredientId != null
                 ? ingredients.firstWhere(
                     (ing) => ing.id == _selectedIngredientId,
@@ -1007,13 +996,15 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
                   )
                 : null;
 
-            // Filter units based on ingredient properties
-            final compatibleUnits =
-                _filterCompatibleUnits(units, selectedIngredient);
+
+            // Filter out Kilocalorie unit (by id or name)
+            final compatibleUnits = _filterCompatibleUnits(units, selectedIngredient)
+              .where((unit) => unit.id.toLowerCase() != 'kcal' && unit.name.toLowerCase() != 'kilocalorie')
+              .toList();
 
             _selectedUnitId ??= _resolveInitialUnitId(compatibleUnits);
             final selectedUnit = _findUnitById(compatibleUnits, _selectedUnitId) ??
-                compatibleUnits.first;
+              compatibleUnits.first;
 
         return Padding(
           key: const ValueKey(2),
@@ -1235,21 +1226,17 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
     );
   }
 
-  /// Filter units based on ingredient properties
   List<Unit> _filterCompatibleUnits(List<Unit> units, Ingredient? ingredient) {
     if (ingredient == null) return units;
 
     return units.where((unit) {
       switch (unit.type) {
         case 'weight':
-          // Weight units always work
           return true;
         case 'volume':
-          // Volume units only work if ingredient has density
           return ingredient.densityGPerMl != null &&
               ingredient.densityGPerMl! > 0;
         case 'count':
-          // Count units only work if ingredient has average weight
           return ingredient.avgWeightG != null && ingredient.avgWeightG! > 0;
         default:
           return true;
@@ -1257,7 +1244,6 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
     }).toList();
   }
 
-  /// Build a helpful message about unit compatibility
   Widget _buildUnitCompatibilityInfo(Ingredient? ingredient) {
     if (ingredient == null) {
       return const SizedBox.shrink();
@@ -1290,7 +1276,7 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
           ),
         ),
         child: const Text(
-          '✓ All unit types available for this ingredient',
+          'All unit types available for this ingredient',
           style: TextStyle(
             color: Colors.green,
             fontSize: 12,
@@ -1311,7 +1297,7 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
         ),
       ),
       child: Text(
-        '⚠ ${missingFor.join(', ')} not available.\nOnly grams/kg and compatible units shown.',
+        '${missingFor.join(', ')} not available.\nOnly grams/kg and compatible units shown.',
         style: const TextStyle(
           color: Colors.orange,
           fontSize: 12,

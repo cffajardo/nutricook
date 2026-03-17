@@ -126,8 +126,7 @@ class _CreateIngredientScreenState extends ConsumerState<CreateIngredientScreen>
               onChanged: (val) => ref.read(createIngredientProvider.notifier).setDescription(val),
             ),
             const SizedBox(height: 20),
-            
-            // Image Upload styled to match library cards
+
             _buildSectionHeader('Image'),
             const SizedBox(height: 12),
             Container(
@@ -163,7 +162,7 @@ class _CreateIngredientScreenState extends ConsumerState<CreateIngredientScreen>
 
             const SizedBox(height: 40),
             
-            // Main Action Button
+
             SizedBox(
               width: double.infinity,
               height: 56,

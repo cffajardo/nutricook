@@ -1,17 +1,9 @@
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart';
 
-/// Service for picking images from camera or gallery
-/// 
-/// Provides a clean abstraction over ImagePicker for use throughout the app.
-/// Handles requesting permissions and returning XFile objects.
 class ImagePickerService {
   final ImagePicker _picker = ImagePicker();
 
-  /// Picks an image from the device gallery
-  /// 
-  /// Returns null if user cancels the selection
-  /// If maxWidth/maxHeight are provided, the image is compressed
   Future<XFile?> pickImageFromGallery({
     double? maxWidth,
     double? maxHeight,
@@ -31,10 +23,6 @@ class ImagePickerService {
     }
   }
 
-  /// Picks an image from the device camera
-  /// 
-  /// Returns null if user cancels the capture
-  /// If maxWidth/maxHeight are provided, the image is compressed
   Future<XFile?> pickImageFromCamera({
     double? maxWidth,
     double? maxHeight,
@@ -54,10 +42,6 @@ class ImagePickerService {
     }
   }
 
-  /// Picks multiple images from gallery
-  /// 
-  /// Returns empty list if user cancels
-  /// If maxWidth/maxHeight are provided, images are compressed
   Future<List<XFile>> pickMultipleImages({
     double? maxWidth,
     double? maxHeight,
@@ -73,7 +57,6 @@ class ImagePickerService {
       );
       return images;
     } catch (e) {
-      debugPrint('Error picking multiple images: $e');
       rethrow;
     }
   }

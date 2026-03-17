@@ -57,7 +57,6 @@ class _EditIngredientScreenState extends ConsumerState<EditIngredientScreen> {
     _densityController = TextEditingController();
     _avgWeightController = TextEditingController();
 
-    // Initialize with first category as default
     _selectedCategory = categories.first;
 
     _loadIngredient();
@@ -83,7 +82,6 @@ class _EditIngredientScreenState extends ConsumerState<EditIngredientScreen> {
         _nameController.text = ingredient.name;
         _descriptionController.text = ingredient.description ?? '';
         
-        // Ensure category is valid, otherwise use first category
         _selectedCategory = categories.contains(ingredient.category)
             ? ingredient.category
             : categories.first;
@@ -135,7 +133,6 @@ class _EditIngredientScreenState extends ConsumerState<EditIngredientScreen> {
   }
 
   void _updateIngredient() {
-    // Validate required fields
     if (_nameController.text.trim().isEmpty) {
       _showError('Ingredient name is required');
       return;
@@ -146,7 +143,6 @@ class _EditIngredientScreenState extends ConsumerState<EditIngredientScreen> {
       return;
     }
 
-    // Validate numeric fields
     final calories = int.tryParse(_caloriesController.text);
     final carbs = double.tryParse(_carbsController.text);
     final protein = double.tryParse(_proteinController.text);
@@ -163,7 +159,6 @@ class _EditIngredientScreenState extends ConsumerState<EditIngredientScreen> {
       return;
     }
 
-    // Validate physical properties
     if (_ingredient.densityGPerMl != null && density == null) {
       _showError('Density value is required for this ingredient');
       return;
@@ -191,14 +186,12 @@ class _EditIngredientScreenState extends ConsumerState<EditIngredientScreen> {
     setState(() => _isSaving = true);
 
     try {
-      // Upload image if selected
       String? imageUrl = _ingredient.imageURL;
       final uploadedUrl = await (_imageUploadKey.currentState as dynamic)?.uploadImage();
       if (uploadedUrl != null) {
         imageUrl = uploadedUrl;
       }
 
-      // Create updated ingredient
       final nutritionInfo = NutritionInfo(
         calories: calories,
         carbohydrates: carbs,
@@ -219,7 +212,6 @@ class _EditIngredientScreenState extends ConsumerState<EditIngredientScreen> {
         imageURL: imageUrl,
       );
 
-      // Update in database
       final service = IngredientService();
       await service.updateIngredient(updatedIngredient);
 
@@ -434,8 +426,6 @@ class _EditIngredientScreenState extends ConsumerState<EditIngredientScreen> {
       ),
     );
   }
-
-  // --- THEMED UI COMPONENTS ---
 
   Widget _buildSectionHeader(String title) {
     return Text(

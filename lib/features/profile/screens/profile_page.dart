@@ -329,7 +329,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    if (email.isNotEmpty)
+                    // Only show email if viewing own profile
+                    if (isOwnProfile && email.isNotEmpty)
                       Text(
                         email,
                         maxLines: 1,

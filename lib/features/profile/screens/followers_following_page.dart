@@ -302,7 +302,6 @@ class _FollowersFollowingPageState extends ConsumerState<FollowersFollowingPage>
 
       final userId = (user['id'] ?? '').toString();
       final username = (user['username'] ?? 'Unknown').toString();
-      final email = (user['email'] ?? '').toString();
       final profileImageUrl = (user['mediaId'] ?? user['profilePictureUrl'])?.toString();
       final isSelf = currentUserId != null && userId == currentUserId;
 
@@ -373,21 +372,11 @@ class _FollowersFollowingPageState extends ConsumerState<FollowersFollowingPage>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '@$username',
+                      username,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
                     ),
-                    if (email.isNotEmpty)
-                      Text(
-                        email,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.black54,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
                   ],
                 ),
               ),

@@ -34,10 +34,10 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
   String _ingredientQuery = '';
   String _recipeQuery = '';
   String _reportStatusFilter = '';
-  String _ingredientSortBy = 'name_asc'; // name_asc, name_desc
-  String _ingredientFilterCategory = ''; // '', or specific category name
-  String _recipeSortBy = 'name_asc'; // name_asc, name_desc, reports, favorites
-  String _recipeFilterVisibility = ''; // '', 'public', 'private'
+  String _ingredientSortBy = 'name_asc'; 
+  String _ingredientFilterCategory = ''; 
+  String _recipeSortBy = 'name_asc'; 
+  String _recipeFilterVisibility = ''; 
   int _openReportsCachedCount = 0;
 
   @override
@@ -52,7 +52,6 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
       _userSearchController.clear();
       _ingredientSearchController.clear();
       _recipeSearchController.clear();
-      // Also clear the internal query strings to reset providers
       setState(() {
         _query = '';
         _ingredientQuery = '';
@@ -146,7 +145,6 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
       body: TabBarView(
         controller: _tabController,
         children: [
-          // 1. OVERVIEW TAB
           _OverviewTab(
             totalUsers: totalUsers,
             bannedUsers: bannedUsers,
@@ -155,7 +153,6 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
             totalRecipes: totalRecipes,
           ),
           
-          // 2. USERS TAB
           Column(
             children: [
               _buildSearchField(
@@ -311,7 +308,6 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
             ],
           ),
           
-          // 3. REPORTS TAB
           Column(
             children: [
               Padding(
@@ -358,7 +354,6 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
             ],
           ),
           
-          // 4. INGREDIENTS TAB
           Column(
             children: [
               _buildSearchField(
@@ -371,7 +366,6 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
                   loading: () => const Center(child: CircularProgressIndicator(color: AppColors.rosePink)),
                   error: (error, _) => Center(child: Text('Failed to load ingredients: $error')),
                   data: (ingredients) {
-                    // Get unique categories for dynamic filter dropdown
                     final categories = ingredients
                         .map((i) => ((i['category'] ?? 'Uncategorized').toString()))
                         .toSet()
@@ -379,14 +373,12 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
                         .cast<String>()
                         ..sort();
 
-                    // Apply filtering
                     var filtered = ingredients.where((ingredient) {
                       final category = (ingredient['category'] ?? 'Uncategorized').toString();
                       if (_ingredientFilterCategory.isEmpty) return true;
                       return category == _ingredientFilterCategory;
                     }).toList();
 
-                    // Apply sorting
                     filtered.sort((a, b) {
                       switch (_ingredientSortBy) {
                         case 'name_desc':
@@ -403,7 +395,6 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
 
                     return Column(
                       children: [
-                        // Sort and Filter Controls
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                           child: Row(
@@ -517,7 +508,6 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
             ],
           ),
           
-          // 5. RECIPES TAB
           Column(
             children: [
               _buildSearchField(
@@ -525,7 +515,6 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
                 hintText: 'Search recipes...',
                 onChanged: (value) => setState(() => _recipeQuery = value.trim()),
               ),
-              // Sort and Filter Controls
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                 child: Row(
@@ -574,7 +563,6 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
                   loading: () => const Center(child: CircularProgressIndicator(color: AppColors.rosePink)),
                   error: (error, _) => Center(child: Text('Failed to load recipes: $error')),
                   data: (recipes) {
-                    // Apply filtering
                     var filtered = recipes.where((recipe) {
                       final isPublic = recipe['isPublic'] == true;
                       if (_recipeFilterVisibility.isEmpty) return true;
@@ -583,7 +571,6 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
                       return true;
                     }).toList();
 
-                    // Apply sorting
                     filtered.sort((a, b) {
                       switch (_recipeSortBy) {
                         case 'name_desc':
@@ -592,11 +579,11 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
                         case 'reports':
                           final aReports = (a['reportCount'] as num?)?.toInt() ?? 0;
                           final bReports = (b['reportCount'] as num?)?.toInt() ?? 0;
-                          return bReports.compareTo(aReports); // Descending
+                          return bReports.compareTo(aReports);
                         case 'favorites':
                           final aFavorite = (a['isFavorite'] ?? false) == true ? 1 : 0;
                           final bFavorite = (b['isFavorite'] ?? false) == true ? 1 : 0;
-                          return bFavorite.compareTo(aFavorite); // Favorites first
+                          return bFavorite.compareTo(aFavorite); 
                         case 'name_asc':
                         default:
                           return ((a['name'] ?? '').toString())
@@ -696,8 +683,7 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
               ),
             ],
           ),
-          
-          // 6. ARCHIVE TAB
+        
           _ArchiveTab(
             recipeQuery: _recipeQuery,
             recipeSortBy: _recipeSortBy,
@@ -772,7 +758,7 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
         return Colors.grey;
       case 'archived':
         return AppColors.rosePink;
-      case 'resolved': // Hypothetical if we ever use it
+      case 'resolved': 
         return Colors.blue;
       case 'open':
       default:
@@ -785,7 +771,6 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
     String finalStatus = status;
     String? note;
 
-    // Based on user feedback: Reviewed and Dismissed reports should be ARCHIVED after processing.
     if (status == 'reviewed' || status == 'dismissed') {
       finalStatus = 'archived';
       note = status == 'reviewed' ? 'Marked as Reviewed' : 'Marked as Dismissed';
@@ -842,7 +827,6 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
     required String reason,
   }) async {
     try {
-      // Fetch owner's FCM token
       final userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(recipeOwnerId)
@@ -850,13 +834,11 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
       
       final ownerFcmToken = userDoc.data()?['fcmToken'] as String?;
   
-      // Archive the recipe instead of deleting
       await ref.read(archiveServiceProvider).archiveItem(
             collection: AppConstants.collectionRecipes,
             docId: recipeId,
           );
       
-      // Update ALL reports for this recipe to 'archived' status
       final reportsSnapshot = await FirebaseFirestore.instance
           .collection(FirestoreConstants.recipeReports)
           .where('recipeId', isEqualTo: recipeId)
@@ -953,7 +935,7 @@ class _OverviewTab extends StatelessWidget {
             mainAxisSpacing: 16,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            childAspectRatio: 1.2, // Makes them nice square-ish dashboard cards
+            childAspectRatio: 1.2, 
             children: [
               _MetricCard(title: 'Total Users', value: '$totalUsers', icon: Icons.people_alt_rounded),
               _MetricCard(title: 'Banned Users', value: '$bannedUsers', icon: Icons.gavel_rounded, isAlert: bannedUsers > 0),
@@ -962,7 +944,6 @@ class _OverviewTab extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          // Span the last metric across the full width
           SizedBox(
             width: double.infinity,
             height: 120,
@@ -1103,7 +1084,6 @@ class _ReportCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header: Report Reason and Status
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1127,8 +1107,7 @@ class _ReportCard extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 16),
-          
-          // Details Box (if provided)
+       
           if ((report.details ?? '').isNotEmpty) ...[
             Container(
               width: double.infinity,
@@ -1145,7 +1124,6 @@ class _ReportCard extends ConsumerWidget {
             const SizedBox(height: 16),
           ],
 
-          // Meta Info Grid
           Row(
             children: [
               Expanded(
@@ -1199,7 +1177,6 @@ class _ReportCard extends ConsumerWidget {
             child: Divider(height: 1),
           ),
 
-          // Action Buttons
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -1522,4 +1499,4 @@ class _ArchiveTabState extends ConsumerState<_ArchiveTab> {
       }
     }
   }
-}
+}

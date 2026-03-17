@@ -28,7 +28,6 @@ class AuthService {
         email: email.trim(),
         password: password,
       );
-      // Save FCM token to Firestore after successful sign-in
       final userId = _auth.currentUser?.uid;
       if (userId != null) {
         await FirebaseMessagingService().saveFCMTokenToFirestore(userId);
@@ -46,7 +45,7 @@ class AuthService {
     String email;
 
     if (looksLikeEmail(userOremail)) {
-      email = userOremail; // Treat as email if it contains '@'
+      email = userOremail; 
     } else {
       email = await _getEmailByUsername(userOremail);
     }
@@ -75,7 +74,6 @@ class AuthService {
   Future<void> signInAnonymously() async {
     try {
       await _auth.signInAnonymously();
-      // Save FCM token to Firestore after successful sign-in
       final userId = _auth.currentUser?.uid;
       if (userId != null) {
         await FirebaseMessagingService().saveFCMTokenToFirestore(userId);
@@ -104,7 +102,7 @@ class AuthService {
     try {
       final usernameQuery = await FirebaseFirestore.instance
           .collection('users')
-          .where('username'.toLowerCase(), isEqualTo: trimmedUsername)
+          .where('username_lowercase', isEqualTo: trimmedUsername)
           .limit(1)
           .get();
 
@@ -123,6 +121,7 @@ class AuthService {
         'id': uid,
         'email': trimmedEmail,
         'username': username.trim(),
+        'username_lowercase': trimmedUsername,
         'profilePictureUrl': null,
         'role': 'user',
         'isBanned': false,
@@ -137,14 +136,10 @@ class AuthService {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      // Create default Favorites collection
       await CollectionService().createDefaultFavoritesCollection(uid);
-
       await userCredential.user!.updateDisplayName(username.trim());
-
       await userCredential.user!.sendEmailVerification();
 
-      // Save FCM token to Firestore after successful registration
       await FirebaseMessagingService().saveFCMTokenToFirestore(uid);
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
@@ -186,7 +181,6 @@ class AuthService {
         );
       }
 
-      // Save FCM token to Firestore after successful sign-in
       await FirebaseMessagingService().saveFCMTokenToFirestore(userCredential.user!.uid);
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
@@ -302,6 +296,7 @@ class AuthService {
       'id': uid,
       'email': email,
       'username': username,
+      'username_lowercase': username.toLowerCase(),
       'mediaId': profilePictureUrl,
       'role': 'user',
       'isBanned': false,
@@ -316,7 +311,6 @@ class AuthService {
       'createdAt': FieldValue.serverTimestamp(),
     });
 
-    // Create default Favorites collection
     await CollectionService().createDefaultFavoritesCollection(uid);
   }
 

@@ -13,8 +13,6 @@ class ArchiveService {
   final Ref _ref;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Archives a document in the given collection by setting `archived = true`,
-  /// `archivedAt`, and `deleteAfter` based on user preferences.
   Future<void> archiveItem({
     required String collection,
     required String docId,
@@ -35,7 +33,6 @@ class ArchiveService {
     });
   }
 
-  /// Restores an archived document by removing the archive metadata fields.
   Future<void> restoreItem({
     required String collection,
     required String docId,
@@ -47,19 +44,13 @@ class ArchiveService {
     });
   }
 
-  /// Permanently deletes an item from the given collection.
   Future<void> permanentlyDeleteItem({
     required String collection,
     required String docId,
   }) async {
-    // For collections that require complex soft-deletion or nested deletion
-    // we should ideally route to their respective services. But for standard
-    // docs we can delete them here.
     await _firestore.collection(collection).doc(docId).delete();
   }
 
-  /// Runs the automatic cleanup of items past their retention date.
-  /// Should be called on app startup.
   Future<void> runCleanup() async {
     final userId = _ref.read(currentUserIdProvider);
     if (userId == null || userId.isEmpty) return;
@@ -81,12 +72,10 @@ class ArchiveService {
             .get();
 
         for (final doc in querySnapshot.docs) {
-          // Permanently delete expired items
           await doc.reference.delete();
         }
       } catch (e) {
-        // Silently fail cleanup errors to not break app startup
-        print('Error cleaning up archive in $collection: $e');
+        //
       }
     }
   }

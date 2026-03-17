@@ -7,21 +7,17 @@ final userServiceProvider = Provider<UserService>((ref) {
   return UserService();
 });
 
-// Stream Provider for current user's data (Requires user ID from auth provider)
 final userDataProvider = StreamProvider((ref) {
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) return Stream.value(null);
 
   final userService = ref.watch(userServiceProvider);
-  // Never emit null for signed-in users; emit an empty map if user doc is missing
   return userService.getUserDataStream(userId).map((data) {
     if (data == null) return <String, dynamic>{};
     return data;
   });
 });
 
-// Core user data provider for routing - excludes frequently-changing social fields
-// to prevent unnecessary router re-evaluations when following/unfollowing
 final coreUserDataProvider = StreamProvider((ref) {
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) return Stream.value(null);
@@ -30,7 +26,6 @@ final coreUserDataProvider = StreamProvider((ref) {
   return userService.getUserDataStream(userId)
       .map((data) {
         if (data == null) return <String, dynamic>{};
-        // Only include routing-critical fields, exclude social/frequently-changing data
         return <String, dynamic>{
           'id': data['id'],
           'email': data['email'],
@@ -41,7 +36,6 @@ final coreUserDataProvider = StreamProvider((ref) {
         };
       })
       .distinct((a, b) {
-        // Only emit if core data actually changed, not just if document was updated elsewhere
         if (identical(a, b)) return true;
         if (a.isEmpty && b.isEmpty) return true;
         return a['id'] == b['id'] &&
@@ -79,7 +73,6 @@ final adminUsersQueryProvider =
       return ref.watch(userServiceProvider).getAllUsersStream(query: query);
     });
 
-// Stream Provider for current user's allergens
 final userAllergenProvider = StreamProvider<List<String>>((ref) {
   final preferences = ref.watch(userPreferencesProvider).asData?.value;
   return Stream.value(preferences?.allergens ?? const <String>[]);
@@ -240,10 +233,6 @@ String _normalizeConnectionToken(String? raw) {
   final text = (raw ?? '').trim();
   if (text.isEmpty) return '';
 
-  // Handles values like:
-  // - users/{uid}
-  // - DocumentReference<Map<String, dynamic>>(users/{uid})
-  // - projects/.../documents/users/{uid}
   final usersIndex = text.lastIndexOf('users/');
   if (usersIndex >= 0) {
     final candidate = text.substring(usersIndex + 'users/'.length).trim();

@@ -128,7 +128,6 @@ class R2UploadService {
       final dateStamp = _formatDateStamp(now);
 
       final payloadHash = sha256.convert(fileBytes).toString();
-
       final canonicalRequest = _createCanonicalRequest(
         bucket: bucket,
         objectKey: cleanObjectKey,
@@ -151,18 +150,6 @@ class R2UploadService {
         dateStamp,
         signature,
       );
-
-      if (CloudflareConfig.debugMode) {
-        debugPrint('[R2] --- Signature Debug ---');
-        debugPrint('[R2] Canonical Request:');
-        debugPrint(canonicalRequest);
-        debugPrint('[R2] Canonical Request Hash: $canonicalRequestHash');
-        debugPrint('[R2] String to Sign:');
-        debugPrint(stringToSign);
-        debugPrint('[R2] Signature: $signature');
-        debugPrint('[R2] Authorization Header: $authorizationHeader');
-        debugPrint('[R2] ----------------------');
-      }
 
       // Build headers for request
       final headers = <String, String>{
@@ -258,7 +245,7 @@ class R2UploadService {
     final kDate = Hmac(sha256, utf8.encode('AWS4${CloudflareConfig.secretAccessKey}'))
         .convert(utf8.encode(dateStamp));
 
-    // kRegion = HMAC-SHA256(kDate, "auto") - Cloudflare R2 uses "auto" region
+    // kRegion = HMAC-SHA256(kDate, "auto") 
     final kRegion = Hmac(sha256, kDate.bytes)
         .convert(utf8.encode('auto'));
 
@@ -289,7 +276,6 @@ class R2UploadService {
         'SignedHeaders=$signedHeaders, Signature=$signature';
   }
 
-  /// Format DateTime to AMZ date string: YYYYMMDDTHHMMSSZ
   String _formatAmzDate(DateTime dateTime) {
     final year = dateTime.year;
     final month = dateTime.month.toString().padLeft(2, '0');
@@ -300,7 +286,6 @@ class R2UploadService {
     return '$year$month${day}T$hour$minute${second}Z';
   }
 
-  /// Format DateTime to date stamp: YYYYMMDD
   String _formatDateStamp(DateTime dateTime) {
     final year = dateTime.year;
     final month = dateTime.month.toString().padLeft(2, '0');

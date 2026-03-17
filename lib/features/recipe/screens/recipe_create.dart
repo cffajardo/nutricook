@@ -68,15 +68,11 @@ class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
       );
       return;
     }
-
-    // Merge in any temporary ingredients created in this session that might not 
-    // be in the streamed map yet.
     final ingredientsMap = <String, Ingredient>{
       ...baseIngredientsMap,
       ...creation.tempIngredients,
     };
 
-    // Capture the Navigator and ScaffoldMessenger before any async operations
     final navigator = Navigator.of(context);
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
@@ -102,7 +98,7 @@ class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
         tags: creation.tags,
       );
 
-      // Step 3: Save the recipe
+
       if (creation.isEditing) {
         await ref
             .read(recipeServiceProvider)
@@ -121,14 +117,12 @@ class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
             );
       }
 
-      // Step 4: Finalize temporary ingredients
       await ref.read(recipeCreationProvider.notifier).finalizeTempIngredients(creation.creationId);
 
       if (!mounted) return;
-      
+  
       ref.read(recipeCreationProvider.notifier).clear();
-      
-      // Use the captured states
+
       navigator.pop();
       scaffoldMessenger
         ..hideCurrentSnackBar()
@@ -143,7 +137,6 @@ class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
           ),
         );
     } catch (error) {
-      // Step 5: Rollback temporary ingredients on failure
       await ref.read(recipeCreationProvider.notifier).cleanupTempIngredients(creation.creationId);
 
       if (mounted) {
@@ -189,7 +182,6 @@ class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Keep draft creation state alive across page transitions in this flow.
     ref.watch(recipeCreationProvider);
 
     return Scaffold(
@@ -201,8 +193,7 @@ class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
           onPressed: () async {
             final creation = ref.read(recipeCreationProvider);
             final cleanupId = creation.creationId;
-            
-            // Show confirmation dialog if there are temporary ingredients
+
             if (creation.tempIngredientIds.isNotEmpty) {
               final confirmed = await showDialog<bool>(
                 context: context,
@@ -219,8 +210,7 @@ class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
                 ),
               );
               if (confirmed != true) return;
-              
-              // Cleanup
+    
               await ref.read(recipeCreationProvider.notifier).cleanupTempIngredients(cleanupId);
             }
 

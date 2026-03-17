@@ -20,7 +20,6 @@ class UserPreferencesService {
     final storageKey = _storageKeyFor(userId);
     var raw = prefs.getString(storageKey);
 
-    // One-time migration from the legacy global key to per-user storage.
     if ((raw == null || raw.trim().isEmpty) && userId != null) {
       final legacyRaw = prefs.getString(_legacyStorageKey);
       if (legacyRaw != null && legacyRaw.trim().isNotEmpty) {

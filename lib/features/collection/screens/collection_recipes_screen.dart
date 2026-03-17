@@ -29,13 +29,13 @@ class _CollectionRecipesScreenState extends ConsumerState<CollectionRecipesScree
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF9FA), // System background
+      backgroundColor: const Color(0xFFFFF9FA), 
       appBar: AppBar(
         title: Text(
-          widget.collection.name, // Removed toUpperCase()
+          widget.collection.name,
           style: const TextStyle(
             color: Colors.black,
-            fontWeight: FontWeight.bold, // Softened from w900
+            fontWeight: FontWeight.bold, 
             fontSize: 18,
           ),
         ),
@@ -44,7 +44,7 @@ class _CollectionRecipesScreenState extends ConsumerState<CollectionRecipesScree
         elevation: 0,
         leading: IconButton(
           icon: const Icon(
-            Icons.chevron_left, // Unified chevron icon
+            Icons.chevron_left, 
             color: AppColors.rosePink,
             size: 32,
           ),
@@ -125,7 +125,7 @@ class _CollectionRecipesScreenState extends ConsumerState<CollectionRecipesScree
                 ),
                 const SizedBox(height: 24),
                 const Text(
-                  'No recipes yet', // Sentence case
+                  'No recipes yet',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,

@@ -268,7 +268,7 @@ class _PlannerRecipeFilterModalState
                         _buildInputSliderRow(
                           'Time',
                           _cookTime,
-                          180,
+                          360,
                           _timeController,
                           unit: 'min',
                         ),

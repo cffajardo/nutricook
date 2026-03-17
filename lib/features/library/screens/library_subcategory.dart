@@ -65,7 +65,6 @@ class LibrarySubCategoryScreen extends ConsumerWidget {
   }) {
     return GestureDetector(
       onTap: () {
-        // Navigate to CustomIngredientsScreen for custom category
         if (item.id == LibrarySubCategoryIds.custom) {
           Navigator.push(
             context,
@@ -74,7 +73,6 @@ class LibrarySubCategoryScreen extends ConsumerWidget {
             ),
           );
         } else {
-          // Navigate to regular library item screen for other categories
           context.push('/library/$categoryId/${item.id}');
         }
       },

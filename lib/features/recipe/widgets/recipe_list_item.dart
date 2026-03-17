@@ -59,7 +59,6 @@ class RecipeListItem extends ConsumerWidget {
               padding: const EdgeInsets.all(12),
               child: Row(
                 children: [
-                  // Image Placeholder
                   Container(
                     width: 100,
                     height: 100,
@@ -87,7 +86,6 @@ class RecipeListItem extends ConsumerWidget {
                   ),
                   const SizedBox(width: 16),
 
-                  // Info Content
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -156,7 +154,6 @@ class RecipeListItem extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  // Calorie Badge
                   _buildCalorieBadge(),
                 ],
               ),

@@ -8,8 +8,6 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 typedef NotificationCallback = Future<void> Function(RemoteMessage message);
 
-/// Firebase Cloud Messaging Service
-/// Handles FCM token management, permissions, and message routing
 class FirebaseMessagingService {
   static final FirebaseMessagingService _instance =
       FirebaseMessagingService._internal();
@@ -30,13 +28,10 @@ class FirebaseMessagingService {
 
   FirebaseMessagingService._internal();
 
-  /// Check if service is initialized
   bool get isInitialized => _isInitialized;
 
-  /// Get the FCM token
   String? get fcmToken => _fcmToken;
 
-  /// Request notification permissions (iOS & Android 13+)
   Future<bool> requestNotificationPermission() async {
     try {
       final settings = await _firebaseMessaging.requestPermission(
@@ -47,9 +42,6 @@ class FirebaseMessagingService {
         provisional: false,
         sound: true,
       );
-
-      debugPrint(
-          'Notification permission status: ${settings.authorizationStatus}');
       return settings.authorizationStatus == AuthorizationStatus.authorized ||
           settings.authorizationStatus == AuthorizationStatus.provisional;
     } catch (e) {
@@ -58,9 +50,6 @@ class FirebaseMessagingService {
     }
   }
 
-  /// Initialize Firebase Messaging and Local Notifications
-  /// [onForegroundMessage] - Called when notification arrives in foreground
-  /// [onNotificationTap] - Called when notification is tapped (passes notification ID)
   Future<void> initialize({
     required NotificationCallback onForegroundMessage,
     required Function(String notificationId) onNotificationTap,
@@ -73,28 +62,21 @@ class FirebaseMessagingService {
     try {
       debugPrint('Initializing FirebaseMessagingService...');
 
-      // Store callbacks
       _foregroundNotificationCallback = onForegroundMessage;
       _notificationTapCallback = onNotificationTap;
 
-      // Request permission
       await requestNotificationPermission();
 
-      // Initialize local notifications
       await _initializeLocalNotifications();
 
-      // Get and cache FCM token
       _fcmToken = await _firebaseMessaging.getToken();
       debugPrint('FCM Token: $_fcmToken');
 
-      // Listen for token refresh
       _firebaseMessaging.onTokenRefresh.listen((newToken) {
         debugPrint('FCM Token refreshed: $newToken');
         _fcmToken = newToken;
-        // Note: Token refresh is handled by re-initialization in main.dart
       });
 
-      // Set up message handlers
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
         debugPrint('Foreground message received: ${message.messageId}');
         _handleForegroundMessage(message);
@@ -105,26 +87,20 @@ class FirebaseMessagingService {
         _handleNotificationTap(message);
       });
 
-      // Set up background message handler (static)
       FirebaseMessaging.onBackgroundMessage(_handleBackgroundMessage);
 
       _isInitialized = true;
-      debugPrint('FirebaseMessagingService initialized successfully');
     } catch (e) {
-      debugPrint('Error initializing FirebaseMessagingService: $e');
       _isInitialized = false;
       rethrow;
     }
   }
 
-  /// Initialize local notifications for Android and iOS
   Future<void> _initializeLocalNotifications() async {
     try {
-      // Android initialization
       const AndroidInitializationSettings androidInit =
           AndroidInitializationSettings('@mipmap/ic_launcher');
 
-      // iOS initialization
       const DarwinInitializationSettings iOSInit =
           DarwinInitializationSettings(
         requestAlertPermission: true,
@@ -140,14 +116,12 @@ class FirebaseMessagingService {
       await _flutterLocalNotificationsPlugin.initialize(
         initSettings,
         onDidReceiveNotificationResponse: (NotificationResponse response) {
-          debugPrint('Local notification tapped: ${response.payload}');
           if (response.payload != null) {
             _notificationTapCallback?.call(response.payload!);
           }
         },
       );
 
-      // Create default notification channel for Android 8+
       if (Platform.isAndroid) {
         const AndroidNotificationChannel channel = AndroidNotificationChannel(
           'default_notification_channel',
@@ -171,15 +145,12 @@ class FirebaseMessagingService {
     }
   }
 
-  /// Handle foreground messages
   Future<void> _handleForegroundMessage(RemoteMessage message) async {
     try {
       debugPrint('Handling foreground message: ${message.messageId}');
       
-      // Show local notification
       await _showLocalNotification(message);
 
-      // Call the foreground notification callback
       if (_foregroundNotificationCallback != null) {
         await _foregroundNotificationCallback!(message);
       }
@@ -188,18 +159,14 @@ class FirebaseMessagingService {
     }
   }
 
-  /// Handle background messages (static - cannot access instance)
   static Future<void> _handleBackgroundMessage(RemoteMessage message) async {
     try {
       debugPrint('Handling background message: ${message.messageId}');
-      // Background message handling is done by FCM
-      // App will show notification from FCM system
     } catch (e) {
       debugPrint('Error handling background message: $e');
     }
   }
 
-  /// Handle notification tap
   Future<void> _handleNotificationTap(RemoteMessage message) async {
     try {
       final payloadData = message.data;
@@ -215,7 +182,6 @@ class FirebaseMessagingService {
     }
   }
 
-  /// Show local notification (for foreground messages)
   Future<void> _showLocalNotification(RemoteMessage message) async {
     try {
       final notification = message.notification;
@@ -264,8 +230,6 @@ class FirebaseMessagingService {
     }
   }
 
-  /// Save FCM token to Firestore user document
-  /// Called after successful authentication
   Future<void> saveFCMTokenToFirestore(String userId) async {
     try {
       if (_fcmToken == null) {
@@ -278,14 +242,11 @@ class FirebaseMessagingService {
         'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
       });
 
-      debugPrint('FCM token saved to Firestore for user: $userId');
     } catch (e) {
-      debugPrint('Error saving FCM token to Firestore: $e');
-      // Don't rethrow - failure to save token shouldn't block login
+      //
     }
   }
 
-  /// Refresh FCM token (call this periodically or on token refresh)
   Future<String?> refreshFCMToken() async {
     try {
       _fcmToken = await _firebaseMessaging.getToken();
@@ -297,7 +258,6 @@ class FirebaseMessagingService {
     }
   }
 
-  /// Delete FCM token (call on logout)
   Future<void> deleteFCMToken(String userId) async {
     try {
       await _firestore.collection('users').doc(userId).update({
@@ -310,7 +270,6 @@ class FirebaseMessagingService {
     }
   }
 
-  /// Get initial message (for when app is opened from notification while closed)
   Future<RemoteMessage?> getInitialMessage() async {
     try {
       return await _firebaseMessaging.getInitialMessage();
@@ -320,7 +279,6 @@ class FirebaseMessagingService {
     }
   }
 
-  /// Enable/disable notifications at app level
   Future<void> setNotificationsEnabled(bool enabled) async {
     try {
       if (enabled) {
@@ -328,9 +286,8 @@ class FirebaseMessagingService {
       } else {
         await _firebaseMessaging.setAutoInitEnabled(false);
       }
-      debugPrint('Notifications enabled: $enabled');
     } catch (e) {
-      debugPrint('Error setting notifications enabled: $e');
+      //
     }
   }
 }

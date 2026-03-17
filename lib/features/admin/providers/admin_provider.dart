@@ -60,7 +60,6 @@ final adminRecipesProvider =
             return snapshot.docs
                 .map((doc) => <String, dynamic>{...doc.data(), 'id': doc.id})
                 .where((recipe) {
-                  // Exclude archived recipes from the main list
                   if (recipe['archived'] == true) return false;
                   
                   if (normalized.isEmpty) return true;

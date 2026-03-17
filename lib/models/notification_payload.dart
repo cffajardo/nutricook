@@ -1,26 +1,13 @@
 import 'package:nutricook/core/enums/notification_type.dart';
 
-/// Type-safe notification payload for routing and handling
+
 class NotificationPayload {
-  /// Unique notification ID
   final String notificationId;
-
-  /// Type of notification
   final NotificationType type;
-
-  /// ID of the entity related to the notification (recipeId, userId, plannerId, etc.)
   final String? entityId;
-
-  /// ID of the user who triggered the notification (liker, follower, etc.)
   final String? senderId;
-
-  /// Notification title
   final String title;
-
-  /// Notification body/message
   final String? body;
-
-  /// Additional metadata
   final Map<String, String> metadata;
 
   const NotificationPayload({
@@ -33,7 +20,6 @@ class NotificationPayload {
     this.metadata = const {},
   });
 
-  /// Create NotificationPayload from FCM data payload
   factory NotificationPayload.fromFCMData({
     required String notificationId,
     required Map<String, dynamic> data,
@@ -42,7 +28,7 @@ class NotificationPayload {
   }) {
     final typeString = data['type'] as String?;
     final type = NotificationType.fromString(typeString) ??
-        NotificationType.recipeLike; // Default to recipeLike
+        NotificationType.recipeLike; 
 
     return NotificationPayload(
       notificationId: notificationId,
@@ -61,14 +47,12 @@ class NotificationPayload {
     );
   }
 
-  /// System keys that shouldn't be included in metadata
   static const Set<String> _systemKeys = {
     'type',
     'entityId',
     'senderId',
   };
 
-  /// Convert to map for Firestore storage
   Map<String, dynamic> toMap() {
     return {
       'type': type.value,

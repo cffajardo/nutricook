@@ -37,7 +37,6 @@ class CollectionService {
     return collection.id;
   }
 
-  /// Create the default Favorites collection for a user (called during user creation)
   Future<void> createDefaultFavoritesCollection(String userId) async {
     final collectionRef = _db.collection('collections').doc();
     final collection = Collection(
@@ -105,18 +104,15 @@ class CollectionService {
       throw Exception('Unauthorized');
     }
 
-    // Prevent deletion of default Favorites collection
     if (data['isDefault'] == true) {
       throw Exception('The Favorites collection cannot be deleted');
     }
 
-    // Delete all items in the collection
     final itemsSnapshot = await collectionRef.collection('items').get();
     for (final doc in itemsSnapshot.docs) {
       await doc.reference.delete();
     }
 
-    // Delete the collection
     await collectionRef.delete();
   }
 
@@ -138,7 +134,6 @@ class CollectionService {
                 .where((col) => col.archived == false)
                 .toList();
             
-            // Sort to put Favorites (default) collection first
             collections.sort((a, b) {
               if (a.isDefault && !b.isDefault) return -1;
               if (!a.isDefault && b.isDefault) return 1;
@@ -162,7 +157,6 @@ class CollectionService {
                 .map((doc) => Collection.fromJson(doc.data()))
                 .toList();
             
-            // Sort to put Favorites (default) collection first
             collections.sort((a, b) {
               if (a.isDefault && !b.isDefault) return -1;
               if (!a.isDefault && b.isDefault) return 1;
@@ -213,14 +207,12 @@ class CollectionService {
         );
   }
 
-  /// Get or create the default favorites collection for the current user
   Future<Collection> getOrCreateFavoritesCollection() async {
     final user = _authService.currentUser;
     if (user == null) {
       throw Exception('User not authenticated');
     }
 
-    // Try to find existing favorites collection
     final query = await _db
         .collection('collections')
         .where('ownerId', isEqualTo: user.uid)
@@ -232,7 +224,6 @@ class CollectionService {
       return Collection.fromJson(query.docs.first.data());
     }
 
-    // Create new favorites collection
     final collectionRef = _db.collection('collections').doc();
     final favoritesCollection = Collection(
       id: collectionRef.id,
@@ -248,7 +239,6 @@ class CollectionService {
     return favoritesCollection;
   }
 
-  /// Add a recipe to the favorites collection
   Future<void> addRecipeToFavorites({
     required String recipeId,
     required String recipeName,
@@ -257,7 +247,6 @@ class CollectionService {
     try {
       final favoritesCollection = await getOrCreateFavoritesCollection();
 
-      // Check if recipe already in favorites
       final existingItem = await _db
           .collection('collections')
           .doc(favoritesCollection.id)
@@ -267,10 +256,9 @@ class CollectionService {
           .get();
 
       if (existingItem.docs.isNotEmpty) {
-        return; // Already in favorites
+        return; 
       }
 
-      // Add recipe to favorites collection
       final itemRef = _db
           .collection('collections')
           .doc(favoritesCollection.id)
@@ -293,7 +281,6 @@ class CollectionService {
 
       await itemRef.set(collectionItem.toJson());
 
-      // Update recipe count
       await _db
           .collection('collections')
           .doc(favoritesCollection.id)
@@ -307,12 +294,10 @@ class CollectionService {
     }
   }
 
-  /// Remove a recipe from the favorites collection
   Future<void> removeRecipeFromFavorites(String recipeId) async {
     try {
       final favoritesCollection = await getOrCreateFavoritesCollection();
 
-      // Find the item to remove
       final query = await _db
           .collection('collections')
           .doc(favoritesCollection.id)
@@ -324,7 +309,6 @@ class CollectionService {
         await doc.reference.delete();
       }
 
-      // Update recipe count
       if (query.docs.isNotEmpty) {
         await _db
             .collection('collections')

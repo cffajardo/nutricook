@@ -42,7 +42,6 @@ class CloudflareConfig {
     return value.endsWith('/') ? value.substring(0, value.length - 1) : value;
   }
 
-  /// Debug mode flag
   static bool get debugMode {
     final value = dotenv.env['DEBUG_MODE']?.toLowerCase();
     return value == 'true' || value == '1';
@@ -59,12 +58,10 @@ class CloudflareConfig {
       throw ConfigurationException('Account ID is empty');
     }
     String endpoint = 'https://$id.r2.cloudflarestorage.com';
-    // Ensure we return a clean base endpoint without trailing slashes or bucket names
     return endpoint.replaceAll(RegExp(r'/+$'), '');
   }
 
   static String getUploadUrl(String objectKey) {
-    // Ensure endpoint doesn't have the bucket name or trailing slash
     final bucket = bucketName;
     final endpoint = s3Endpoint.replaceAll(RegExp('/$bucket\$'), '').replaceAll(RegExp(r'/+$'), '');
     

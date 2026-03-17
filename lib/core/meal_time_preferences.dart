@@ -6,7 +6,7 @@ const List<String> orderedMealTypes = <String>[
   'Other',
 ];
 
-// Store as minutes (0-1439) to support both hours and minutes
+// Store as minutes for Hour/Minute Support
 const Map<String, int> defaultMealStartHours = <String, int>{
   'Breakfast': 5 * 60, // 5:00 AM
   'Lunch': 11 * 60, // 11:00 AM
@@ -19,13 +19,13 @@ Map<String, int> sanitizeMealStartHours(Map<String, int>? hours) {
   return <String, int>{
     for (final mealType in orderedMealTypes)
       mealType: (hours?[mealType] ?? defaultMealStartHours[mealType]!)
-          .clamp(0, 1439) // 0-1439 minutes in a day
+          .clamp(0, 1439) 
           .toInt(),
   };
 }
 
 String resolveMealTypeForTime(DateTime time, Map<String, int>? hours) {
-  final sanitized = sanitizeMealStartHours(hours);
+  final sanitized = sanitizeMealStartHours(hours); // Ensures Valid Time
   final currentMinutes = (time.hour * 60) + time.minute;
   final slots = orderedMealTypes.asMap().entries.map((entry) {
     return _MealTimeSlot(
@@ -67,10 +67,7 @@ bool isSameCalendarDay(DateTime a, DateTime b) {
   return a.year == b.year && a.month == b.month && a.day == b.day;
 }
 
-/// Validates that meal times are in chronological order (no overlaps).
-/// "Other" can be set at any time and has no ordering constraints.
-/// Returns the validated map or the original if no overlaps would occur.
-/// If an overlap is detected, the new time is clamped to prevent it.
+// Checks for Overlaps and Clamps to Valid Ranges
 Map<String, int> validateAndClampMealTimes(
   Map<String, int> mealTimes,
   String mealTypeBeingChanged,
@@ -79,16 +76,14 @@ Map<String, int> validateAndClampMealTimes(
   final result = Map<String, int>.from(mealTimes);
   result[mealTypeBeingChanged] = newTime.clamp(0, 1439);
 
-  // "Other" can be at any time, no validation needed
+  // Other can be any time so no need to check
   if (mealTypeBeingChanged == 'Other') {
     return sanitizeMealStartHours(result);
   }
 
-  // Get the index of the meal being changed
   final changedIndex = orderedMealTypes.indexOf(mealTypeBeingChanged);
   if (changedIndex == -1) return sanitizeMealStartHours(result);
 
-  // Check if it violates ordering with previous meal (skip if prev is "Other")
   if (changedIndex > 0) {
     final prevMealType = orderedMealTypes[changedIndex - 1];
     if (prevMealType != 'Other') {
@@ -99,7 +94,6 @@ Map<String, int> validateAndClampMealTimes(
     }
   }
 
-  // Check if it violates ordering with next meal (skip if next is "Other")
   if (changedIndex < orderedMealTypes.length - 1) {
     final nextMealType = orderedMealTypes[changedIndex + 1];
     if (nextMealType != 'Other') {
