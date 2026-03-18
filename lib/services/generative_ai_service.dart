@@ -178,6 +178,36 @@ Consider what a "typical" piece would be for this ingredient.
       );
     }
   }
+
+  Future<PhysicalPropertyAnalysis> analyzePhysicalProperties(String ingredientName) async {
+    final prompt = '''
+For the food ingredient "$ingredientName", analyze its physical form and measurement patterns.
+All ingredients are measured per 100g for nutrition, but some need extra data for unit conversions (e.g., volume to weight or pieces to weight).
+
+Categorize it into ONE of these:
+1. "LIQUID": Naturally liquid/fluid (needs density in g/ml).
+2. "SOLID_PIECE": Naturally comes in discrete units/pieces (e.g., garlic clove, whole apple, egg) and is commonly measured by count (needs average weight in grams).
+3. "WEIGHT_ONLY": Items usually measured only by weight/volume but don't have a standard "piece" size (e.g., flour, sugar, minced meat, chopped vegetables).
+
+Return ONLY a valid JSON object:
+{
+  "category": "LIQUID" | "SOLID_PIECE" | "WEIGHT_ONLY",
+  "value": <decimal or null>,
+  "explanation": "<short reason>"
+}
+
+- For LIQUID: value is density in g/ml (e.g. 1.03).
+- For SOLID_PIECE: value is average weight of ONE piece in grams (e.g. 5.0).
+- For WEIGHT_ONLY: value must be null.
+''';
+
+    try {
+      final jsonString = await generateText(prompt: prompt);
+      return PhysicalPropertyAnalysis.fromJson(jsonString);
+    } catch (e) {
+      throw GenerativeAiException('Failed to analyze physical properties: $e');
+    }
+  }
 }
 
 class GenerativeAiException implements Exception {
@@ -267,5 +297,44 @@ class IngredientNutritionData {
     if (value is int) return value.toDouble();
     if (value is String) return double.parse(value);
     return 0.0;
+  }
+}
+
+class PhysicalPropertyAnalysis {
+  final String category; // LIQUID, SOLID_PIECE, WEIGHT_ONLY
+  final double? value;
+  final String explanation;
+
+  const PhysicalPropertyAnalysis({
+    required this.category,
+    this.value,
+    required this.explanation,
+  });
+
+  factory PhysicalPropertyAnalysis.fromJson(String jsonString) {
+    try {
+      String cleaned = jsonString
+          .replaceAll('```json', '')
+          .replaceAll('```', '')
+          .trim();
+
+      // Simple manual JSON parsing (regex based for robustness)
+      final categoryMatch = RegExp(r'"category":\s*"([^"]*)"').firstMatch(cleaned);
+      final valueMatch = RegExp(r'"value":\s*([0-9.]+|null)').firstMatch(cleaned);
+      final explanationMatch = RegExp(r'"explanation":\s*"([^"]*)"').firstMatch(cleaned);
+
+      final category = categoryMatch?.group(1) ?? 'WEIGHT_ONLY';
+      final valueStr = valueMatch?.group(1);
+      final value = (valueStr == null || valueStr == 'null') ? null : double.tryParse(valueStr);
+      final explanation = explanationMatch?.group(1) ?? '';
+
+      return PhysicalPropertyAnalysis(
+        category: category,
+        value: value,
+        explanation: explanation,
+      );
+    } catch (e) {
+      throw GenerativeAiException('Failed to parse property analysis: $e');
+    }
   }
 }

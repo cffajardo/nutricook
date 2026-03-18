@@ -172,7 +172,7 @@ class _CreateIngredientScreenState extends ConsumerState<CreateIngredientScreen>
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   elevation: 0,
                 ),
-                onPressed: state.isLoadingNutrition || state.isLoadingPhysicalProperty
+                onPressed: state.isLoadingNutrition
                     ? null
                     : () async {
                         if (state.nutritionMethod == 'manual') {
@@ -184,7 +184,6 @@ class _CreateIngredientScreenState extends ConsumerState<CreateIngredientScreen>
                           ref.read(createIngredientProvider.notifier).setImageUrl(imageUrl);
                         }
 
-                        await ref.read(createIngredientProvider.notifier).generatePhysicalProperty(_nameController.text);
                         
                         final res = await ref.read(createIngredientProvider.notifier).createIngredient();
                         
@@ -193,7 +192,7 @@ class _CreateIngredientScreenState extends ConsumerState<CreateIngredientScreen>
                           context.pop();
                         }
                       },
-                child: state.isLoadingNutrition || state.isLoadingPhysicalProperty
+                child: state.isLoadingNutrition
                     ? const SizedBox(
                         height: 20,
                         width: 20,

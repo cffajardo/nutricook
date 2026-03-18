@@ -14,6 +14,8 @@ import 'firebase_options.dart';
 import 'routing/main_router.dart';
 import 'package:nutricook/services/archive_service.dart';
 import 'package:nutricook/features/auth/providers/auth_provider.dart';
+import 'package:nutricook/features/admin/providers/create_ingredient_provider.dart';
+import 'package:nutricook/services/ingredient_service.dart';
 
 
 Future<void> main() async {
@@ -74,6 +76,9 @@ class NutriCookApp extends ConsumerWidget {
     ref.listen(currentUserIdProvider, (previous, next) {
       if (next != null && next.isNotEmpty && previous != next) {
         ref.read(archiveServiceProvider).runCleanup();
+        ref.read(ingredientServiceProvider).enrichMissingProperties(
+              ref.read(generativeAiServiceProvider),
+            );
       }
     });
     _setupNotificationTapListener(context);

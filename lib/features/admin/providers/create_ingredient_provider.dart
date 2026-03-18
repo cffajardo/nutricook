@@ -27,11 +27,8 @@ class CreateIngredientState {
     this.fiber = 0.0,
     this.sugar = 0.0,
     this.sodium = 0.0,
-    this.density,
-    this.avgWeight,
     this.imageUrl = '',
     this.isLoadingNutrition = false,
-    this.isLoadingPhysicalProperty = false,
     this.error = '',
     this.success = false,
     this.isTemporary = false,
@@ -50,11 +47,8 @@ class CreateIngredientState {
   final double fiber;
   final double sugar;
   final double sodium;
-  final double? density; // for liquids
-  final double? avgWeight; // for solids
   final String imageUrl; 
   final bool isLoadingNutrition;
-  final bool isLoadingPhysicalProperty;
   final String error;
   final bool success;
   final bool isTemporary;
@@ -73,11 +67,8 @@ class CreateIngredientState {
     double? fiber,
     double? sugar,
     double? sodium,
-    double? density,
-    double? avgWeight,
     String? imageUrl,
     bool? isLoadingNutrition,
-    bool? isLoadingPhysicalProperty,
     String? error,
     bool? success,
     bool? isTemporary,
@@ -96,12 +87,8 @@ class CreateIngredientState {
       fiber: fiber ?? this.fiber,
       sugar: sugar ?? this.sugar,
       sodium: sodium ?? this.sodium,
-      density: density ?? this.density,
-      avgWeight: avgWeight ?? this.avgWeight,
       imageUrl: imageUrl ?? this.imageUrl,
       isLoadingNutrition: isLoadingNutrition ?? this.isLoadingNutrition,
-      isLoadingPhysicalProperty:
-          isLoadingPhysicalProperty ?? this.isLoadingPhysicalProperty,
       error: error ?? this.error,
       success: success ?? this.success,
       isTemporary: isTemporary ?? this.isTemporary,
@@ -129,8 +116,6 @@ class CreateIngredientState {
           ? description.trim()
           : name.trim(),
       nutritionPer100g: nutritionInfo,
-      densityGPerMl: isLiquid ? density : null,
-      avgWeightG: !isLiquid ? avgWeight : null,
       imageURL: imageUrl.isNotEmpty ? imageUrl : null,
     );
   }
@@ -157,8 +142,6 @@ class CreateIngredientNotifier extends Notifier<CreateIngredientState> {
   void setIngredientType(bool isLiquid) {
     state = state.copyWith(
       isLiquid: isLiquid,
-      density: null,
-      avgWeight: null,
       error: '',
     );
   }
@@ -235,45 +218,6 @@ class CreateIngredientNotifier extends Notifier<CreateIngredientState> {
     }
   }
 
-  Future<void> generatePhysicalProperty(String ingredientName) async {
-    if (ingredientName.trim().isEmpty) {
-      state = state.copyWith(
-        error: 'Please enter ingredient name first',
-      );
-      return;
-    }
-
-    try {
-      state = state.copyWith(isLoadingPhysicalProperty: true, error: '');
-
-      final aiService = ref.read(generativeAiServiceProvider);
-
-      if (state.isLiquid) {
-        final density = await aiService.generateDensityFromAI(
-          ingredientName.trim(),
-        );
-        state = state.copyWith(
-          density: density,
-          isLoadingPhysicalProperty: false,
-          error: '',
-        );
-      } else {
-        final avgWeight = await aiService.generateAveragePieceWeightFromAI(
-          ingredientName.trim(),
-        );
-        state = state.copyWith(
-          avgWeight: avgWeight,
-          isLoadingPhysicalProperty: false,
-          error: '',
-        );
-      }
-    } catch (e) {
-      state = state.copyWith(
-        isLoadingPhysicalProperty: false,
-        error: 'Failed to generate property: ${e.toString()}',
-      );
-    }
-  }
 
   Future<Ingredient?> createIngredient() async {
     if (state.name.trim().isEmpty) {
@@ -323,8 +267,6 @@ class CreateIngredientNotifier extends Notifier<CreateIngredientState> {
             ? state.description.trim()
             : state.name.trim(),
         nutritionPer100g: nutritionInfo,
-        densityGPerMl: state.isLiquid ? state.density : null,
-        avgWeightG: !state.isLiquid ? state.avgWeight : null,
         imageURL: state.imageUrl.isNotEmpty ? state.imageUrl : null,
       );
 

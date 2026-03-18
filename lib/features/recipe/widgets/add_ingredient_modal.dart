@@ -445,10 +445,10 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       elevation: 0,
                     ),
-                    onPressed: state.isLoadingNutrition || state.isLoadingPhysicalProperty
+                    onPressed: state.isLoadingNutrition
                         ? null
                         : () => _submitCustomIngredient(),
-                    child: state.isLoadingNutrition || state.isLoadingPhysicalProperty
+                    child: state.isLoadingNutrition
                         ? const SizedBox(
                             height: 20,
                             width: 20,
@@ -767,7 +767,7 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
             const SizedBox(width: 12),
             Expanded(
               child: ElevatedButton(
-                onPressed: ingredientState.isLoadingNutrition || ingredientState.isLoadingPhysicalProperty
+                onPressed: ingredientState.isLoadingNutrition
                     ? null
                     : () => _submitCustomIngredient(),
                 style: ElevatedButton.styleFrom(
@@ -777,7 +777,7 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                 ),
-                child: ingredientState.isLoadingNutrition || ingredientState.isLoadingPhysicalProperty
+                child: ingredientState.isLoadingNutrition
                     ? const SizedBox(
                         height: 20,
                         width: 20,
@@ -927,7 +927,6 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
           ? (_ingredientImageUploadKey.currentState as dynamic)?.uploadImage()
           : Future.value(null);
 
-      ref.read(createIngredientProvider.notifier).generatePhysicalProperty(_nameController.text);
       final recipeCreationState = ref.read(recipeCreationProvider);
       final recipeId = recipeCreationState.creationId;
           

@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:nutricook/core/constants.dart';
 import 'package:nutricook/models/ingredient/ingredient.dart';
+import 'package:nutricook/services/generative_ai_service.dart';
 
 class IngredientService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -191,5 +192,45 @@ class IngredientService {
         .get();
 
     return snapshot.docs.isNotEmpty;
+  }
+
+  Future<void> enrichMissingProperties(GenerativeAiService aiService) async {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) return;
+
+    final snapshot = await _db
+        .collection(FirestoreConstants.ingredients)
+        .where('ownerId', isEqualTo: userId)
+        .get();
+
+    final ingredientsToEnrich = snapshot.docs
+        .map((doc) => Ingredient.fromJson(doc.data()..['id'] = doc.id))
+        .where((ing) => (ing.densityGPerMl == null || ing.densityGPerMl == 0) && (ing.avgWeightG == null || ing.avgWeightG == 0))
+        .toList();
+
+    if (ingredientsToEnrich.isEmpty) return;
+
+    for (final ingredient in ingredientsToEnrich) {
+      try {
+        final analysis = await aiService.analyzePhysicalProperties(ingredient.name);
+        
+        final Map<String, dynamic> updates = {};
+        if (analysis.category == 'LIQUID' && analysis.value != null) {
+          updates['densityGPerMl'] = analysis.value;
+        } else if (analysis.category == 'SOLID_PIECE' && analysis.value != null) {
+          updates['avgWeightG'] = analysis.value;
+        }
+        
+        updates['isAnalyzed'] = true;
+
+        await _db
+            .collection(FirestoreConstants.ingredients)
+            .doc(ingredient.id)
+            .update(updates);
+        debugPrint('✅ Enriched ${ingredient.name}: ${analysis.category} (${analysis.value})');
+      } catch (e) {
+        debugPrint('❌ Failed to enrich ${ingredient.name}: $e');
+      }
+    }
   }
 }
