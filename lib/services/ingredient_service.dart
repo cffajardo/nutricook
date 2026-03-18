@@ -8,6 +8,17 @@ import 'package:nutricook/models/ingredient/ingredient.dart';
 import 'package:nutricook/services/generative_ai_service.dart';
 
 class IngredientService {
+    /// Returns a stream of all global ingredients (ownerId == null) and custom ingredients for the given user.
+    Stream<List<Ingredient>> getVisibleIngredientsStream(String userId) {
+      return _db
+          .collection(FirestoreConstants.ingredients)
+          .orderBy('name')
+          .snapshots()
+          .map((snapshot) => snapshot.docs
+              .map((doc) => Ingredient.fromJson(doc.data()..['id'] = doc.id))
+              .where((ing) => ing.archived == false && (ing.ownerId == null || ing.ownerId == userId))
+              .toList());
+    }
   IngredientService(this._ref);
   final Ref _ref;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -198,13 +209,17 @@ class IngredientService {
         .toList();
   }
 
-  Future<bool> isIngredientNameTaken(String name) async {
-    final snapshot = await _db
-        .collection(FirestoreConstants.ingredients)
-        .where('name', isEqualTo: name)
-        .limit(1)
-        .get();
-
+  /// Checks if an ingredient name is taken for the current user (custom) or globally (global ingredient).
+  /// Allows duplicate names if ownerId is different.
+  Future<bool> isIngredientNameTaken(String name, {String? ownerId}) async {
+    Query query = _db.collection(FirestoreConstants.ingredients)
+        .where('name', isEqualTo: name);
+    if (ownerId != null) {
+      query = query.where('ownerId', isEqualTo: ownerId);
+    } else {
+      query = query.where('ownerId', isNull: true);
+    }
+    final snapshot = await query.limit(1).get();
     return snapshot.docs.isNotEmpty;
   }
 

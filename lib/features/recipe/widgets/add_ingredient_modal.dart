@@ -43,7 +43,8 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
   String? _selectedUnitId;
   late TextEditingController _amountController;
   final TextEditingController _searchController = TextEditingController();
-  final GlobalKey<State<ImageUploadField>> _ingredientImageUploadKey = GlobalKey();
+  final GlobalKey<State<ImageUploadField>> _ingredientImageUploadKey =
+      GlobalKey();
 
   late TextEditingController _nameController;
   late TextEditingController _descriptionController;
@@ -56,8 +57,18 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
   late TextEditingController _sodiumController;
 
   final List<String> categories = [
-    'Proteins', 'Vegetables', 'Fruits', 'Dairy', 'Grains', 'Spices',
-    'Herbs', 'Sauces', 'Seafood', 'Nuts and Seeds', 'Fats and Oils', 'Beverages',
+    'Proteins',
+    'Vegetables',
+    'Fruits',
+    'Dairy',
+    'Grains',
+    'Spices',
+    'Herbs',
+    'Sauces',
+    'Seafood',
+    'Nuts and Seeds',
+    'Fats and Oils',
+    'Beverages',
   ];
 
   final List<String> _processes = const <String>[
@@ -246,10 +257,7 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
             onPressed: () => setState(() => _stage = 3),
             style: OutlinedButton.styleFrom(
               backgroundColor: Colors.white,
-              side: const BorderSide(
-                color: AppColors.rosePink,
-                width: 2,
-              ),
+              side: const BorderSide(color: AppColors.rosePink, width: 2),
               minimumSize: const Size(double.infinity, 50),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -260,7 +268,11 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.add_circle_outline, color: AppColors.rosePink, size: 20),
+                  Icon(
+                    Icons.add_circle_outline,
+                    color: AppColors.rosePink,
+                    size: 20,
+                  ),
                   SizedBox(width: 8),
                   Text(
                     'Create Custom Ingredient',
@@ -291,8 +303,8 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
         final filtered = ingredients.where((ingredient) {
           final inCategory =
               _selectedCategory == null ||
-              (ingredient.category?.toLowerCase() ?? '')
-                  == _selectedCategory!.toLowerCase();
+              ingredient.category.toLowerCase() ==
+                  _selectedCategory!.toLowerCase();
           if (!inCategory) return false;
           if (query.isEmpty) return true;
           return ingredient.name.toLowerCase().contains(query);
@@ -346,15 +358,17 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
   }
 
   void _updateNutritionFromControllers() {
-    ref.read(createIngredientProvider.notifier).setNutritionValue(
-      calories: int.tryParse(_caloriesController.text) ?? 0,
-      carbohydrates: double.tryParse(_carbsController.text) ?? 0.0,
-      protein: double.tryParse(_proteinController.text) ?? 0.0,
-      fat: double.tryParse(_fatController.text) ?? 0.0,
-      fiber: double.tryParse(_fiberController.text) ?? 0.0,
-      sugar: double.tryParse(_sugarController.text) ?? 0.0,
-      sodium: double.tryParse(_sodiumController.text) ?? 0.0,
-    );
+    ref
+        .read(createIngredientProvider.notifier)
+        .setNutritionValue(
+          calories: int.tryParse(_caloriesController.text) ?? 0,
+          carbohydrates: double.tryParse(_carbsController.text) ?? 0.0,
+          protein: double.tryParse(_proteinController.text) ?? 0.0,
+          fat: double.tryParse(_fatController.text) ?? 0.0,
+          fiber: double.tryParse(_fiberController.text) ?? 0.0,
+          sugar: double.tryParse(_sugarController.text) ?? 0.0,
+          sodium: double.tryParse(_sodiumController.text) ?? 0.0,
+        );
   }
 
   Widget _buildCreateCustomIngredientStep() {
@@ -372,26 +386,31 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
           _buildThemedTextField(
             controller: _nameController,
             hint: 'e.g., Atlantic Salmon, Avocado',
-            onChanged: (val) => ref.read(createIngredientProvider.notifier).setName(val),
+            onChanged: (val) =>
+                ref.read(createIngredientProvider.notifier).setName(val),
           ),
           const SizedBox(height: 20),
-          
+
           _buildSectionHeader('Description'),
           const SizedBox(height: 12),
           _buildThemedTextField(
             controller: _descriptionController,
             hint: 'e.g., Fresh Atlantic salmon, rich in omega-3',
             maxLines: 3,
-            onChanged: (val) => ref.read(createIngredientProvider.notifier).setDescription(val),
+            onChanged: (val) =>
+                ref.read(createIngredientProvider.notifier).setDescription(val),
           ),
           const SizedBox(height: 20),
-          
+
           _buildSectionHeader('Image'),
           const SizedBox(height: 12),
           Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: AppColors.rosePink.withValues(alpha: 0.1), width: 1.5),
+              border: Border.all(
+                color: AppColors.rosePink.withValues(alpha: 0.1),
+                width: 1.5,
+              ),
             ),
             clipBehavior: Clip.antiAlias,
             child: ImageUploadField(
@@ -403,7 +422,7 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
             ),
           ),
           const SizedBox(height: 24),
-                              
+
           _buildSectionHeader('Categorization'),
           const SizedBox(height: 12),
           _buildThemedDropdown(state),
@@ -420,7 +439,7 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
             _buildAIStatusCard(state),
 
           const SizedBox(height: 32),
-          
+
           Row(
             children: [
               Expanded(
@@ -428,10 +447,21 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
                   onPressed: () => setState(() => _stage = 0),
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size(0, 56),
-                    side: const BorderSide(color: AppColors.rosePink, width: 1.5),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    side: const BorderSide(
+                      color: AppColors.rosePink,
+                      width: 1.5,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
-                  child: const Text('Back', style: TextStyle(color: AppColors.rosePink, fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    'Back',
+                    style: TextStyle(
+                      color: AppColors.rosePink,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -442,7 +472,9 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.rosePink,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                       elevation: 0,
                     ),
                     onPressed: state.isLoadingNutrition
@@ -452,10 +484,19 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
                         ? const SizedBox(
                             height: 20,
                             width: 20,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
                           )
-                        : const Text('Create & Add',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16)),
+                        : const Text(
+                            'Create & Add',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 16,
+                            ),
+                          ),
                   ),
                 ),
               ),
@@ -468,10 +509,22 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
   }
 
   Widget _buildSectionHeader(String title) {
-    return Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.black87));
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w900,
+        color: Colors.black87,
+      ),
+    );
   }
 
-  Widget _buildThemedTextField({required TextEditingController controller, required String hint, Function(String)? onChanged, int? maxLines}) {
+  Widget _buildThemedTextField({
+    required TextEditingController controller,
+    required String hint,
+    Function(String)? onChanged,
+    int? maxLines,
+  }) {
     return TextField(
       controller: controller,
       onChanged: onChanged,
@@ -481,10 +534,16 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
         hintText: hint,
         filled: true,
         fillColor: AppColors.cardRose.withValues(alpha: 0.1),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppColors.rosePink.withValues(alpha: 0.1), width: 1),
+          borderSide: BorderSide(
+            color: AppColors.rosePink.withValues(alpha: 0.1),
+            width: 1,
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -500,13 +559,20 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
       decoration: BoxDecoration(
         color: AppColors.cardRose.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.rosePink.withValues(alpha: 0.1), width: 1),
+        border: Border.all(
+          color: AppColors.rosePink.withValues(alpha: 0.1),
+          width: 1,
+        ),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: state.category,
           isExpanded: true,
-          style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 14),
+          style: const TextStyle(
+            color: Colors.black87,
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
           items: categories.map((c) {
             final displayText = c
                 .split(' ')
@@ -516,7 +582,8 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
             return DropdownMenuItem(value: c, child: Text(displayText));
           }).toList(),
           onChanged: (val) {
-            if (val != null) ref.read(createIngredientProvider.notifier).setCategory(val);
+            if (val != null)
+              ref.read(createIngredientProvider.notifier).setCategory(val);
           },
         ),
       ),
@@ -527,7 +594,14 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Input Method', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black38)),
+        const Text(
+          'Input Method',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: Colors.black38,
+          ),
+        ),
         const SizedBox(height: 8),
         SizedBox(
           width: double.infinity,
@@ -542,10 +616,17 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
               backgroundColor: Colors.white,
               selectedBackgroundColor: AppColors.rosePink,
               selectedForegroundColor: Colors.white,
-              side: BorderSide(color: AppColors.rosePink.withValues(alpha: 0.1), width: 1.5),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              side: BorderSide(
+                color: AppColors.rosePink.withValues(alpha: 0.1),
+                width: 1.5,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
-            onSelectionChanged: (set) => ref.read(createIngredientProvider.notifier).setNutritionMethod(set.first),
+            onSelectionChanged: (set) => ref
+                .read(createIngredientProvider.notifier)
+                .setNutritionMethod(set.first),
           ),
         ),
       ],
@@ -572,11 +653,22 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
     );
   }
 
-  Widget _buildSmallNutritionField(String label, TextEditingController controller, String unit) {
+  Widget _buildSmallNutritionField(
+    String label,
+    TextEditingController controller,
+    String unit,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('$label ($unit)', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black45)),
+        Text(
+          '$label ($unit)',
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: Colors.black45,
+          ),
+        ),
         const SizedBox(height: 4),
         Expanded(
           child: TextField(
@@ -593,7 +685,10 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: AppColors.rosePink, width: 1),
+                borderSide: const BorderSide(
+                  color: AppColors.rosePink,
+                  width: 1,
+                ),
               ),
             ),
           ),
@@ -603,9 +698,10 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
   }
 
   Widget _buildAIStatusCard(dynamic state) {
-    final hasGeneratedValues = state.calories > 0 || 
-        state.carbohydrates > 0 || 
-        state.protein > 0 || 
+    final hasGeneratedValues =
+        state.calories > 0 ||
+        state.carbohydrates > 0 ||
+        state.protein > 0 ||
         state.fat > 0;
 
     return Container(
@@ -614,49 +710,84 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
       decoration: BoxDecoration(
         color: AppColors.cardRose.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.rosePink.withValues(alpha: 0.1), width: 1.5),
+        border: Border.all(
+          color: AppColors.rosePink.withValues(alpha: 0.1),
+          width: 1.5,
+        ),
       ),
       child: Column(
         children: [
           if (state.isLoadingNutrition) ...[
             const CircularProgressIndicator(color: AppColors.rosePink),
             const SizedBox(height: 12),
-            const Text('Generating nutrition data...', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.rosePink)),
+            const Text(
+              'Generating nutrition data...',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: AppColors.rosePink,
+              ),
+            ),
           ] else if (hasGeneratedValues) ...[
             const Icon(Icons.check_circle, color: Colors.green, size: 32),
             const SizedBox(height: 12),
-            const Text('AI Generated Values', style: TextStyle(fontWeight: FontWeight.w900)),
+            const Text(
+              'AI Generated Values',
+              style: TextStyle(fontWeight: FontWeight.w900),
+            ),
             const SizedBox(height: 16),
             _buildGeneratedValueDisplay(state),
             const SizedBox(height: 16),
             OutlinedButton(
               onPressed: () {
                 _updateNutritionFromControllers();
-                ref.read(createIngredientProvider.notifier).generateNutritionFromAI(_nameController.text);
+                ref
+                    .read(createIngredientProvider.notifier)
+                    .generateNutritionFromAI(_nameController.text);
               },
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: AppColors.rosePink),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-              child: const Text('Regenerate', style: TextStyle(color: AppColors.rosePink, fontWeight: FontWeight.bold)),
+              child: const Text(
+                'Regenerate',
+                style: TextStyle(
+                  color: AppColors.rosePink,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ] else ...[
             const Icon(Icons.auto_awesome, color: AppColors.rosePink, size: 32),
             const SizedBox(height: 12),
-            const Text('AI Prediction Ready', style: TextStyle(fontWeight: FontWeight.w900)),
+            const Text(
+              'AI Prediction Ready',
+              style: TextStyle(fontWeight: FontWeight.w900),
+            ),
             const SizedBox(height: 16),
             OutlinedButton(
               onPressed: () {
                 _updateNutritionFromControllers();
-                ref.read(createIngredientProvider.notifier).generateNutritionFromAI(_nameController.text);
+                ref
+                    .read(createIngredientProvider.notifier)
+                    .generateNutritionFromAI(_nameController.text);
               },
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: AppColors.rosePink),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-              child: const Text('Generate with AI', style: TextStyle(color: AppColors.rosePink, fontWeight: FontWeight.bold)),
+              child: const Text(
+                'Generate with AI',
+                style: TextStyle(
+                  color: AppColors.rosePink,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
-          ]
+          ],
         ],
       ),
     );
@@ -683,8 +814,18 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 13, color: Colors.black54)),
-          Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 13, color: Colors.black54),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
         ],
       ),
     );
@@ -694,7 +835,9 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
     final ingredientState = ref.watch(createIngredientProvider);
     final nameController = TextEditingController(text: ingredientState.name);
     final caloriesController = TextEditingController(
-      text: ingredientState.calories > 0 ? ingredientState.calories.toString() : '',
+      text: ingredientState.calories > 0
+          ? ingredientState.calories.toString()
+          : '',
     );
 
     return Column(
@@ -704,7 +847,8 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
           label: 'Ingredient Name *',
           hint: 'e.g., Atlantic Salmon',
           controller: nameController,
-          onChanged: (val) => ref.read(createIngredientProvider.notifier).setName(val),
+          onChanged: (val) =>
+              ref.read(createIngredientProvider.notifier).setName(val),
         ),
         const SizedBox(height: 16),
         _buildSimpleTextField(
@@ -722,15 +866,17 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
           keyboardType: TextInputType.number,
           onChanged: (val) {
             final cal = int.tryParse(val) ?? 0;
-            ref.read(createIngredientProvider.notifier).setNutritionValue(
-              calories: cal,
-              carbohydrates: ingredientState.carbohydrates,
-              protein: ingredientState.protein,
-              fat: ingredientState.fat,
-              fiber: ingredientState.fiber,
-              sugar: ingredientState.sugar,
-              sodium: ingredientState.sodium,
-            );
+            ref
+                .read(createIngredientProvider.notifier)
+                .setNutritionValue(
+                  calories: cal,
+                  carbohydrates: ingredientState.carbohydrates,
+                  protein: ingredientState.protein,
+                  fat: ingredientState.fat,
+                  fiber: ingredientState.fiber,
+                  sugar: ingredientState.sugar,
+                  sodium: ingredientState.sodium,
+                );
           },
         ),
         const SizedBox(height: 24),
@@ -740,7 +886,9 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
           label: 'Ingredient Image (Optional)',
           height: 160,
           autoUpload: false,
-          initialImageUrl: ingredientState.imageUrl.isEmpty ? null : ingredientState.imageUrl,
+          initialImageUrl: ingredientState.imageUrl.isEmpty
+              ? null
+              : ingredientState.imageUrl,
           onSuccess: (imageUrl) {
             ref.read(createIngredientProvider.notifier).setImageUrl(imageUrl);
           },
@@ -760,7 +908,10 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
                 ),
                 child: const Text(
                   'Back',
-                  style: TextStyle(color: AppColors.rosePink, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: AppColors.rosePink,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
@@ -781,7 +932,10 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
                       )
                     : const Text(
                         'Create & Add',
@@ -810,7 +964,10 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+        Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+        ),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
@@ -822,7 +979,10 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
             hintText: hint,
             filled: true,
             fillColor: AppColors.cardRose.withValues(alpha: 0.2),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
@@ -839,7 +999,10 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.rosePink, width: 1.5),
+              borderSide: const BorderSide(
+                color: AppColors.rosePink,
+                width: 1.5,
+              ),
             ),
           ),
         ),
@@ -885,13 +1048,18 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
                 decoration: BoxDecoration(
                   color: AppColors.cardRose.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.rosePink.withValues(alpha: 0.2)),
+                  border: Border.all(
+                    color: AppColors.rosePink.withValues(alpha: 0.2),
+                  ),
                 ),
                 child: Center(
                   child: Text(
                     cat,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
@@ -922,34 +1090,35 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
       // Firestore will sync the item first, and we can update the image URL later if needed.
       // However, for immediate offline support, we'll try to get the local path if possible,
       // but the requirement was "be able to create even without image".
-      
-      final uploadFuture = _ingredientImageUploadKey.currentState != null 
+
+      final uploadFuture = _ingredientImageUploadKey.currentState != null
           ? (_ingredientImageUploadKey.currentState as dynamic)?.uploadImage()
           : Future.value(null);
 
       final recipeCreationState = ref.read(recipeCreationProvider);
       final recipeId = recipeCreationState.creationId;
-          
-      ref.read(createIngredientProvider.notifier).setTemporaryStatus(
-        isTemporary: true,
-        recipeId: recipeId,
-      );
+
+      ref
+          .read(createIngredientProvider.notifier)
+          .setTemporaryStatus(isTemporary: true, recipeId: recipeId);
 
       // We call createIngredient but don't await the result to block the UI.
       // We need the created object to add to the recipe list though.
       // To keep it simple and responsive, we generate the ID locally or use the one in state.
-      
+
       final currentIng = state.toIngredient(
         id: 'ing_${DateTime.now().millisecondsSinceEpoch}',
         ownerId: ref.read(currentUserIdProvider),
       );
 
       ref.read(createIngredientProvider.notifier).createIngredient();
-      
+
       // Update with image URL whenever it's ready (non-blocking)
       uploadFuture.then((url) {
         if (url != null && url is String) {
-          ref.read(ingredientServiceProvider).updateIngredient(currentIng.copyWith(imageURL: url));
+          ref
+              .read(ingredientServiceProvider)
+              .updateIngredient(currentIng.copyWith(imageURL: url));
         }
       });
 
@@ -970,7 +1139,7 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
 
       _showSnack('Ingredient "${currentIng.name}" created and added.');
       ref.read(createIngredientProvider.notifier).reset();
-      
+
       _nameController.clear();
       _descriptionController.clear();
       _caloriesController.clear();
@@ -1002,7 +1171,8 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
 
         return ingredientsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => Center(child: Text('Failed to load ingredients: $error')),
+          error: (error, _) =>
+              Center(child: Text('Failed to load ingredients: $error')),
           data: (ingredients) {
             final selectedIngredient = _selectedIngredientId != null
                 ? ingredients.firstWhere(
@@ -1011,130 +1181,135 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
                   )
                 : null;
 
-
             // Filter out Kilocalorie unit (by id or name)
-            final compatibleUnits = _filterCompatibleUnits(units, selectedIngredient)
-              .where((unit) => unit.id.toLowerCase() != 'kcal' && unit.name.toLowerCase() != 'kilocalorie')
-              .toList();
+            final compatibleUnits =
+                _filterCompatibleUnits(units, selectedIngredient)
+                    .where(
+                      (unit) =>
+                          unit.id.toLowerCase() != 'kcal' &&
+                          unit.name.toLowerCase() != 'kilocalorie',
+                    )
+                    .toList();
 
             _selectedUnitId ??= _resolveInitialUnitId(compatibleUnits);
-            final selectedUnit = _findUnitById(compatibleUnits, _selectedUnitId) ??
-              compatibleUnits.first;
+            final selectedUnit =
+                _findUnitById(compatibleUnits, _selectedUnitId) ??
+                compatibleUnits.first;
 
-        return Padding(
-          key: const ValueKey(2),
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildDisplayField(
-                'Ingredient',
-                _selectedIngredientName ?? 'Select ingredient',
-                Icons.restaurant,
-                onTap: () => setState(() => _stage = 0),
-              ),
-              const SizedBox(height: 16),
-              if (_selectedProcess != 'None') ...[
-                _buildDisplayField(
-                  'Preparation Style',
-                  _selectedProcess,
-                  Icons.settings_suggest_outlined,
-                ),
-                const SizedBox(height: 16),
-              ],
-              const Text(
-                'Preparation Style',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-              ),
-              const SizedBox(height: 8),
-              _buildDropdownField(
-                value: _selectedProcess,
-                items: _processes,
-                onChanged: (value) =>
-                    setState(() => _selectedProcess = value ?? 'None'),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Measurement',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-              ),
-              const SizedBox(height: 8),
-              Row(
+            return Padding(
+              key: const ValueKey(2),
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    flex: 2,
-                    child: _buildSmallTextField(
-                      controller: _amountController,
-                      hint: 'Qty',
-                    ),
+                  _buildDisplayField(
+                    'Ingredient',
+                    _selectedIngredientName ?? 'Select ingredient',
+                    Icons.restaurant,
+                    onTap: () => setState(() => _stage = 0),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 3,
-                    child: _buildUnitDropdown(
-                      units: compatibleUnits,
-                      selectedUnitId: selectedUnit.id,
-                      ingredient: selectedIngredient,
+                  const SizedBox(height: 16),
+                  if (_selectedProcess != 'None') ...[
+                    _buildDisplayField(
+                      'Preparation Style',
+                      _selectedProcess,
+                      Icons.settings_suggest_outlined,
                     ),
+                    const SizedBox(height: 16),
+                  ],
+                  const Text(
+                    'Preparation Style',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildDropdownField(
+                    value: _selectedProcess,
+                    items: _processes,
+                    onChanged: (value) =>
+                        setState(() => _selectedProcess = value ?? 'None'),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Measurement',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: _buildSmallTextField(
+                          controller: _amountController,
+                          hint: 'Qty',
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 3,
+                        child: _buildUnitDropdown(
+                          units: compatibleUnits,
+                          selectedUnitId: selectedUnit.id,
+                          ingredient: selectedIngredient,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _buildUnitCompatibilityInfo(selectedIngredient),
+                  const Spacer(),
+                  Row(
+                    children: [
+                      if (isEditing)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 12),
+                          child: IconButton(
+                            onPressed: widget.onIngredientDeleted == null
+                                ? null
+                                : () {
+                                    widget.onIngredientDeleted!();
+                                    Navigator.pop(context);
+                                  },
+                            icon: const Icon(
+                              Icons.delete_outline,
+                              color: Colors.redAccent,
+                              size: 28,
+                            ),
+                            style: IconButton.styleFrom(
+                              side: const BorderSide(
+                                color: Colors.redAccent,
+                                width: 1.5,
+                              ),
+                              padding: const EdgeInsets.all(12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                          ),
+                        ),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => _submitIngredient(selectedUnit),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.rosePink,
+                            minimumSize: const Size(0, 55),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: Text(
+                            isEditing ? 'Update Ingredient' : 'Add to Recipe',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              _buildUnitCompatibilityInfo(selectedIngredient),
-              const Spacer(),
-              Row(
-                children: [
-                  if (isEditing)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 12),
-                      child: IconButton(
-                        onPressed: widget.onIngredientDeleted == null
-                            ? null
-                            : () {
-                                widget.onIngredientDeleted!();
-                                Navigator.pop(context);
-                              },
-                        icon: const Icon(
-                          Icons.delete_outline,
-                          color: Colors.redAccent,
-                          size: 28,
-                        ),
-                        style: IconButton.styleFrom(
-                          side: const BorderSide(
-                            color: Colors.redAccent,
-                            width: 1.5,
-                          ),
-                          padding: const EdgeInsets.all(12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                      ),
-                    ),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => _submitIngredient(selectedUnit),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.rosePink,
-                        minimumSize: const Size(0, 55),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: Text(
-                        isEditing ? 'Update Ingredient' : 'Add to Recipe',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
+            );
           },
         );
       },

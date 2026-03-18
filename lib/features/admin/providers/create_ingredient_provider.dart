@@ -245,10 +245,15 @@ class CreateIngredientNotifier extends Notifier<CreateIngredientState> {
       return null;
     }
 
-    final existingIngredient = await _checkIngredientExists(state.name.trim());
-    if (existingIngredient != null) {
+    // Get current userId for custom ingredient, or null for global
+    final userId = ref.read(currentUserIdProvider);
+    final isTaken = await ref.read(ingredientServiceProvider).isIngredientNameTaken(
+      state.name.trim(),
+      ownerId: userId,
+    );
+    if (isTaken) {
       state = state.copyWith(
-        error: 'An ingredient named "${state.name.trim()}" already exists',
+        error: 'You already have an ingredient named "${state.name.trim()}"',
       );
       return null;
     }
@@ -288,6 +293,7 @@ class CreateIngredientNotifier extends Notifier<CreateIngredientState> {
             : state.name.trim(),
         nutritionPer100g: nutritionInfo,
         imageURL: state.imageUrl.isNotEmpty ? state.imageUrl : null,
+        ownerId: userId,
       );
 
       final ingredientService = ref.read(ingredientServiceProvider);
