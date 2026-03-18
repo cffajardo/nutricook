@@ -5,6 +5,7 @@ import 'package:nutricook/models/nutrition_info/nutrition_info.dart';
 import 'package:nutricook/services/generative_ai_service.dart';
 import 'package:nutricook/services/ingredient_service.dart';
 import 'package:nutricook/features/library/ingredients/provider/ingredient_provider.dart';
+import 'package:nutricook/features/auth/providers/auth_provider.dart';
 // Providers are imported from their respective service/provider files
 
 class CreateIngredientState {
