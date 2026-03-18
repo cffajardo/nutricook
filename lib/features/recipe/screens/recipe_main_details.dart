@@ -14,6 +14,7 @@ import 'package:nutricook/features/recipe/screens/recipe_instruction_detail.dart
 import 'package:nutricook/features/recipe/providers/recipe_provider.dart';
 import 'package:nutricook/features/recipe/providers/recipe_report_provider.dart';
 import 'package:nutricook/features/recipe/widgets/recipe_fab_modal.dart';
+import 'package:nutricook/features/admin/screens/edit_recipe_modal.dart';
 import 'package:nutricook/features/collection/screens/add_to_collections_modal.dart';
 import 'package:nutricook/features/utils/nutrition_calculator.dart';
 import 'package:nutricook/services/archive_service.dart';
@@ -145,28 +146,13 @@ class _RecipeDetailsScreenState extends ConsumerState<RecipeDetailsScreen> {
   }
 
   Future<void> _editRecipe() async {
-    final notifier = ref.read(recipeCreationProvider.notifier);
-    notifier.clear();
-    notifier.setEditingRecipeId(widget.recipe.id);
-    notifier.updateAbout(
-      name: widget.recipe.name,
-      description: widget.recipe.description,
-      prepTimeMinutes: widget.recipe.prepTime,
-      cookTimeMinutes: widget.recipe.cookTime,
-      servings: widget.recipe.servings,
-      isPublic: widget.recipe.isPublic,
-      tags: widget.recipe.tags,
-    );
-
-    for (final ingredient in widget.recipe.ingredients) {
-      notifier.addIngredient(ingredient);
-    }
-    for (final step in widget.recipe.steps) {
-      notifier.addStep(step);
-    }
-
     if (!mounted) return;
-    context.pushNamed(AppRoutes.recipeCreateName);
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => EditRecipeModal(recipeId: widget.recipe.id),
+    );
   }
 
   Future<void> _deleteRecipe() async {

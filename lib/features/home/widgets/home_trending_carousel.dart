@@ -174,7 +174,20 @@ class _RecipeStackCard extends ConsumerWidget {
                 Image.network(
                   imageUrl,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => _fallbackBg(),
+                  errorBuilder: (context, url, error) {
+                    debugPrint('[Image Load] URL: $imageUrl');
+                    debugPrint('[Image Load] Error: $error');
+                    return Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.image_not_supported, color: Colors.red),
+                        SizedBox(height: 8),
+                        Text('Failed to load image'),
+                        Text('URL: $imageUrl', style: TextStyle(fontSize: 10)),
+                        Text('Error: $error', style: TextStyle(fontSize: 10)),
+                      ],
+                    );
+                  },
                 )
               else
                 _fallbackBg(),

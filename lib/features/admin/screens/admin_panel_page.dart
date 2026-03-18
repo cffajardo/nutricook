@@ -888,15 +888,7 @@ class _AdminPanelPageState extends ConsumerState<AdminPanelPage>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => EditRecipeModal(
-        recipeId: recipeId,
-        initialName: initialName,
-        initialDescription: initialDescription,
-        initialPrepTime: initialPrepTime,
-        initialCookTime: initialCookTime,
-        initialServings: initialServings,
-        initialIsPublic: initialIsPublic,
-      ),
+      builder: (ctx) => EditRecipeModal(recipeId: recipeId),
     );
   }
 }
