@@ -154,7 +154,11 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
           Expanded(
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 250),
-              child: _buildStageContent(),
+              child: Align(
+                key: ValueKey(_stage),
+                alignment: Alignment.topCenter,
+                child: _buildStageContent(),
+              ),
             ),
           ),
         ],
@@ -1196,12 +1200,17 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
                 _findUnitById(compatibleUnits, _selectedUnitId) ??
                 compatibleUnits.first;
 
-            return Padding(
+            return SingleChildScrollView(
               key: const ValueKey(2),
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              physics: const BouncingScrollPhysics(),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                   _buildDisplayField(
                     'Ingredient',
                     _selectedIngredientName ?? 'Select ingredient',
@@ -1256,7 +1265,7 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
                   ),
                   const SizedBox(height: 12),
                   _buildUnitCompatibilityInfo(selectedIngredient),
-                  const Spacer(),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       if (isEditing)
@@ -1308,6 +1317,7 @@ class _AddIngredientModalState extends ConsumerState<AddIngredientModal> {
                     ],
                   ),
                 ],
+              ),
               ),
             );
           },

@@ -35,10 +35,10 @@ import 'package:nutricook/services/recipe_service.dart';
 import 'package:nutricook/routing/navigation_provider.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final userAsync = ref.watch(authStateProvider);
-  final coreUserDataAsync = ref.watch(coreUserDataProvider);
+  // Create the router once and refresh it when auth/core user streams change.
+  late final GoRouter router;
 
-  return GoRouter(
+  router = GoRouter(
     initialLocation: AppRoutes.splashPath,
     redirect: (context, state) {
       final path = state.uri.path;
@@ -48,50 +48,48 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isSplashRoute = path == AppRoutes.splashPath;
       final isAdminRoute = path.startsWith(AppRoutes.adminPath);
       final isBannedRoute = path == AppRoutes.bannedPath;
-      
+
       final isDeepLinkRoute = path.startsWith('/recipe/');
 
       if (isSplashRoute) return null;
 
-      return userAsync.when(
-        loading: () => null,
-        error: (_, _) => AppRoutes.loginPath,
-        data: (user) {
-          if (user == null) {
-            if (isDeepLinkRoute) return null;
-            return isAuthRoute ? null : AppRoutes.loginPath;
-          }
+      final userAsync = ref.read(authStateProvider);
+      if (userAsync.isLoading) return null;
+      if (userAsync.hasError) return AppRoutes.loginPath;
 
-          final userData = coreUserDataAsync.asData?.value;
-          final isBanned = userData != null && userData['isBanned'] == true;
-          if (isBanned) {
-            return isBannedRoute ? null : AppRoutes.bannedPath;
-          }
+      final user = userAsync.asData?.value;
+      if (user == null) {
+        if (isDeepLinkRoute) return null;
+        return isAuthRoute ? null : AppRoutes.loginPath;
+      }
 
-          if (!isBanned && isBannedRoute) {
-            return AppRoutes.homePath;
-          }
+      final coreUserDataAsync = ref.read(coreUserDataProvider);
+      final userData = coreUserDataAsync.asData?.value;
+      final isBanned = userData != null && userData['isBanned'] == true;
+      if (isBanned) {
+        return isBannedRoute ? null : AppRoutes.bannedPath;
+      }
 
-          final role = (userData?['role'] ?? '').toString().toLowerCase();
-          final isAdmin = role == 'admin' || userData?['isAdmin'] == true;
-          if (isAdminRoute && !isAdmin) {
-            return AppRoutes.homePath;
-          }
+      if (!isBanned && isBannedRoute) {
+        return AppRoutes.homePath;
+      }
 
-          final needsVerif =
-              user.email != null &&
-              user.email!.isNotEmpty &&
-              !user.emailVerified;
-          if (needsVerif) {
-            return isVerifyEmailRoute ? null : AppRoutes.verifyEmailPath;
-          }
+      final role = (userData?['role'] ?? '').toString().toLowerCase();
+      final isAdmin = role == 'admin' || userData?['isAdmin'] == true;
+      if (isAdminRoute && !isAdmin) {
+        return AppRoutes.homePath;
+      }
 
-          if (isAuthRoute || isVerifyEmailRoute) return AppRoutes.homePath;
+      final needsVerif =
+          user.email != null && user.email!.isNotEmpty && !user.emailVerified;
+      if (needsVerif) {
+        return isVerifyEmailRoute ? null : AppRoutes.verifyEmailPath;
+      }
 
-          if (isDeepLinkRoute) return null;
-          return null;
-        },
-      );
+      if (isAuthRoute || isVerifyEmailRoute) return AppRoutes.homePath;
+
+      if (isDeepLinkRoute) return null;
+      return null;
     },
     routes: [
       GoRoute(
@@ -434,4 +432,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
+
+  // Refresh router when auth state or core user data changes, without recreating the router.
+  ref.listen(authStateProvider, (_, __) => router.refresh());
+  ref.listen(coreUserDataProvider, (_, __) => router.refresh());
+
+  return router;
 });
