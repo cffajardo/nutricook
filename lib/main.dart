@@ -87,6 +87,7 @@ class NutriCookApp extends ConsumerWidget {
 
     return MaterialApp.router(
       title: 'NutriCook',
+      debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.lightTheme,
       themeMode: ThemeMode.light,
