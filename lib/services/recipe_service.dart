@@ -225,31 +225,48 @@ class RecipeService {
   Future<void> addFavorite(String recipeId, String userId) async {
     final recipeRef = _db.collection(FirestoreConstants.recipes).doc(recipeId);
     final favoriteRef = recipeRef.collection(FirestoreConstants.favorites).doc(userId);
-    await _db.runTransaction((tx) async {
-      final favDoc = await tx.get(favoriteRef);
-      if (favDoc.exists) {
-        return;
-      }
-      tx.set(favoriteRef, {
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-      tx.update(recipeRef, {
-        'favoriteCount': FieldValue.increment(1),
-      });
-    });
 
     try {
-      final recipeDoc = await recipeRef.get();
+      // Fetch data using serverAndCache to avoid hanging offline
+      final favDoc = await favoriteRef.get(const GetOptions(source: Source.serverAndCache));
+      if (favDoc.exists) return;
+
+      // Non-blocking write
+      final batch = _db.batch();
+      batch.set(favoriteRef, {
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      batch.update(recipeRef, {
+        'favoriteCount': FieldValue.increment(1),
+      });
+      batch.commit();
+
+      // Handle notification in background
+      _sendFavoriteNotification(recipeId, userId);
+    } catch (e) {
+      debugPrint('Error in addFavorite: $e');
+    }
+  }
+
+  Future<void> _sendFavoriteNotification(String recipeId, String userId) async {
+    try {
+      final recipeRef = _db.collection(FirestoreConstants.recipes).doc(recipeId);
+      final recipeDoc = await recipeRef.get(const GetOptions(source: Source.serverAndCache));
       if (!recipeDoc.exists) return;
+      
       final recipe = Recipe.fromJson(recipeDoc.data()!);
       final recipeOwnerId = recipe.ownerId;
       if (recipeOwnerId == null || userId == recipeOwnerId) return;
-      final ownerDoc = await _db.collection(FirestoreConstants.users).doc(recipeOwnerId).get();
+
+      final ownerDoc = await _db.collection(FirestoreConstants.users).doc(recipeOwnerId).get(const GetOptions(source: Source.serverAndCache));
       if (!ownerDoc.exists) return;
+      
       final ownerFcmToken = ownerDoc.get('fcmToken') as String?;
       if (ownerFcmToken == null || ownerFcmToken.isEmpty) return;
-      final userDoc = await _db.collection(FirestoreConstants.users).doc(userId).get();
+
+      final userDoc = await _db.collection(FirestoreConstants.users).doc(userId).get(const GetOptions(source: Source.serverAndCache));
       final likerName = userDoc.get('username') as String? ?? 'Someone';
+
       await RecipeLikeHelper.onRecipeLiked(
         recipeId: recipeId,
         recipeName: recipe.name,
@@ -266,16 +283,20 @@ class RecipeService {
   Future<void> removeFavorite(String recipeId, String userId) async {
     final recipeRef = _db.collection(FirestoreConstants.recipes).doc(recipeId);
     final favoriteRef = recipeRef.collection(FirestoreConstants.favorites).doc(userId);
-    await _db.runTransaction((tx) async {
-      final favDoc = await tx.get(favoriteRef);
-      if (!favDoc.exists) {
-        return;
-      }
-      tx.delete(favoriteRef);
-      tx.update(recipeRef, {
+
+    try {
+      final favDoc = await favoriteRef.get(const GetOptions(source: Source.serverAndCache));
+      if (!favDoc.exists) return;
+
+      final batch = _db.batch();
+      batch.delete(favoriteRef);
+      batch.update(recipeRef, {
         'favoriteCount': FieldValue.increment(-1),
       });
-    });
+      batch.commit(); // Non-blocking
+    } catch (e) {
+      debugPrint('Error in removeFavorite: $e');
+    }
   }
 
   bool doesRecipeContainAllergens(

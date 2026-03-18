@@ -31,39 +31,44 @@ class RecipeReportService {
         .doc(reportId);
     final recipeRef = _db.collection(FirestoreConstants.recipes).doc(recipeId);
 
-    await _db.runTransaction((transaction) async {
-      final recipeSnapshot = await transaction.get(recipeRef);
+    try {
+      // Fetch status using serverAndCache to avoid hanging offline
+      final recipeSnapshot = await recipeRef.get(const GetOptions(source: Source.serverAndCache));
       if (!recipeSnapshot.exists) {
         throw StateError('Recipe not found.');
       }
 
-      final reportSnapshot = await transaction.get(reportRef);
+      final reportSnapshot = await reportRef.get(const GetOptions(source: Source.serverAndCache));
+      
+      final batch = _db.batch();
       if (reportSnapshot.exists) {
-        transaction.update(reportRef, <String, dynamic>{
+        batch.update(reportRef, <String, dynamic>{
           'reason': reason,
           'details': details,
           'status': 'open',
           'updatedAt': Timestamp.fromDate(now),
         });
-        return;
+      } else {
+        final report = RecipeReport(
+          id: reportId,
+          recipeId: recipeId,
+          reporterId: uid,
+          reason: reason,
+          details: details,
+          status: 'open',
+          createdAt: now,
+          updatedAt: now,
+        );
+
+        batch.set(reportRef, report.toJson());
+        batch.update(recipeRef, <String, dynamic>{
+          'reportCount': FieldValue.increment(1),
+        });
       }
-
-      final report = RecipeReport(
-        id: reportId,
-        recipeId: recipeId,
-        reporterId: uid,
-        reason: reason,
-        details: details,
-        status: 'open',
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      transaction.set(reportRef, report.toJson());
-      transaction.update(recipeRef, <String, dynamic>{
-        'reportCount': FieldValue.increment(1),
-      });
-    });
+      batch.commit(); // Non-blocking for offline functionality
+    } catch (e) {
+      //
+    }
   }
 
   Future<bool> hasUserReportedRecipe(String recipeId, {String? userId}) async {

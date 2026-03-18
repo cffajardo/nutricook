@@ -31,11 +31,11 @@ class IngredientService {
         .toList();
   }
 
-  Future<Ingredient?> getIngredientById(String ingredientId) async {
+  Future<Ingredient?> getIngredientById(String ingredientId, {Source source = Source.serverAndCache}) async {
     final doc = await _db
         .collection(FirestoreConstants.ingredients)
         .doc(ingredientId)
-        .get();
+        .get(GetOptions(source: source));
 
     if (!doc.exists) return null;
     return Ingredient.fromJson(doc.data()!);
@@ -157,7 +157,7 @@ class IngredientService {
   Future<void> deleteIngredient(String ingredientId) async {
     final userId = _auth.currentUser?.uid;
 
-    final ingredient = await getIngredientById(ingredientId);
+    final ingredient = await getIngredientById(ingredientId, source: Source.serverAndCache);
 
     if (ingredient == null) {
       throw Exception('Ingredient not found');

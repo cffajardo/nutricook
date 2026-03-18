@@ -14,7 +14,7 @@ class UserService {
       updatedData['username_lowercase'] =
           (updatedData['username'] as String).trim().toLowerCase();
     }
-    await _users.doc(uid).update(updatedData);
+    _users.doc(uid).update(updatedData); // Non-blocking
   }
 
   Future<Map<String, dynamic>?> getUserData(String uid) async {
@@ -26,15 +26,15 @@ class UserService {
   }
 
   Future<void> updateUserAllergens(String uid, String newAllergen) async {
-    await _users.doc(uid).update({
+    _users.doc(uid).update({
       'allergens': FieldValue.arrayUnion([newAllergen]),
-    });
+    }); // Non-blocking
   }
 
   Future<void> removeUserAllergen(String uid, String allergenToRemove) async {
-    await _users.doc(uid).update({
+    _users.doc(uid).update({
       'allergens': FieldValue.arrayRemove([allergenToRemove]),
-    });
+    }); // Non-blocking
   }
 
   Future<List<String>> getUserAllergens(String uid) async {
@@ -154,10 +154,10 @@ class UserService {
   }
 
   Future<void> updateProfilePictureUrl(String uid, String photoUrl) async {
-    await _users.doc(uid).update({
+    _users.doc(uid).update({
       'mediaId': photoUrl,
       'profilePictureUrl': photoUrl,
-    });
+    }); // Non-blocking
   }
 
   Stream<List<String>> getUserAllergensStream(String uid) {
@@ -279,7 +279,7 @@ class UserService {
   }
 
   Future<List<Map<String, dynamic>>> getFollowersOfUserOnce(String userId) async {
-    final snapshot = await _users.where('following', arrayContains: userId).get();
+    final snapshot = await _users.where('following', arrayContains: userId).get(const GetOptions(source: Source.serverAndCache));
     return snapshot.docs
         .map((doc) {
           final data = doc.data();
@@ -290,7 +290,7 @@ class UserService {
   }
 
   Future<List<Map<String, dynamic>>> getFollowingOfUserOnce(String userId) async {
-    final snapshot = await _users.where('followers', arrayContains: userId).get();
+    final snapshot = await _users.where('followers', arrayContains: userId).get(const GetOptions(source: Source.serverAndCache));
     return snapshot.docs
         .map((doc) {
           final data = doc.data();
@@ -325,54 +325,44 @@ class UserService {
     final currentRef = _users.doc(currentUserId);
     final targetRef = _users.doc(targetUserId);
 
-    String? currentUserName;
+    try {
+      // Fetch data using serverAndCache to avoid hanging offline
+      final currentSnap = await currentRef.get(const GetOptions(source: Source.serverAndCache));
+      final targetSnap = await targetRef.get(const GetOptions(source: Source.serverAndCache));
 
-    await _db.runTransaction((txn) async {
-      final currentSnap = await txn.get(currentRef);
-      final targetSnap = await txn.get(targetRef);
-
-      if (!currentSnap.exists || !targetSnap.exists) {
-        throw Exception('User document not found.');
-      }
+      if (!currentSnap.exists || !targetSnap.exists) return;
 
       final currentData = currentSnap.data() ?? <String, dynamic>{};
       final targetData = targetSnap.data() ?? <String, dynamic>{};
 
-      currentUserName = currentData['username'] as String?;
-
-      final currentBlocked = List<String>.from(
-        currentData['blockedUsers'] ?? [],
-      );
+      final currentUserName = currentData['username'] as String?;
+      final currentBlocked = List<String>.from(currentData['blockedUsers'] ?? []);
       final targetBlocked = List<String>.from(targetData['blockedUsers'] ?? []);
 
-      if (currentBlocked.contains(targetUserId) ||
-          targetBlocked.contains(currentUserId)) {
+      if (currentBlocked.contains(targetUserId) || targetBlocked.contains(currentUserId)) {
         throw Exception('Cannot follow a blocked user.');
       }
 
-      txn.update(currentRef, {
+      // Non-blocking updates
+      currentRef.update({
         'following': FieldValue.arrayUnion([targetUserId]),
       });
-      txn.update(targetRef, {
+      targetRef.update({
         'followers': FieldValue.arrayUnion([currentUserId]),
       });
-    });
 
-    try {
-      final targetDoc = await _users.doc(targetUserId).get();
-      if (!targetDoc.exists) return;
-
-      final targetUserFcmToken = targetDoc.get('fcmToken') as String?;
-      if (targetUserFcmToken == null || targetUserFcmToken.isEmpty) return;
-
-      await FollowHelper.onUserFollowed(
-        followerId: currentUserId,
-        followerName: currentUserName ?? 'Someone',
-        targetUserId: targetUserId,
-        targetUserFcmToken: targetUserFcmToken,
-      );
+      // Handle notification in background
+      final targetUserFcmToken = targetData['fcmToken'] as String?;
+      if (targetUserFcmToken != null && targetUserFcmToken.isNotEmpty) {
+        FollowHelper.onUserFollowed(
+          followerId: currentUserId,
+          followerName: currentUserName ?? 'Someone',
+          targetUserId: targetUserId,
+          targetUserFcmToken: targetUserFcmToken,
+        );
+      }
     } catch (e) {
-      // Not let follow notification failure block the follow action
+      debugPrint('Error in followUser: $e');
     }
   }
 
@@ -392,7 +382,7 @@ class UserService {
     batch.update(targetRef, {
       'followers': FieldValue.arrayRemove([currentUserId]),
     });
-    await batch.commit();
+    batch.commit(); // Non-blocking
   }
 
   Future<void> blockUser({
@@ -415,7 +405,7 @@ class UserService {
       'following': FieldValue.arrayRemove([currentUserId]),
       'followers': FieldValue.arrayRemove([currentUserId]),
     });
-    await batch.commit();
+    batch.commit(); // Non-blocking
   }
 
   Future<void> unblockUser({
@@ -434,7 +424,7 @@ class UserService {
     batch.update(targetRef, {
       'blockedBy': FieldValue.arrayRemove([currentUserId]),
     });
-    await batch.commit();
+    batch.commit(); // Non-blocking
   }
 
   Stream<List<Map<String, dynamic>>> getAllUsersStream({

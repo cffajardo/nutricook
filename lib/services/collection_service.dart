@@ -220,7 +220,7 @@ class CollectionService {
         .where('ownerId', isEqualTo: user.uid)
         .where('isDefault', isEqualTo: true)
         .limit(1)
-        .get();
+        .get(const GetOptions(source: Source.serverAndCache));
 
     if (query.docs.isNotEmpty) {
       return Collection.fromJson(query.docs.first.data());
@@ -237,7 +237,7 @@ class CollectionService {
       updatedAt: DateTime.now(),
     );
 
-    collectionRef.set(favoritesCollection.toJson());
+    collectionRef.set(favoritesCollection.toJson()); // Non-blocking
     return favoritesCollection;
   }
 
@@ -255,11 +255,9 @@ class CollectionService {
           .collection('items')
           .where('recipeId', isEqualTo: recipeId)
           .limit(1)
-          .get();
+          .get(const GetOptions(source: Source.serverAndCache));
 
-      if (existingItem.docs.isNotEmpty) {
-        return; 
-      }
+      if (existingItem.docs.isNotEmpty) return;
 
       final itemRef = _db
           .collection('collections')
@@ -281,18 +279,14 @@ class CollectionService {
         order: 0,
       );
 
-      itemRef.set(collectionItem.toJson());
+      itemRef.set(collectionItem.toJson()); // Non-blocking
 
-      _db
-          .collection('collections')
-          .doc(favoritesCollection.id)
-          .update({
+      _db.collection('collections').doc(favoritesCollection.id).update({
         'recipeCount': FieldValue.increment(1),
         'updatedAt': DateTime.now(),
-      });
+      }); // Non-blocking
     } catch (e) {
       debugPrint('Error adding recipe to favorites: $e');
-      rethrow;
     }
   }
 
@@ -305,24 +299,22 @@ class CollectionService {
           .doc(favoritesCollection.id)
           .collection('items')
           .where('recipeId', isEqualTo: recipeId)
-          .get();
+          .get(const GetOptions(source: Source.serverAndCache));
 
+      if (query.docs.isEmpty) return;
+
+      final batch = _db.batch();
       for (final doc in query.docs) {
-        doc.reference.delete();
+        batch.delete(doc.reference);
       }
 
-      if (query.docs.isNotEmpty) {
-        _db
-            .collection('collections')
-            .doc(favoritesCollection.id)
-            .update({
-          'recipeCount': FieldValue.increment(-query.docs.length),
-          'updatedAt': DateTime.now(),
-        });
-      }
+      batch.update(_db.collection('collections').doc(favoritesCollection.id), {
+        'recipeCount': FieldValue.increment(-query.docs.length),
+        'updatedAt': DateTime.now(),
+      });
+      batch.commit(); // Non-blocking
     } catch (e) {
       debugPrint('Error removing recipe from favorites: $e');
-      rethrow;
     }
   }
 }
