@@ -1,11 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nutricook/core/constants.dart';
+import 'package:nutricook/services/archive_service.dart';
 import 'package:nutricook/models/ingredient/ingredient.dart';
 import 'package:nutricook/services/generative_ai_service.dart';
 
 class IngredientService {
+  IngredientService(this._ref);
+  final Ref _ref;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
@@ -142,17 +146,26 @@ class IngredientService {
     batch.commit();
   }
 
-  Future<void> updateIngredient(Ingredient ingredient) async {
+  Future<void> updateIngredient(Ingredient ingredient, {bool nameChanged = false}) async {
     final userId = _auth.currentUser?.uid;
 
     if (ingredient.ownerId != userId) {
       throw Exception('You can only update your own custom ingredients');
     }
 
-    _db
+    final Map<String, dynamic> data = ingredient.toJson();
+    
+    // If name changed, reset physical properties to trigger re-enrichment
+    if (nameChanged) {
+      data['densityGPerMl'] = null;
+      data['avgWeightG'] = null;
+      data['isAnalyzed'] = false;
+    }
+
+    await _db
         .collection(FirestoreConstants.ingredients)
         .doc(ingredient.id)
-        .update(ingredient.toJson());
+        .update(data);
   }
 
   Future<void> deleteIngredient(String ingredientId) async {
@@ -168,10 +181,11 @@ class IngredientService {
       throw Exception('You can only delete your own custom ingredients');
     }
 
-    _db
-        .collection(FirestoreConstants.ingredients)
-        .doc(ingredientId)
-        .delete();
+    // Use centralized ArchiveService for consistent retention policies
+    await _ref.read(archiveServiceProvider).archiveItem(
+      collection: FirestoreConstants.ingredients,
+      docId: ingredientId,
+    );
   }
 
   Future<List<Ingredient>> searchIngredients(String query) async {

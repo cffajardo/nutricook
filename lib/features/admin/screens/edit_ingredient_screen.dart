@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
-import 'package:nutricook/models/ingredient/ingredient.dart';
-import 'package:nutricook/models/nutrition_info/nutrition_info.dart';
-import 'package:nutricook/services/ingredient_service.dart';
+import 'package:nutricook/features/admin/providers/create_ingredient_provider.dart';
 import 'package:nutricook/widgets/image_upload_field.dart';
 
 class EditIngredientScreen extends ConsumerStatefulWidget {
@@ -26,94 +24,27 @@ class _EditIngredientScreenState extends ConsumerState<EditIngredientScreen> {
   late TextEditingController _fiberController;
   late TextEditingController _sugarController;
   late TextEditingController _sodiumController;
-  late TextEditingController _densityController;
-  late TextEditingController _avgWeightController;
 
   final _imageUploadKey = GlobalKey();
-  late Ingredient _ingredient;
-  bool _isLoading = true;
-  bool _isSaving = false;
-  String? _errorMessage;
 
   final List<String> categories = [
-    'proteins', 'vegetables', 'fruits', 'dairy', 'grains', 'spices',
-    'herbs', 'sauces', 'seafood', 'nuts-and-seeds', 'fats-and-oils', 'beverages',
+    'Proteins', 'Vegetables', 'Fruits', 'Dairy', 'Grains', 'Spices',
+    'Herbs', 'Sauces', 'Seafood', 'Nuts and Seeds', 'Fats and Oils', 'Beverages',
   ];
-
-  late String _selectedCategory;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController();
-    _descriptionController = TextEditingController();
-    _caloriesController = TextEditingController();
-    _carbsController = TextEditingController();
-    _proteinController = TextEditingController();
-    _fatController = TextEditingController();
-    _fiberController = TextEditingController();
-    _sugarController = TextEditingController();
-    _sodiumController = TextEditingController();
-    _densityController = TextEditingController();
-    _avgWeightController = TextEditingController();
-
-    _selectedCategory = categories.first;
-
-    _loadIngredient();
-  }
-
-  Future<void> _loadIngredient() async {
-    try {
-      final service = IngredientService();
-      final ingredient = await service.getIngredientById(widget.ingredientId);
-
-      if (ingredient == null) {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-            _errorMessage = 'Ingredient not found';
-          });
-        }
-        return;
-      }
-
-      setState(() {
-        _ingredient = ingredient;
-        _nameController.text = ingredient.name;
-        _descriptionController.text = ingredient.description ?? '';
-        
-        _selectedCategory = categories.contains(ingredient.category)
-            ? ingredient.category
-            : categories.first;
-
-        if (ingredient.nutritionPer100g != null) {
-          _caloriesController.text = ingredient.nutritionPer100g!.calories.toString();
-          _carbsController.text = ingredient.nutritionPer100g!.carbohydrates.toString();
-          _proteinController.text = ingredient.nutritionPer100g!.protein.toString();
-          _fatController.text = ingredient.nutritionPer100g!.fat.toString();
-          _fiberController.text = ingredient.nutritionPer100g!.fiber.toString();
-          _sugarController.text = ingredient.nutritionPer100g!.sugar.toString();
-          _sodiumController.text = ingredient.nutritionPer100g!.sodium.toStringAsFixed(2);
-        }
-
-        if (ingredient.densityGPerMl != null) {
-          _densityController.text = ingredient.densityGPerMl!.toString();
-        }
-
-        if (ingredient.avgWeightG != null) {
-          _avgWeightController.text = ingredient.avgWeightG!.toString();
-        }
-
-        _isLoading = false;
-      });
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _errorMessage = 'Error loading ingredient: $e';
-        });
-      }
-    }
+    final state = ref.read(createIngredientProvider);
+    _nameController = TextEditingController(text: state.name);
+    _descriptionController = TextEditingController(text: state.description);
+    _caloriesController = TextEditingController(text: state.calories.toString());
+    _carbsController = TextEditingController(text: state.carbohydrates.toString());
+    _proteinController = TextEditingController(text: state.protein.toString());
+    _fatController = TextEditingController(text: state.fat.toString());
+    _fiberController = TextEditingController(text: state.fiber.toString());
+    _sugarController = TextEditingController(text: state.sugar.toString());
+    _sodiumController = TextEditingController(text: state.sodium.toStringAsFixed(2));
   }
 
   @override
@@ -127,168 +58,37 @@ class _EditIngredientScreenState extends ConsumerState<EditIngredientScreen> {
     _fiberController.dispose();
     _sugarController.dispose();
     _sodiumController.dispose();
-    _densityController.dispose();
-    _avgWeightController.dispose();
     super.dispose();
   }
 
-  void _updateIngredient() {
-    if (_nameController.text.trim().isEmpty) {
-      _showError('Ingredient name is required');
-      return;
-    }
-
-    if (_selectedCategory.isEmpty) {
-      _showError('Category is required');
-      return;
-    }
-
-    final calories = int.tryParse(_caloriesController.text);
-    final carbs = double.tryParse(_carbsController.text);
-    final protein = double.tryParse(_proteinController.text);
-    final fat = double.tryParse(_fatController.text);
-    final fiber = double.tryParse(_fiberController.text);
-    final sugar = double.tryParse(_sugarController.text);
-    final sodium = double.tryParse(_sodiumController.text);
-    final density = _densityController.text.isNotEmpty ? double.tryParse(_densityController.text) : null;
-    final avgWeight = _avgWeightController.text.isNotEmpty ? double.tryParse(_avgWeightController.text) : null;
-
-    if (calories == null || carbs == null || protein == null || fat == null ||
-        fiber == null || sugar == null || sodium == null) {
-      _showError('All nutrition values must be valid numbers');
-      return;
-    }
-
-    if (_ingredient.densityGPerMl != null && density == null) {
-      _showError('Density value is required for this ingredient');
-      return;
-    }
-
-    if (_ingredient.avgWeightG != null && avgWeight == null) {
-      _showError('Average weight value is required for this ingredient');
-      return;
-    }
-
-    _saveIngredient(calories, carbs, protein, fat, fiber, sugar, sodium, density, avgWeight);
-  }
-
-  Future<void> _saveIngredient(
-    int calories,
-    double carbs,
-    double protein,
-    double fat,
-    double fiber,
-    double sugar,
-    double sodium,
-    double? density,
-    double? avgWeight,
-  ) async {
-    setState(() => _isSaving = true);
-
-    try {
-      String? imageUrl = _ingredient.imageURL;
-      final uploadedUrl = await (_imageUploadKey.currentState as dynamic)?.uploadImage();
-      if (uploadedUrl != null) {
-        imageUrl = uploadedUrl;
-      }
-
-      final nutritionInfo = NutritionInfo(
-        calories: calories,
-        carbohydrates: carbs,
-        protein: protein,
-        fat: fat,
-        fiber: fiber,
-        sugar: sugar,
-        sodium: sodium,
-      );
-
-      final updatedIngredient = _ingredient.copyWith(
-        name: _nameController.text.trim(),
-        description: _descriptionController.text.trim(),
-        category: _selectedCategory,
-        nutritionPer100g: nutritionInfo,
-        densityGPerMl: density,
-        avgWeightG: avgWeight,
-        imageURL: imageUrl,
-      );
-
-      final service = IngredientService();
-      await service.updateIngredient(updatedIngredient);
-
-      if (mounted) {
-        context.pop();
-      }
-    } catch (e) {
-      _showError('Failed to save ingredient: $e');
-    } finally {
-      if (mounted) {
-        setState(() => _isSaving = false);
-      }
-    }
-  }
-
-  void _showError(String message) {
-    setState(() => _errorMessage = message);
-    Future.delayed(const Duration(seconds: 4), () {
-      if (mounted) {
-        setState(() => _errorMessage = null);
-      }
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-      ),
+  void _updateNutritionFromControllers() {
+    ref.read(createIngredientProvider.notifier).setNutritionValue(
+      calories: int.tryParse(_caloriesController.text) ?? 0,
+      carbohydrates: double.tryParse(_carbsController.text) ?? 0.0,
+      protein: double.tryParse(_proteinController.text) ?? 0.0,
+      fat: double.tryParse(_fatController.text) ?? 0.0,
+      fiber: double.tryParse(_fiberController.text) ?? 0.0,
+      sugar: double.tryParse(_sugarController.text) ?? 0.0,
+      sodium: double.tryParse(_sodiumController.text) ?? 0.0,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return Scaffold(
-        backgroundColor: const Color(0xFFFFF9FA),
-        appBar: AppBar(
-          backgroundColor: const Color(0xFFFFF9FA),
-          elevation: 0,
-          centerTitle: true,
-          leading: IconButton(
-            onPressed: () => context.pop(),
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black, size: 20),
-          ),
-          title: const Text(
-            'Edit Ingredient',
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900, fontSize: 20),
-          ),
-        ),
-        body: const Center(
-          child: CircularProgressIndicator(color: AppColors.rosePink),
-        ),
-      );
-    }
+    final state = ref.watch(createIngredientProvider);
 
-    if (_errorMessage != null && _errorMessage!.contains('not found')) {
-      return Scaffold(
-        backgroundColor: const Color(0xFFFFF9FA),
-        appBar: AppBar(
-          backgroundColor: const Color(0xFFFFF9FA),
-          elevation: 0,
-          centerTitle: true,
-          leading: IconButton(
-            onPressed: () => context.pop(),
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black, size: 20),
-          ),
-          title: const Text(
-            'Edit Ingredient',
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900, fontSize: 20),
-          ),
-        ),
-        body: Center(
-          child: Text(_errorMessage ?? 'Error loading ingredient'),
-        ),
-      );
-    }
+    ref.listen(createIngredientProvider, (previous, next) {
+      if (next.error.isNotEmpty && next.error != previous?.error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(next.error), backgroundColor: Colors.red),
+        );
+      }
+      if (next.success && !(previous?.success ?? false)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ingredient updated successfully!'), backgroundColor: Colors.green),
+        );
+      }
+    });
 
     return Scaffold(
       backgroundColor: const Color(0xFFFFF9FA),
@@ -316,17 +116,19 @@ class _EditIngredientScreenState extends ConsumerState<EditIngredientScreen> {
             _buildThemedTextField(
               controller: _nameController,
               hint: 'e.g., Atlantic Salmon, Avocado',
+              onChanged: (val) => ref.read(createIngredientProvider.notifier).setName(val),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
             _buildSectionHeader('Description'),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             _buildThemedTextField(
               controller: _descriptionController,
-              hint: 'Optional description',
+              hint: 'e.g., Fresh Atlantic salmon, rich in omega-3',
               maxLines: 3,
+              onChanged: (val) => ref.read(createIngredientProvider.notifier).setDescription(val),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
             _buildSectionHeader('Image'),
             const SizedBox(height: 12),
@@ -342,62 +144,26 @@ class _EditIngredientScreenState extends ConsumerState<EditIngredientScreen> {
                 height: 160,
                 showLabel: false,
                 autoUpload: false,
-                initialImageUrl: _ingredient.imageURL,
+                initialImageUrl: state.imageUrl,
               ),
             ),
             const SizedBox(height: 24),
 
-            _buildSectionHeader('Category'),
+            _buildSectionHeader('Categorization'),
             const SizedBox(height: 12),
-            _buildThemedDropdown(),
+            _buildThemedDropdown(state),
             const SizedBox(height: 24),
 
             _buildSectionHeader('Nutrition (per 100g)'),
             const SizedBox(height: 12),
-            _buildManualNutritionGrid(),
-            const SizedBox(height: 24),
+            _buildNutritionToggle(state),
+            const SizedBox(height: 20),
 
-            _buildSectionHeader('Physical Properties'),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Density (g/mL)',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black54),
-                      ),
-                      const SizedBox(height: 8),
-                      _buildThemedTextField(
-                        controller: _densityController,
-                        hint: 'e.g., 1.0',
-                        keyboardType: TextInputType.number,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Avg Weight (g)',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black54),
-                      ),
-                      const SizedBox(height: 8),
-                      _buildThemedTextField(
-                        controller: _avgWeightController,
-                        hint: 'e.g., 200',
-                        keyboardType: TextInputType.number,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+            if (state.nutritionMethod == 'manual')
+              _buildManualNutritionGrid()
+            else
+              _buildAIStatusCard(state),
+
             const SizedBox(height: 40),
 
             SizedBox(
@@ -409,15 +175,41 @@ class _EditIngredientScreenState extends ConsumerState<EditIngredientScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   elevation: 0,
                 ),
-                onPressed: _isSaving ? null : _updateIngredient,
-                child: Text(
-                  _isSaving ? 'Saving...' : 'Save Changes',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 16,
-                  ),
-                ),
+                onPressed: state.isLoadingNutrition
+                    ? null
+                    : () async {
+                        if (state.nutritionMethod == 'manual') {
+                          _updateNutritionFromControllers();
+                        }
+
+                        final imageUrl = await (_imageUploadKey.currentState as dynamic)?.uploadImage();
+                        if (imageUrl != null) {
+                          ref.read(createIngredientProvider.notifier).setImageUrl(imageUrl);
+                        }
+
+                        final res = await ref.read(createIngredientProvider.notifier).updateIngredient();
+
+                        if (res && mounted) {
+                          ref.read(createIngredientProvider.notifier).reset();
+                          context.pop();
+                        }
+                      },
+                child: state.isLoadingNutrition
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      )
+                    : const Text('Update Ingredient',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16)),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Center(
+              child: TextButton(
+                onPressed: () => _showDeleteConfirmation(context, ref),
+                child: const Text('Delete Ingredient', 
+                  style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w900)),
               ),
             ),
             const SizedBox(height: 40),
@@ -427,23 +219,47 @@ class _EditIngredientScreenState extends ConsumerState<EditIngredientScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Text(
-      title,
-      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.black87),
+  void _showDeleteConfirmation(BuildContext outerContext, WidgetRef ref) {
+    showDialog(
+      context: outerContext,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete Ingredient', style: TextStyle(fontWeight: FontWeight.w900)),
+        content: const Text('Are you sure you want to delete this ingredient? This action will archive it.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel', style: TextStyle(color: Colors.black54, fontWeight: FontWeight.bold)),
+          ),
+          TextButton(
+            onPressed: () async {
+              final success = await ref.read(createIngredientProvider.notifier).deleteIngredient(widget.ingredientId);
+              if (dialogContext.mounted) {
+                Navigator.pop(dialogContext); // Close dialog
+              }
+              if (success && outerContext.mounted) {
+                ref.read(createIngredientProvider.notifier).reset();
+                outerContext.pop(); // Go back to list safely
+                ScaffoldMessenger.of(outerContext).showSnackBar(
+                  const SnackBar(content: Text('Ingredient deleted'), backgroundColor: Colors.green),
+                );
+              }
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildThemedTextField({
-    required TextEditingController controller,
-    required String hint,
-    int maxLines = 1,
-    TextInputType keyboardType = TextInputType.text,
-  }) {
+  Widget _buildSectionHeader(String title) {
+    return Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.black87));
+  }
+
+  Widget _buildThemedTextField({required TextEditingController controller, required String hint, Function(String)? onChanged, int? maxLines}) {
     return TextField(
       controller: controller,
-      maxLines: maxLines,
-      keyboardType: keyboardType,
+      onChanged: onChanged,
+      maxLines: maxLines ?? 1,
       style: const TextStyle(fontWeight: FontWeight.bold),
       decoration: InputDecoration(
         hintText: hint,
@@ -462,7 +278,7 @@ class _EditIngredientScreenState extends ConsumerState<EditIngredientScreen> {
     );
   }
 
-  Widget _buildThemedDropdown() {
+  Widget _buildThemedDropdown(dynamic state) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
@@ -472,19 +288,48 @@ class _EditIngredientScreenState extends ConsumerState<EditIngredientScreen> {
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
-          value: _selectedCategory.isEmpty ? categories.first : _selectedCategory,
+          value: state.category,
           isExpanded: true,
           style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
-          items: categories
-              .map((c) => DropdownMenuItem(value: c, child: Text(c.replaceAll('-', ' ').toUpperCase())))
-              .toList(),
+          items: categories.map((c) {
+            final displayText = c
+                .split(' ')
+                .map((word) => word[0].toUpperCase() + word.substring(1))
+                .join(' ')
+                .replaceAll('And', '&');
+            return DropdownMenuItem(value: c, child: Text(displayText));
+          }).toList(),
           onChanged: (val) {
-            if (val != null) {
-              setState(() => _selectedCategory = val);
-            }
+            if (val != null) ref.read(createIngredientProvider.notifier).setCategory(val);
           },
         ),
       ),
+    );
+  }
+
+  Widget _buildSegmentedToggle<T>({required String label, required T value, required List<ButtonSegment<T>> segments, required Function(T) onChanged}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black38)),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: SegmentedButton<T>(
+            segments: segments,
+            selected: {value},
+            showSelectedIcon: false,
+            style: SegmentedButton.styleFrom(
+              backgroundColor: Colors.white,
+              selectedBackgroundColor: AppColors.rosePink,
+              selectedForegroundColor: Colors.white,
+              side: BorderSide(color: AppColors.rosePink.withValues(alpha: 0.1), width: 1.5),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onSelectionChanged: (set) => onChanged(set.first),
+          ),
+        ),
+      ],
     );
   }
 
@@ -512,10 +357,7 @@ class _EditIngredientScreenState extends ConsumerState<EditIngredientScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '$label ($unit)',
-          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black45),
-        ),
+        Text('$label ($unit)', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black45)),
         const SizedBox(height: 4),
         Expanded(
           child: TextField(
@@ -538,6 +380,106 @@ class _EditIngredientScreenState extends ConsumerState<EditIngredientScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildAIStatusCard(dynamic state) {
+    final hasGeneratedValues = state.calories > 0 || 
+        state.carbohydrates > 0 || 
+        state.protein > 0 || 
+        state.fat > 0;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.cardRose.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.rosePink.withValues(alpha: 0.1), width: 1.5),
+      ),
+      child: Column(
+        children: [
+          if (state.isLoadingNutrition) ...[
+            const CircularProgressIndicator(color: AppColors.rosePink),
+            const SizedBox(height: 12),
+            const Text('Generating nutrition data...', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.rosePink)),
+          ] else if (hasGeneratedValues) ...[
+            const Icon(Icons.check_circle, color: Colors.green, size: 32),
+            const SizedBox(height: 12),
+            const Text('AI Generated Values', style: TextStyle(fontWeight: FontWeight.w900)),
+            const SizedBox(height: 16),
+            _buildGeneratedValueDisplay(state),
+            const SizedBox(height: 16),
+            OutlinedButton(
+              onPressed: () {
+                _updateNutritionFromControllers();
+                ref.read(createIngredientProvider.notifier).generateNutritionFromAI(_nameController.text);
+              },
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: AppColors.rosePink),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Regenerate', style: TextStyle(color: AppColors.rosePink, fontWeight: FontWeight.bold)),
+            ),
+          ] else ...[
+            const Icon(Icons.auto_awesome, color: AppColors.rosePink, size: 32),
+            const SizedBox(height: 12),
+            const Text('AI Prediction Ready', style: TextStyle(fontWeight: FontWeight.w900)),
+            const SizedBox(height: 16),
+            OutlinedButton(
+              onPressed: () {
+                _updateNutritionFromControllers();
+                ref.read(createIngredientProvider.notifier).generateNutritionFromAI(_nameController.text);
+              },
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: AppColors.rosePink),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Generate with AI', style: TextStyle(color: AppColors.rosePink, fontWeight: FontWeight.bold)),
+            ),
+          ]
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGeneratedValueDisplay(dynamic state) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildValueRow('Calories', '${state.calories} kcal'),
+        _buildValueRow('Protein', '${state.protein.toStringAsFixed(1)} g'),
+        _buildValueRow('Carbs', '${state.carbohydrates.toStringAsFixed(1)} g'),
+        _buildValueRow('Fat', '${state.fat.toStringAsFixed(1)} g'),
+        _buildValueRow('Fiber', '${state.fiber.toStringAsFixed(1)} g'),
+        _buildValueRow('Sugar', '${state.sugar.toStringAsFixed(1)} g'),
+        _buildValueRow('Sodium', '${state.sodium.toStringAsFixed(2)} g'),
+      ],
+    );
+  }
+
+  Widget _buildValueRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 13, color: Colors.black54)),
+          Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNutritionToggle(dynamic state) {
+    return _buildSegmentedToggle<String>(
+      label: 'Input Method',
+      value: state.nutritionMethod,
+      segments: const [
+        ButtonSegment(value: 'manual', label: Text('Manual')),
+        ButtonSegment(value: 'ai', label: Text('AI SmartFill')),
+      ],
+      onChanged: (val) => ref.read(createIngredientProvider.notifier).setNutritionMethod(val),
     );
   }
 }

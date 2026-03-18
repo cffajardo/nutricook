@@ -6,7 +6,7 @@ import 'package:nutricook/services/ingredient_service.dart';
 
 
 final ingredientServiceProvider = Provider<IngredientService>((ref) {
-  return IngredientService();
+  return IngredientService(ref);
 });
 
 

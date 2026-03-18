@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
 import 'package:nutricook/features/library/providers/library_catalog_provider.dart';
+import 'package:nutricook/features/admin/providers/create_ingredient_provider.dart';
+import 'package:nutricook/features/admin/screens/edit_ingredient_screen.dart';
+import 'package:nutricook/features/library/ingredients/provider/ingredient_provider.dart';
+import 'package:nutricook/models/ingredient/ingredient.dart';
 
 class LibrarySingleItemDetailScreen extends ConsumerWidget {
   const LibrarySingleItemDetailScreen({
@@ -35,6 +40,30 @@ class LibrarySingleItemDetailScreen extends ConsumerWidget {
             size: 22,
           ),
         ),
+        actions: detailAsync.value?.isCustom == true
+            ? [
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined, color: AppColors.rosePink),
+                  onPressed: () async {
+                    final ingredient = await ref.read(ingredientByIdProvider(itemId).future);
+                    if (ingredient != null && context.mounted) {
+                      ref.read(createIngredientProvider.notifier).populateFromIngredient(ingredient);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => EditIngredientScreen(ingredientId: itemId),
+                        ),
+                      );
+                    }
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+                  onPressed: () => _showDeleteConfirmation(context, ref),
+                ),
+                const SizedBox(width: 8),
+              ]
+            : null,
       ),
       body: detailAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -202,6 +231,37 @@ class LibrarySingleItemDetailScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 10),
           child,
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete Ingredient', style: TextStyle(fontWeight: FontWeight.w900)),
+        content: const Text('Are you sure you want to delete this ingredient? This action will archive it.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel', style: TextStyle(color: Colors.black54, fontWeight: FontWeight.bold)),
+          ),
+          TextButton(
+            onPressed: () async {
+              final success = await ref.read(createIngredientProvider.notifier).deleteIngredient(itemId);
+              if (dialogContext.mounted) {
+                Navigator.pop(dialogContext); // Close dialog
+              }
+              if (success && context.mounted) {
+                context.pop(); // Use go_router pop to go back to list safely
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Ingredient deleted'), backgroundColor: Colors.green),
+                );
+              }
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+          ),
         ],
       ),
     );

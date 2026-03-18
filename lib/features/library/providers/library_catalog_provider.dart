@@ -85,6 +85,7 @@ class LibraryItemDetailData {
     required this.description,
     this.imageUrl,
     this.fields = const <LibraryItemDetailField>[],
+    this.isCustom = false,
   });
 
   final String id;
@@ -92,6 +93,7 @@ class LibraryItemDetailData {
   final String description;
   final String? imageUrl;
   final List<LibraryItemDetailField> fields;
+  final bool isCustom;
 }
 
 List<LibraryCatalogItem> _sortedItems(
@@ -312,6 +314,7 @@ final libraryItemDetailProvider =
                 : 'No description available.',
             imageUrl: ingredient.imageURL,
             fields: fields,
+            isCustom: ingredient.ownerId != null && ingredient.ownerId!.isNotEmpty,
           );
         }
       }

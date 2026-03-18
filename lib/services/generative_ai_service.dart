@@ -1,4 +1,9 @@
 import 'package:firebase_ai/firebase_ai.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+final generativeAiServiceProvider = Provider<GenerativeAiService>((ref) {
+  return GenerativeAiService();
+});
 
 class GenerativeAiService {
   GenerativeAiService({

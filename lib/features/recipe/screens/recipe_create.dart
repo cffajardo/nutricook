@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nutricook/core/theme/app_theme.dart';
-import 'package:nutricook/features/library/ingredients/provider/ingredient_provider.dart' hide ingredientServiceProvider;
+import 'package:nutricook/features/library/ingredients/provider/ingredient_provider.dart';
 import 'package:nutricook/features/library/units/unit_provider.dart';
 import 'package:nutricook/features/recipe/providers/recipe_provider.dart';
 import 'package:nutricook/features/recipe/screens/recipe_create_select_ingredients.dart';
