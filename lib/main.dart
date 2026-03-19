@@ -14,10 +14,9 @@ import 'firebase_options.dart';
 import 'routing/main_router.dart';
 import 'package:nutricook/services/archive_service.dart';
 import 'package:nutricook/features/auth/providers/auth_provider.dart';
-import 'package:nutricook/features/admin/providers/create_ingredient_provider.dart';
 import 'package:nutricook/features/library/ingredients/provider/ingredient_provider.dart';
 import 'package:nutricook/services/generative_ai_service.dart';
-import 'package:nutricook/services/ingredient_service.dart';
+
 
 
 Future<void> main() async {

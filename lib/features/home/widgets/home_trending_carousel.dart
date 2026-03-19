@@ -171,23 +171,28 @@ class _RecipeStackCard extends ConsumerWidget {
             fit: StackFit.expand,
             children: [
               if (isNetwork)
-                Image.network(
-                  imageUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, url, error) {
-                    debugPrint('[Image Load] URL: $imageUrl');
-                    debugPrint('[Image Load] Error: $error');
-                    return Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.image_not_supported, color: Colors.red),
-                        SizedBox(height: 8),
-                        Text('Failed to load image'),
-                        Text('URL: $imageUrl', style: TextStyle(fontSize: 10)),
-                        Text('Error: $error', style: TextStyle(fontSize: 10)),
-                      ],
-                    );
-                  },
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+                    errorBuilder: (context, url, error) {
+                      debugPrint('[Image Load] URL: $imageUrl');
+                      debugPrint('[Image Load] Error: $error');
+                      return Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.image_not_supported, color: Colors.red),
+                            SizedBox(height: 8),
+                            Text('Failed to load image', textAlign: TextAlign.center),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 )
               else
                 _fallbackBg(),

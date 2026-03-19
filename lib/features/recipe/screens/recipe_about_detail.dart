@@ -33,12 +33,29 @@ class RecipeViewAbout extends ConsumerWidget {
             ),
             child: Stack(
               children: [
-                const Center(
-                  child: Icon(
-                    Icons.image_outlined,
-                    size: 50,
-                    color: Colors.black12,
-                  ),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: recipe.imageURL.isNotEmpty
+                      ? Image.network(
+                          recipe.imageURL.first,
+                          width: double.infinity,
+                          height: 250,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, _, __) => const Center(
+                            child: Icon(
+                              Icons.image_outlined,
+                              size: 50,
+                              color: Colors.black12,
+                            ),
+                          ),
+                        )
+                      : const Center(
+                          child: Icon(
+                            Icons.image_outlined,
+                            size: 50,
+                            color: Colors.black12,
+                          ),
+                        ),
                 ),
                 Positioned(
                   top: 16,
